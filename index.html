@@ -358,7 +358,7 @@
         }
 
         #detailHeatmap {
-            height: 90px;
+            height: 360px;
         }
 
         .summary-row {
@@ -475,16 +475,17 @@
             background: #1e2440;
         }
 
-        .gallery-item img {
-            width: 100%;
-            max-height: 220px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
         .gallery-item-media {
             position: relative;
+        }
+
+        .gallery-item-chart {
+            width: 100%;
+            height: 220px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            background: #151932;
         }
 
         .gallery-item-info {
@@ -750,6 +751,7 @@
         const clearGalleryButton = document.getElementById('clearGallery');
         const galleryList = document.getElementById('galleryList');
         const galleryCount = document.getElementById('galleryCount');
+        const galleryCharts = new Map();
 
         const appState = {
             selectedMutualPair: null,
@@ -1168,18 +1170,10 @@
             });
         }
 
-        function updateOverlayChart() {
-            if (!appState.cachedMarketData || !appState.selectedMutualPair) {
-                return;
-            }
-            const { base, compare } = appState.selectedMutualPair;
-            const offset = parseInt(document.getElementById('offset').value);
-            const baseCandles = appState.cachedMarketData[base] || [];
-            const compareCandles = appState.cachedMarketData[compare] || [];
+        function buildOverlayOption({ base, compare, offset, baseCandles, compareCandles }) {
             const alignedMeta = getAlignedMeta(baseCandles.length, compareCandles.length, offset);
             if (alignedMeta.minLength === 0) {
-                chartOverlay.clear();
-                return;
+                return { option: null, alignedMeta };
             }
             const baseAligned = baseCandles.slice(
                 alignedMeta.baseStartIndex,
@@ -1195,7 +1189,7 @@
             const baseAxisRange = calculateAxisRange(baseCandles, AXIS_DATA_RATIO);
             const compareAxisRange = calculateAxisRange(compareCandles, AXIS_DATA_RATIO);
 
-            chartOverlay.setOption({
+            const option = {
                 backgroundColor: '#151932',
                 title: {
                     text: `${base} & ${compare} ローソク足 (重ね合わせ)`,
@@ -1307,7 +1301,25 @@
                         }
                     }
                 ]
-            }, true);
+            };
+
+            return { option, alignedMeta };
+        }
+
+        function updateOverlayChart() {
+            if (!appState.cachedMarketData || !appState.selectedMutualPair) {
+                return;
+            }
+            const { base, compare } = appState.selectedMutualPair;
+            const offset = parseInt(document.getElementById('offset').value);
+            const baseCandles = appState.cachedMarketData[base] || [];
+            const compareCandles = appState.cachedMarketData[compare] || [];
+            const { option } = buildOverlayOption({ base, compare, offset, baseCandles, compareCandles });
+            if (!option) {
+                chartOverlay.clear();
+                return;
+            }
+            chartOverlay.setOption(option, true);
         }
 
         function updateDetailHeatmap() {
@@ -1692,6 +1704,7 @@
             if (isVisible) {
                 chartOverlay.resize();
                 chartDetail.resize();
+                resizeGalleryCharts();
             }
             updateGalleryControls();
         }
@@ -1782,45 +1795,18 @@
             setDataControlState(false);
         }
 
-        function getSnapshotWithoutSelectionLines() {
-            const currentOption = chartOverlay.getOption();
-            const tooltipBackup = currentOption.tooltip
-                ? JSON.parse(JSON.stringify(currentOption.tooltip[0] || currentOption.tooltip))
-                : null;
-            const markLineBackup = Array.isArray(currentOption.series)
-                ? currentOption.series.map((series) => series.markLine ? JSON.parse(JSON.stringify(series.markLine)) : null)
-                : [];
-
-            chartOverlay.setOption({
-                tooltip: { show: false },
-                series: markLineBackup.map(() => ({ markLine: { data: [] } }))
-            }, false);
-
-            const dataUrl = chartOverlay.getDataURL({
-                type: 'png',
-                pixelRatio: 2,
-                backgroundColor: '#151932'
-            });
-
-            chartOverlay.setOption({
-                tooltip: tooltipBackup || { show: true },
-                series: markLineBackup.map((markLine) => ({ markLine: markLine || { data: [] } }))
-            }, false);
-
-            return dataUrl;
-        }
-
-        function createGalleryItem({ dataUrl, title, tooltip }) {
+        function createGalleryItem({ title, tooltip, option }) {
             const item = document.createElement('div');
             item.classList.add('gallery-item');
 
             const media = document.createElement('div');
             media.classList.add('gallery-item-media');
 
-            const image = document.createElement('img');
-            image.src = dataUrl;
-            image.alt = title;
-            media.append(image);
+            const chartHost = document.createElement('div');
+            chartHost.classList.add('gallery-item-chart');
+            chartHost.setAttribute('role', 'img');
+            chartHost.setAttribute('aria-label', title);
+            media.append(chartHost);
 
             const info = document.createElement('div');
             info.classList.add('gallery-item-info');
@@ -1877,6 +1863,7 @@
             deleteButton.dataset.action = 'delete';
             deleteButton.textContent = '削除';
             deleteButton.addEventListener('click', () => {
+                disposeGalleryItem(item);
                 item.remove();
                 updateGalleryControls();
             });
@@ -1885,7 +1872,26 @@
             info.append(meta, actions);
             item.append(media, info);
 
+            const galleryChart = echarts.init(chartHost);
+            galleryChart.setOption(option, true);
+            galleryCharts.set(item, galleryChart);
+            requestAnimationFrame(() => galleryChart.resize());
+
             return item;
+        }
+
+        function disposeGalleryItem(item) {
+            const chart = galleryCharts.get(item);
+            if (chart) {
+                chart.dispose();
+                galleryCharts.delete(item);
+            }
+        }
+
+        function resizeGalleryCharts() {
+            galleryCharts.forEach((chart) => {
+                chart.resize();
+            });
         }
 
         function addOverlaySnapshotToGallery() {
@@ -1898,10 +1904,16 @@
             }
 
             const { base, compare } = appState.selectedMutualPair;
-            const dataUrl = getSnapshotWithoutSelectionLines();
+            const offset = parseInt(document.getElementById('offset').value);
+            const baseCandles = appState.cachedMarketData[base] || [];
+            const compareCandles = appState.cachedMarketData[compare] || [];
+            const { option } = buildOverlayOption({ base, compare, offset, baseCandles, compareCandles });
+            if (!option) {
+                return;
+            }
             const title = `${base} × ${compare}`;
             const tooltip = getSnapshotTooltipText();
-            const item = createGalleryItem({ dataUrl, title, tooltip });
+            const item = createGalleryItem({ title, tooltip, option });
             galleryList.appendChild(item);
             updateGalleryControls();
         }
@@ -2017,6 +2029,10 @@
         });
         addGalleryItemButton.addEventListener('click', addOverlaySnapshotToGallery);
         clearGalleryButton.addEventListener('click', () => {
+            galleryCharts.forEach((chart, item) => {
+                chart.dispose();
+                galleryCharts.delete(item);
+            });
             galleryList.innerHTML = '';
             updateGalleryControls();
         });
@@ -2088,6 +2104,7 @@
             chartMutual.resize();
             chartOverlay.resize();
             chartDetail.resize();
+            resizeGalleryCharts();
         }, RESIZE_DEBOUNCE_MS);
 
         window.addEventListener('resize', handleResize);
