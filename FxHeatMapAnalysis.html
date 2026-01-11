@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FX相関係数ヒートマップ分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e27;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            color: #00d4ff;
+        }
+
+        .controls-section {
+            margin-bottom: 20px;
+        }
+
+        .tab-shell {
+            background: #151932;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #1f2545;
+        }
+
+        .tab-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab-button {
+            border: 1px solid transparent;
+            background: transparent;
+            color: #8b94b8;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button:hover {
+            color: #d0d4e6;
+            border-color: #2a3150;
+        }
+
+        .tab-button.is-active {
+            background: #1e2440;
+            color: #00d4ff;
+            border-color: #00d4ff;
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.25);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.is-active {
+            display: block;
+        }
+
+        .controls-title {
+            font-size: 14px;
+            color: #8b94b8;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .controls {
+            background: #151932;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .controls.global-controls {
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .controls.data-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .tab-panel .controls {
+            background: transparent;
+            padding: 0;
+            margin-bottom: 0;
+        }
+
+        .tab-panel .controls.global-controls {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .controls .control-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .pair-selection-group {
+            grid-column: 1 / -1;
+        }
+
+        .pair-selection-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 12px;
+            color: #8b94b8;
+        }
+
+        .pair-selection-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pair-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+            gap: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #2a3150;
+            background: #1e2440;
+        }
+
+        .pair-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #d0d4e6;
+        }
+
+        .pair-option input[type="checkbox"] {
+            accent-color: #00d4ff;
+            cursor: pointer;
+        }
+
+        .action-button.small {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .action-button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #00d4ff;
+            color: #0a0e27;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 212, 255, 0.35);
+        }
+
+        .action-button:disabled {
+            cursor: not-allowed;
+            background: #2a3150;
+            color: #8b94b8;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .action-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 12px;
+            color: #8b94b8;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        select, input[type="range"] {
+            background: #1e2440;
+            color: #fff;
+            border: 1px solid #2a3150;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="datetime-local"] {
+            background: #1e2440;
+            color: #fff;
+            border: 1px solid #2a3150;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select:hover, select:focus {
+            border-color: #00d4ff;
+        }
+
+        input[type="datetime-local"]:focus {
+            border-color: #00d4ff;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00d4ff;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #00d4ff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+
+        .slider-value {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 4px;
+        }
+
+        .value-number {
+            background: #00d4ff;
+            color: #0a0e27;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .pane-section {
+            margin-bottom: 24px;
+        }
+
+        .pane-title {
+            font-size: 16px;
+            color: #00d4ff;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .chart-panel {
+            background: #151932;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .export-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            background: rgba(21, 25, 50, 0.8);
+            border: 1px solid rgba(42, 49, 80, 0.7);
+        }
+
+        .export-toolbar .export-title {
+            font-size: 13px;
+            color: #8b94b8;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .export-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .export-buttons.is-collapsed {
+            display: none;
+        }
+
+        .export-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .export-toggle span {
+            font-size: 11px;
+        }
+
+        #mutualChart {
+            height: 560px;
+        }
+
+        #overlayChart {
+            height: 360px;
+        }
+
+        #detailHeatmap {
+            height: 180px;
+        }
+
+        .summary-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .summary-card {
+            flex: 1;
+            background: #151932;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-card h3 {
+            font-size: 13px;
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .summary-card ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: #d0d4e6;
+        }
+
+        .summary-card .pair-score {
+            color: #00d4ff;
+            font-weight: 700;
+        }
+
+        .pair-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .pair-info {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .pair-name {
+            font-weight: 600;
+        }
+
+        .pair-select-button {
+            border: 1px solid #00d4ff;
+            background: transparent;
+            color: #00d4ff;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .pair-select-button:hover {
+            background: #00d4ff;
+            color: #0a0e27;
+            box-shadow: 0 4px 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .pane-hidden {
+            display: none;
+        }
+
+        .gallery-section {
+            background: #151932;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .gallery-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .gallery-meta {
+            font-size: 12px;
+            color: #8b94b8;
+        }
+
+        .gallery-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .gallery-item {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #2a3150;
+            background: #1e2440;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gallery-item-media {
+            position: relative;
+        }
+
+        .gallery-item-info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .gallery-item-meta {
+            flex: 1 1 220px;
+            min-width: 200px;
+        }
+
+        .gallery-item-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #d0d4e6;
+        }
+
+        .gallery-tooltip-panel {
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid #2a3150;
+            background: #0f1430;
+            padding: 8px 10px;
+            color: #d0d4e6;
+        }
+
+        .gallery-tooltip-panel summary {
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            color: #00d4ff;
+            list-style: none;
+        }
+
+        .gallery-tooltip-panel summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .gallery-tooltip-content {
+            margin-top: 6px;
+            font-size: 11px;
+            line-height: 1.4;
+            white-space: pre-line;
+            color: #d0d4e6;
+        }
+
+        .gallery-item-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .gallery-item-actions button {
+            padding: 6px 10px;
+            font-size: 11px;
+            border-radius: 6px;
+            border: 1px solid #2a3150;
+            background: #0f1430;
+            color: #d0d4e6;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .gallery-item-actions button:disabled {
+            cursor: not-allowed;
+            color: #8b94b8;
+            border-color: #27304b;
+            background: #1a2140;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FX相関係数ヒートマップ分析</h1>
+
+        <div class="controls-section">
+            <div class="controls-title">設定コントロール</div>
+            <div class="tab-shell">
+                <div class="tab-list" role="tablist">
+                    <button class="tab-button is-active" type="button" data-tab="data-conditions" role="tab" aria-selected="true">データ条件</button>
+                    <button class="tab-button" type="button" data-tab="analysis-settings" role="tab" aria-selected="false">分析設定</button>
+                    <button class="tab-button" type="button" data-tab="currency-pairs" role="tab" aria-selected="false">通貨ペア</button>
+                </div>
+                <div class="tab-panels">
+                    <div class="tab-panel is-active" id="tab-data-conditions" role="tabpanel">
+                        <div class="controls data-controls" id="dataControls">
+                            <div class="control-row">
+                                <div class="control-group">
+                                    <label for="endDateTime">データ取得の末尾日時</label>
+                                    <input type="datetime-local" id="endDateTime">
+                                </div>
+                            </div>
+                            <div class="control-row">
+                                <div class="control-group">
+                                    <label for="timeframe">時間足</label>
+                                    <select id="timeframe">
+                                        <option value="1m">1分足</option>
+                                        <option value="5m" selected>5分足</option>
+                                        <option value="10m">10分足</option>
+                                        <option value="1d">日足</option>
+                                        <option value="1M">月足</option>
+                                    </select>
+                                </div>
+
+                                <div class="control-group">
+                                    <label for="dataCount">データ数 (50 / 100 / 150 / 200 / 250)</label>
+                                    <input type="range" id="dataCount" min="50" max="250" value="150" step="50">
+                                    <div class="slider-value">
+                                        <span style="font-size: 11px;">生成データ本数</span>
+                                        <span class="value-number" id="dataCountValue">150</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-panel" id="tab-analysis-settings" role="tabpanel">
+                        <div class="controls global-controls" id="analysisControls">
+                            <div class="control-group">
+                                <label for="offset">オフセット (-10 〜 +10)</label>
+                                <input type="range" id="offset" min="-10" max="10" value="0" step="1">
+                                <div class="slider-value">
+                                    <span style="font-size: 11px;">比較対象をずらす</span>
+                                    <span class="value-number" id="offsetValue">0</span>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="divisions">X軸分割数 (2 〜 10)</label>
+                                <input type="range" id="divisions" min="2" max="10" value="5" step="1">
+                                <div class="slider-value">
+                                    <span style="font-size: 11px;">期間分割</span>
+                                    <span class="value-number" id="divisionsValue">5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-panel" id="tab-currency-pairs" role="tabpanel">
+                        <div class="controls data-controls">
+                            <div class="control-row">
+                                <div class="control-group pair-selection-group">
+                                    <label>相関を見る通貨ペア (複数選択)</label>
+                                    <div class="pair-selection-toolbar">
+                                        <span id="selectedPairCount">0件選択</span>
+                                        <div class="pair-selection-actions">
+                                            <button class="action-button small" type="button" id="selectAllPairs">全選択</button>
+                                            <button class="action-button small" type="button" id="clearPairs">全解除</button>
+                                        </div>
+                                    </div>
+                                    <div class="pair-selection" id="pairSelection"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="controls-title">データ生成</div>
+            <div class="controls action-controls">
+                <div class="control-group">
+                    <label>相関データ生成</label>
+                    <button class="action-button" id="generateDataButton">相関データ生成</button>
+                </div>
+                <div class="control-group">
+                    <label>クリア</label>
+                    <button class="action-button" id="clearButton" disabled>クリア</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="pane-section pane-hidden" id="mutualPane">
+            <div class="summary-row">
+                <div class="summary-card">
+                    <h3>🔥 注目ペア抽出 (|r| ≥ 0.8)</h3>
+                    <ul id="topPairsList"></ul>
+                </div>
+                <div class="summary-card">
+                    <h3>🛡️ リスク分散候補 (r ≤ -0.8)</h3>
+                    <ul id="hedgePairsList"></ul>
+                </div>
+            </div>
+            <div class="export-toolbar">
+                <div class="export-title">ヒートマップエクスポート</div>
+                <button class="action-button small export-toggle" type="button" id="toggleExport" aria-expanded="false">
+                    <span>開く</span>
+                </button>
+            </div>
+            <div class="export-buttons is-collapsed" id="exportButtons">
+                <button class="action-button" id="copyHeatmapCsv" disabled>相関CSVコピー</button>
+                <button class="action-button" id="copyHeatmapJson" disabled>相関JSONコピー</button>
+                <button class="action-button" id="downloadHeatmapPng" disabled>PNG出力</button>
+                <button class="action-button" id="downloadHeatmapSvg" disabled>SVG出力</button>
+            </div>
+            <div id="mutualChart" class="chart-panel"></div>
+        </div>
+
+        <div class="pane-section pane-hidden" id="overlayPane">
+            <h2 class="pane-title">選択通貨ペアのローソク足 (重ね合わせ)</h2>
+            <div id="overlayChart" class="chart-panel"></div>
+        </div>
+
+        <div class="pane-section pane-hidden" id="detailPane">
+            <h2 class="pane-title">選択通貨ペアの相関ヒートマップ</h2>
+            <div id="detailHeatmap" class="chart-panel"></div>
+        </div>
+
+        <div class="pane-section pane-hidden" id="galleryPane">
+            <h2 class="pane-title">ローソク足スナップショットギャラリー</h2>
+            <div class="gallery-section">
+                <div class="gallery-toolbar">
+                    <div class="gallery-meta" id="galleryCount">0 / 10 枚</div>
+                    <div class="pair-selection-actions">
+                        <button class="action-button small" type="button" id="addGalleryItem" disabled>ギャラリーに追加</button>
+                        <button class="action-button small" type="button" id="clearGallery" disabled>ギャラリーをクリア</button>
+                    </div>
+                </div>
+                <div class="gallery-list" id="galleryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const currencyPairs = [
+            'USDJPY', 'EURUSD', 'GBPUSD', 'AUDUSD',
+            'USDCHF', 'USDCAD', 'NZDUSD', 'EURJPY',
+            'GBPJPY', 'AUDJPY', 'CHFJPY', 'CADJPY',
+            'EURGBP', 'EURAUD', 'EURCHF', 'EURCAD'
+        ];
+
+        const MIN_REQUIRED_LENGTH = 10;
+        const AXIS_DATA_RATIO = 0.8;
+        const CORRELATION_THRESHOLD = 0.8;
+        const SUMMARY_PAIR_LIMIT = 5;
+        const HEATMAP_NULL_COLOR = '#4a4f63';
+        const HEATMAP_NULL_LABEL_COLOR = '#d0d4e6';
+        const HIGHLIGHT_COLOR = '#00d4ff';
+        const RESIZE_DEBOUNCE_MS = 150;
+
+        const chartMutual = echarts.init(document.getElementById('mutualChart'), null, { renderer: 'svg' });
+        const chartOverlay = echarts.init(document.getElementById('overlayChart'));
+        const chartDetail = echarts.init(document.getElementById('detailHeatmap'));
+        const overlayPane = document.getElementById('overlayPane');
+        const detailPane = document.getElementById('detailPane');
+        const mutualPane = document.getElementById('mutualPane');
+        const galleryPane = document.getElementById('galleryPane');
+        const clearButton = document.getElementById('clearButton');
+        const pairSelectionContainer = document.getElementById('pairSelection');
+        const selectedPairCount = document.getElementById('selectedPairCount');
+        const selectAllPairsButton = document.getElementById('selectAllPairs');
+        const clearPairsButton = document.getElementById('clearPairs');
+        const copyHeatmapCsvButton = document.getElementById('copyHeatmapCsv');
+        const copyHeatmapJsonButton = document.getElementById('copyHeatmapJson');
+        const downloadHeatmapPngButton = document.getElementById('downloadHeatmapPng');
+        const downloadHeatmapSvgButton = document.getElementById('downloadHeatmapSvg');
+        const exportButtons = document.getElementById('exportButtons');
+        const toggleExportButton = document.getElementById('toggleExport');
+        const addGalleryItemButton = document.getElementById('addGalleryItem');
+        const clearGalleryButton = document.getElementById('clearGallery');
+        const galleryList = document.getElementById('galleryList');
+        const galleryCount = document.getElementById('galleryCount');
+
+        const appState = {
+            selectedMutualPair: null,
+            cachedMarketData: null,
+            cachedTimeframe: null,
+            cachedDataCount: null,
+            selectedHeatmapCell: null,
+            detailAlignedMeta: null,
+            activePairs: [...currencyPairs],
+            isGeneratingData: false,
+            pendingGeneration: false
+        };
+
+        const GALLERY_LIMIT = 10;
+
+        function getTimeframeStepMs(timeframe) {
+            const map = {
+                '1m': 60 * 1000,
+                '5m': 5 * 60 * 1000,
+                '10m': 10 * 60 * 1000,
+                '1d': 24 * 60 * 60 * 1000,
+                '1M': 30 * 24 * 60 * 60 * 1000
+            };
+            return map[timeframe] || 60 * 1000;
+        }
+
+        function formatDateTime(date) {
+            if (!(date instanceof Date)) {
+                return 'N/A';
+            }
+            const pad = (value) => String(value).padStart(2, '0');
+            return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        }
+
+        function getSelectedPairsFromUI() {
+            return Array.from(document.querySelectorAll('.pair-checkbox:checked')).map((checkbox) => checkbox.value);
+        }
+
+        function getActivePairs() {
+            return Array.isArray(appState.activePairs) && appState.activePairs.length
+                ? appState.activePairs
+                : currencyPairs;
+        }
+
+        function updateGenerateButtonAvailability() {
+            const selectedCount = getSelectedPairsFromUI().length;
+            const isGenerated = Boolean(appState.cachedMarketData);
+            const generateButton = document.getElementById('generateDataButton');
+            generateButton.disabled = isGenerated || appState.isGeneratingData || selectedCount < 2;
+        }
+
+        function updateGalleryControls() {
+            const total = galleryList.children.length;
+            galleryCount.textContent = `${total} / ${GALLERY_LIMIT} 枚`;
+            addGalleryItemButton.disabled = !appState.selectedMutualPair || !appState.cachedMarketData || total >= GALLERY_LIMIT;
+            clearGalleryButton.disabled = total === 0;
+
+            Array.from(galleryList.children).forEach((item, index, items) => {
+                const upButton = item.querySelector('[data-action="up"]');
+                const downButton = item.querySelector('[data-action="down"]');
+                if (upButton) {
+                    upButton.disabled = index === 0;
+                }
+                if (downButton) {
+                    downButton.disabled = index === items.length - 1;
+                }
+            });
+        }
+
+        function updatePairSelectionMeta() {
+            const selectedPairs = getSelectedPairsFromUI();
+            selectedPairCount.textContent = `${selectedPairs.length}件選択`;
+            updateGenerateButtonAvailability();
+        }
+
+        function renderPairSelection() {
+            pairSelectionContainer.innerHTML = '';
+            currencyPairs.forEach((pair) => {
+                const label = document.createElement('label');
+                label.classList.add('pair-option');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = pair;
+                checkbox.checked = true;
+                checkbox.classList.add('pair-checkbox');
+                checkbox.addEventListener('change', updatePairSelectionMeta);
+                const text = document.createElement('span');
+                text.textContent = pair;
+                label.append(checkbox, text);
+                pairSelectionContainer.appendChild(label);
+            });
+            updatePairSelectionMeta();
+        }
+
+        function generateDummyCandleData(pair, count = 120, timeframe = '1m', endTime = new Date()) {
+            const TREND_STEP_INTERVAL = 18;
+            const TREND_VARIANCE = 0.002;
+            const TREND_SPIKE_VARIANCE = 0.01;
+            const SPIKE_PROBABILITY = 0.12;
+            const VOLATILITY_BASE = 0.012;
+            const VOLATILITY_SPIKE = 0.03;
+            const WICK_SPIKE_MULTIPLIER = 1.2;
+            const WICK_BASE_MULTIPLIER = 0.8;
+            const MIN_PRICE_FACTOR = 0.2;
+
+            const basePrice = {
+                'USDJPY': 150.0,
+                'EURUSD': 1.08,
+                'GBPUSD': 1.27,
+                'AUDUSD': 0.65,
+                'USDCHF': 0.88,
+                'USDCAD': 1.35,
+                'NZDUSD': 0.60,
+                'EURJPY': 162.0,
+                'GBPJPY': 190.5,
+                'AUDJPY': 97.5,
+                'CHFJPY': 170.5,
+                'CADJPY': 111.1,
+                'EURGBP': 0.85,
+                'EURAUD': 1.66,
+                'EURCHF': 0.95,
+                'EURCAD': 1.46
+            }[pair] || 100.0;
+
+            const candles = [];
+            let price = basePrice;
+            let trend = (Math.random() - 0.5) * TREND_VARIANCE;
+            const stepMs = getTimeframeStepMs(timeframe);
+            const safeEndTime = endTime instanceof Date && !Number.isNaN(endTime.getTime())
+                ? endTime
+                : new Date();
+            const startTime = new Date(safeEndTime.getTime() - stepMs * (count - 1));
+
+            for (let i = 0; i < count; i++) {
+                if (i % TREND_STEP_INTERVAL === 0) {
+                    trend = (Math.random() - 0.5) * TREND_SPIKE_VARIANCE;
+                }
+
+                const spike = Math.random() < SPIKE_PROBABILITY;
+                const volatility = spike ? VOLATILITY_SPIKE : VOLATILITY_BASE;
+                const open = price;
+                const direction = (Math.random() - 0.5) * 2;
+                const change = (direction * volatility + trend) * price;
+                const close = open + change;
+                const wickVolatility = volatility * (spike ? WICK_SPIKE_MULTIPLIER : WICK_BASE_MULTIPLIER);
+                const high = Math.max(open, close) + Math.random() * wickVolatility * price;
+                const low = Math.min(open, close) - Math.random() * wickVolatility * price;
+                const time = new Date(startTime.getTime() + stepMs * i);
+
+                price = Math.max(close, basePrice * MIN_PRICE_FACTOR);
+                candles.push({ open, high, low, close, time });
+            }
+
+            return candles;
+        }
+
+        function calculateAxisRange(candles, dataRatio = AXIS_DATA_RATIO) {
+            if (!candles.length) {
+                return { min: 0, max: 1 };
+            }
+            const lows = candles.map((candle) => candle.low);
+            const highs = candles.map((candle) => candle.high);
+            const minValue = Math.min(...lows);
+            const maxValue = Math.max(...highs);
+            const range = maxValue - minValue;
+
+            if (range === 0) {
+                return { min: minValue * 0.98, max: maxValue * 1.02 };
+            }
+
+            const totalRange = range / dataRatio;
+            const padding = (totalRange - range) / 2;
+            return {
+                min: minValue - padding,
+                max: maxValue + padding
+            };
+        }
+
+        function extractCloses(candles) {
+            return candles.map((candle) => candle.close);
+        }
+
+        function splitData(data, divisions) {
+            const chunks = [];
+            for (let i = 0; i < divisions; i++) {
+                const start = Math.floor((i * data.length) / divisions);
+                const end = Math.floor(((i + 1) * data.length) / divisions);
+                chunks.push(data.slice(start, end));
+            }
+            return chunks;
+        }
+
+        function applyOffset(data, offset) {
+            if (offset === 0) return data;
+            if (offset > 0) {
+                return data.slice(offset);
+            }
+            return data.slice(0, offset);
+        }
+
+        function getOverlayShift(offset) {
+            if (offset > 0) {
+                return { baseShift: offset, compareShift: 0 };
+            }
+            if (offset < 0) {
+                return { baseShift: 0, compareShift: Math.abs(offset) };
+            }
+            return { baseShift: 0, compareShift: 0 };
+        }
+
+        function calculateCorrelation(x, y) {
+            if (x.length !== y.length || x.length === 0) return 0;
+
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+            if (denominator === 0) return 0;
+            return numerator / denominator;
+        }
+
+        async function fetchCandleData(pair, count, timeframe, endTime) {
+            return generateDummyCandleData(pair, count, timeframe, endTime);
+        }
+
+        async function generateMarketData(count, timeframe, endTime, pairs) {
+            const entries = await Promise.all(
+                pairs.map(async (pair) => [pair, await fetchCandleData(pair, count, timeframe, endTime)])
+            );
+            return Object.fromEntries(entries);
+        }
+
+        function getTimeframeMeta(timeframe) {
+            const map = {
+                '1m': { label: '1分足', unit: '分', value: 1 },
+                '5m': { label: '5分足', unit: '分', value: 5 },
+                '10m': { label: '10分足', unit: '分', value: 10 },
+                '1d': { label: '日足', unit: '日', value: 1 },
+                '1M': { label: '月足', unit: 'ヶ月', value: 1 }
+            };
+            return map[timeframe] || { label: timeframe, unit: '本', value: 1 };
+        }
+
+        function formatPeriodLabel(count, timeframe) {
+            const meta = getTimeframeMeta(timeframe);
+            const span = count * meta.value;
+            return `直近${count}本 (${span}${meta.unit})`;
+        }
+
+        function getXAxisLabels(divisions, timeframe, dataLength) {
+            const labels = [];
+            const chunkSize = Math.max(1, Math.floor(dataLength / divisions));
+            for (let i = 0; i < divisions; i++) {
+                const count = Math.min(dataLength, chunkSize * (divisions - i));
+                labels.push(formatPeriodLabel(count, timeframe));
+            }
+            return labels;
+        }
+
+        function getHeatmapValue(params) {
+            if (Array.isArray(params.value)) {
+                return params.value;
+            }
+            if (params.data && Array.isArray(params.data.value)) {
+                return params.data.value;
+            }
+            return params.data;
+        }
+
+        function buildAlignedSeries(baseSeries, compareSeries, offset) {
+            const offsetSeries = applyOffset(compareSeries, offset);
+            const baseAdjusted = offset >= 0
+                ? baseSeries.slice(0, baseSeries.length - offset)
+                : baseSeries.slice(-offset);
+            const minLength = Math.min(baseAdjusted.length, offsetSeries.length);
+            return {
+                base: baseAdjusted.slice(0, minLength),
+                compare: offsetSeries.slice(0, minLength),
+                minLength
+            };
+        }
+
+        function buildMutualHeatmapData(data, offset, minRequiredLength, pairs) {
+            const heatmapData = [];
+            pairs.forEach((rowPair, rowIndex) => {
+                const rowCloses = extractCloses(data[rowPair]);
+                pairs.forEach((colPair, colIndex) => {
+                    const colCloses = extractCloses(data[colPair]);
+                    const aligned = buildAlignedSeries(rowCloses, colCloses, offset);
+                    if (aligned.minLength < minRequiredLength) {
+                        heatmapData.push({
+                            value: [colIndex, rowIndex, null],
+                            itemStyle: { color: HEATMAP_NULL_COLOR },
+                            label: { formatter: 'N/A', color: HEATMAP_NULL_LABEL_COLOR }
+                        });
+                        return;
+                    }
+                    const correlation = calculateCorrelation(aligned.base, aligned.compare);
+                    heatmapData.push([colIndex, rowIndex, correlation]);
+                });
+            });
+            return heatmapData;
+        }
+
+        function buildMutualCorrelationRecords(offset, minRequiredLength, pairs) {
+            if (!appState.cachedMarketData) {
+                return [];
+            }
+            const heatmapData = buildMutualHeatmapData(appState.cachedMarketData, offset, minRequiredLength, pairs);
+            return heatmapData.map((entry) => {
+                const value = Array.isArray(entry) ? entry : entry?.value;
+                if (!Array.isArray(value)) {
+                    return null;
+                }
+                const [xIndex, yIndex, correlation] = value;
+                return {
+                    basePair: pairs[yIndex],
+                    comparePair: pairs[xIndex],
+                    correlation: correlation ?? null
+                };
+            }).filter(Boolean);
+        }
+
+        function formatCorrelationCsv(records) {
+            const header = 'basePair,comparePair,correlation';
+            const rows = records.map((record) => {
+                const correlation = record.correlation === null || record.correlation === undefined
+                    ? ''
+                    : record.correlation.toFixed(6);
+                return `${record.basePair},${record.comparePair},${correlation}`;
+            });
+            return [header, ...rows].join('\n');
+        }
+
+        async function copyTextToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.top = '-9999px';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+
+        function downloadChartImage(chartInstance, type) {
+            const dataUrl = chartInstance.getDataURL({
+                type,
+                pixelRatio: 2,
+                backgroundColor: '#151932'
+            });
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            link.href = dataUrl;
+            link.download = `mutual-heatmap-${timestamp}.${type}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function getAlignedMeta(baseLength, compareLength, offset) {
+            const baseStartIndex = offset >= 0 ? 0 : -offset;
+            const compareStartIndex = offset >= 0 ? offset : 0;
+            const baseAdjustedLength = Math.max(0, baseLength - Math.max(offset, 0) + Math.min(offset, 0));
+            const compareAdjustedLength = Math.max(0, compareLength - Math.max(offset, 0) + Math.min(offset, 0));
+            const minLength = Math.min(baseAdjustedLength, compareAdjustedLength);
+            return {
+                baseStartIndex,
+                compareStartIndex,
+                minLength
+            };
+        }
+
+        function getDivisionBounds(index, divisions, length) {
+            const start = Math.floor((index * length) / divisions);
+            const end = Math.floor(((index + 1) * length) / divisions);
+            return { start, end };
+        }
+
+        function getDivisionCenterIndex(index, divisions, length) {
+            const { start, end } = getDivisionBounds(index, divisions, length);
+            if (end <= start) {
+                return start;
+            }
+            return Math.floor((start + end - 1) / 2);
+        }
+
+        function updateOverlayMarkers(baseIndex, compareIndex) {
+            const buildLine = (index, color) => {
+                if (index === null || index === undefined) {
+                    return { data: [] };
+                }
+                return {
+                    symbol: 'none',
+                    lineStyle: { type: 'dashed', color, width: 1 },
+                    data: [{ xAxis: index }]
+                };
+            };
+
+            chartOverlay.setOption({
+                series: [
+                    { markLine: buildLine(baseIndex, '#b2ebf2') },
+                    { markLine: buildLine(compareIndex, '#ffcc80') }
+                ]
+            });
+        }
+
+        function updateOverlayChart() {
+            if (!appState.cachedMarketData || !appState.selectedMutualPair) {
+                return;
+            }
+            const { base, compare } = appState.selectedMutualPair;
+            const offset = parseInt(document.getElementById('offset').value);
+            const baseCandles = appState.cachedMarketData[base] || [];
+            const compareCandles = appState.cachedMarketData[compare] || [];
+            const alignedMeta = getAlignedMeta(baseCandles.length, compareCandles.length, offset);
+            if (alignedMeta.minLength === 0) {
+                chartOverlay.clear();
+                return;
+            }
+            const baseAligned = baseCandles.slice(
+                alignedMeta.baseStartIndex,
+                alignedMeta.baseStartIndex + alignedMeta.minLength
+            );
+            const compareAligned = compareCandles.slice(
+                alignedMeta.compareStartIndex,
+                alignedMeta.compareStartIndex + alignedMeta.minLength
+            );
+            const candleXAxisData = Array.from({ length: alignedMeta.minLength }, (_, index) => index + 1);
+            const baseSeries = baseAligned.map((candle) => [candle.open, candle.close, candle.low, candle.high]);
+            const compareSeries = compareAligned.map((candle) => [candle.open, candle.close, candle.low, candle.high]);
+            const baseAxisRange = calculateAxisRange(baseCandles, AXIS_DATA_RATIO);
+            const compareAxisRange = calculateAxisRange(compareCandles, AXIS_DATA_RATIO);
+
+            chartOverlay.setOption({
+                backgroundColor: '#151932',
+                title: {
+                    text: `${base} & ${compare} ローソク足 (重ね合わせ)`,
+                    left: 'center',
+                    top: 10,
+                    textStyle: { color: '#fff', fontSize: 14, fontWeight: 'bold' }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'none'
+                    },
+                    formatter: (params) => {
+                        const items = Array.isArray(params) ? params : [params];
+                        return items
+                            .filter((item) => item.seriesType === 'candlestick')
+                            .map((item) => {
+                                const isBaseSeries = item.seriesIndex === 0;
+                                const sourceCandles = isBaseSeries ? baseAligned : compareAligned;
+                                const candle = sourceCandles[item.dataIndex];
+                                if (!candle) {
+                                    return `<strong>${item.seriesName}</strong><br/>データなし`;
+                                }
+                                const timeText = candle?.time ? formatDateTime(candle.time) : 'N/A';
+                                if (!Array.isArray(item.data) || item.data.some((value) => value === null || value === undefined)) {
+                                    return `<strong>${item.seriesName}</strong><br/>${timeText}<br/>データなし`;
+                                }
+                                const values = item.data;
+                                const open = values[0];
+                                const close = values[1];
+                                const low = values[2];
+                                const high = values[3];
+                                return `<strong>${item.seriesName}</strong><br/>${timeText}<br/>始値: ${open.toFixed(5)} 高値: ${high.toFixed(5)}<br/>安値: ${low.toFixed(5)} 終値: ${close.toFixed(5)}`;
+                            })
+                            .join('<br/><br/>');
+                    }
+                },
+                legend: {
+                    top: 36,
+                    textStyle: { color: '#fff', fontSize: 11 },
+                    data: [`${base} ローソク足`, `${compare} ローソク足`]
+                },
+                grid: {
+                    left: 80,
+                    right: 80,
+                    top: 70,
+                    bottom: 30
+                },
+                xAxis: {
+                    type: 'category',
+                    data: candleXAxisData,
+                    axisLabel: { show: false },
+                    axisLine: { lineStyle: { color: '#2a3150' } }
+                },
+                yAxis: [
+                    {
+                        type: 'value',
+                        min: baseAxisRange.min,
+                        max: baseAxisRange.max,
+                        axisLabel: {
+                            color: '#fff',
+                            showMinLabel: false,
+                            showMaxLabel: false
+                        },
+                        axisLine: { lineStyle: { color: '#2a3150' } },
+                        splitLine: { lineStyle: { color: '#20284a' } }
+                    },
+                    {
+                        type: 'value',
+                        min: compareAxisRange.min,
+                        max: compareAxisRange.max,
+                        position: 'right',
+                        axisLabel: {
+                            color: '#fff',
+                            showMinLabel: false,
+                            showMaxLabel: false
+                        },
+                        axisLine: { lineStyle: { color: '#2a3150' } },
+                        splitLine: { lineStyle: { color: '#20284a' } }
+                    }
+                ],
+                series: [
+                    {
+                        name: `${base} ローソク足`,
+                        type: 'candlestick',
+                        xAxisIndex: 0,
+                        yAxisIndex: 0,
+                        data: baseSeries,
+                        markLine: { data: [] },
+                        itemStyle: {
+                            color: '#4caf50',
+                            color0: '#ef5350',
+                            borderColor: '#4caf50',
+                            borderColor0: '#ef5350'
+                        }
+                    },
+                    {
+                        name: `${compare} ローソク足`,
+                        type: 'candlestick',
+                        xAxisIndex: 0,
+                        yAxisIndex: 1,
+                        data: compareSeries,
+                        markLine: { data: [] },
+                        itemStyle: {
+                            color: HIGHLIGHT_COLOR,
+                            color0: '#ffb74d',
+                            borderColor: HIGHLIGHT_COLOR,
+                            borderColor0: '#ffb74d'
+                        }
+                    }
+                ]
+            }, true);
+        }
+
+        function updateDetailHeatmap() {
+            if (!appState.cachedMarketData || !appState.selectedMutualPair) {
+                return;
+            }
+            const { base, compare } = appState.selectedMutualPair;
+            const offset = parseInt(document.getElementById('offset').value);
+            const divisions = parseInt(document.getElementById('divisions').value);
+            const timeframe = document.getElementById('timeframe').value;
+            const baseCandles = appState.cachedMarketData[base] || [];
+            const compareCandles = appState.cachedMarketData[compare] || [];
+            const baseCloses = extractCloses(baseCandles);
+            const compareCloses = extractCloses(compareCandles);
+            const offsetCloses = applyOffset(compareCloses, offset);
+            const baseClosesAdjusted = offset >= 0
+                ? baseCloses.slice(0, baseCloses.length - offset)
+                : baseCloses.slice(-offset);
+            const minLength = Math.min(baseClosesAdjusted.length, offsetCloses.length);
+            appState.detailAlignedMeta = getAlignedMeta(baseCandles.length, compareCandles.length, offset);
+
+            const xAxisData = getXAxisLabels(divisions, timeframe, minLength);
+            const heatmapData = [];
+
+            if (minLength < Math.max(MIN_REQUIRED_LENGTH, divisions)) {
+                for (let i = 0; i < divisions; i++) {
+                    heatmapData.push({
+                        value: [i, 0, null],
+                        itemStyle: { color: HEATMAP_NULL_COLOR },
+                        label: { formatter: 'N/A', color: HEATMAP_NULL_LABEL_COLOR }
+                    });
+                }
+            } else {
+                const baseChunks = splitData(baseClosesAdjusted.slice(0, minLength), divisions);
+                const compareChunks = splitData(offsetCloses.slice(0, minLength), divisions);
+                for (let i = 0; i < divisions; i++) {
+                    if (baseChunks[i].length < MIN_REQUIRED_LENGTH || compareChunks[i].length < MIN_REQUIRED_LENGTH) {
+                        heatmapData.push({
+                            value: [i, 0, null],
+                            itemStyle: { color: HEATMAP_NULL_COLOR },
+                            label: { formatter: 'N/A', color: HEATMAP_NULL_LABEL_COLOR }
+                        });
+                        continue;
+                    }
+                    const correlation = calculateCorrelation(baseChunks[i], compareChunks[i]);
+                    heatmapData.push([i, 0, correlation]);
+                }
+            }
+
+            chartDetail.setOption({
+                backgroundColor: '#151932',
+                title: {
+                    text: `${base} × ${compare} 相関ヒートマップ`,
+                    left: 'center',
+                    top: 8,
+                    textStyle: { color: '#fff', fontSize: 14, fontWeight: 'bold' }
+                },
+                tooltip: {
+                    position: 'top',
+                    formatter: (params) => {
+                        const value = getHeatmapValue(params);
+                        const period = xAxisData[value[0]];
+                        if (value[2] === null || value[2] === undefined) {
+                            return `<strong>${compare}</strong> - ${period}<br/>相関計算不可`;
+                        }
+                        return `<strong>${compare}</strong> - ${period}<br/>相関係数: <span style="color:${HIGHLIGHT_COLOR};">${value[2].toFixed(4)}</span>`;
+                    }
+                },
+                grid: {
+                    left: 90,
+                    right: 80,
+                    top: 50,
+                    bottom: 40
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xAxisData,
+                    axisLabel: { color: '#fff', fontSize: 11 },
+                    axisLine: { lineStyle: { color: '#2a3150' } },
+                    splitArea: { show: true }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: [compare],
+                    axisLabel: { color: '#fff', fontSize: 11 },
+                    axisLine: { lineStyle: { color: '#2a3150' } },
+                    splitArea: { show: true }
+                },
+                visualMap: {
+                    min: -1,
+                    max: 1,
+                    calculable: true,
+                    orient: 'vertical',
+                    right: 6,
+                    top: 60,
+                    bottom: 30,
+                    textStyle: { color: '#fff' },
+                    inRange: {
+                        color: [
+                            '#0d47a1',
+                            '#1976d2',
+                            '#42a5f5',
+                            '#90caf9',
+                            '#e0e0e0',
+                            '#ffcdd2',
+                            '#ef5350',
+                            '#e53935',
+                            '#b71c1c'
+                        ]
+                    },
+                    outOfRange: {
+                        color: [HEATMAP_NULL_COLOR]
+                    }
+                },
+                series: [
+                    {
+                        name: '相関係数',
+                        type: 'heatmap',
+                        data: heatmapData,
+                        label: {
+                            show: true,
+                            formatter: (params) => {
+                                const value = getHeatmapValue(params);
+                                if (value[2] === null || value[2] === undefined) {
+                                    return 'N/A';
+                                }
+                                return value[2].toFixed(2);
+                            },
+                            color: '#fff',
+                            fontSize: 10,
+                            fontWeight: 'bold'
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowColor: 'rgba(0, 212, 255, 0.5)',
+                                borderColor: HIGHLIGHT_COLOR,
+                                borderWidth: 2
+                            }
+                        }
+                    }
+                ]
+            }, true);
+
+            if (appState.selectedHeatmapCell !== null) {
+                applyHeatmapSelection(appState.selectedHeatmapCell, true);
+            }
+        }
+
+        function applyHeatmapSelection(xIndex, updateMarkers = true) {
+            if (xIndex === null || !appState.selectedMutualPair) {
+                return;
+            }
+            const divisions = parseInt(document.getElementById('divisions').value);
+            appState.selectedHeatmapCell = xIndex;
+            chartDetail.dispatchAction({ type: 'downplay', seriesIndex: 0 });
+            chartDetail.dispatchAction({ type: 'highlight', seriesIndex: 0, dataIndex: xIndex });
+            chartDetail.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: xIndex });
+
+            if (!updateMarkers || !appState.detailAlignedMeta) {
+                return;
+            }
+            const { minLength } = appState.detailAlignedMeta;
+            if (minLength <= 0) {
+                return;
+            }
+            const centerIndex = getDivisionCenterIndex(xIndex, divisions, minLength);
+            updateOverlayMarkers(centerIndex + 1, centerIndex + 1);
+        }
+
+        function updatePairSummaries(data, offset, minRequiredLength, pairs) {
+            const topPairs = [];
+            const hedgePairs = [];
+
+            for (let i = 0; i < pairs.length; i++) {
+                for (let j = i + 1; j < pairs.length; j++) {
+                    const pairX = pairs[i];
+                    const pairY = pairs[j];
+                    const baseCloses = extractCloses(data[pairX]);
+                    const compareCloses = extractCloses(data[pairY]);
+                    const aligned = buildAlignedSeries(baseCloses, compareCloses, offset);
+                    if (aligned.minLength < minRequiredLength) {
+                        continue;
+                    }
+                    const correlation = calculateCorrelation(aligned.base, aligned.compare);
+                    if (correlation >= CORRELATION_THRESHOLD) {
+                        topPairs.push({ pairX, pairY, correlation });
+                    }
+                    if (correlation <= -CORRELATION_THRESHOLD) {
+                        hedgePairs.push({ pairX, pairY, correlation });
+                    }
+                }
+            }
+
+            topPairs.sort((a, b) => b.correlation - a.correlation);
+            hedgePairs.sort((a, b) => a.correlation - b.correlation);
+
+            const topList = document.getElementById('topPairsList');
+            const hedgeList = document.getElementById('hedgePairsList');
+
+            topList.innerHTML = '';
+            hedgeList.innerHTML = '';
+
+            const createSummaryItem = (entry, list) => {
+                const item = document.createElement('li');
+                item.classList.add('pair-item');
+                const info = document.createElement('div');
+                info.classList.add('pair-info');
+                const name = document.createElement('span');
+                name.classList.add('pair-name');
+                name.textContent = `${entry.pairX} × ${entry.pairY}`;
+                const score = document.createElement('span');
+                score.classList.add('pair-score');
+                score.textContent = entry.correlation.toFixed(2);
+                info.append(name, score);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('pair-select-button');
+                button.textContent = '選択';
+                button.addEventListener('click', () => {
+                    selectMutualPair(entry.pairX, entry.pairY);
+                });
+                item.append(info, button);
+                list.appendChild(item);
+            };
+
+            const topSlice = topPairs.slice(0, SUMMARY_PAIR_LIMIT);
+            const hedgeSlice = hedgePairs.slice(0, SUMMARY_PAIR_LIMIT);
+
+            if (topSlice.length === 0) {
+                topList.innerHTML = '<li>該当なし（条件を満たす相関がありません）</li>';
+            } else {
+                topSlice.forEach((entry) => {
+                    createSummaryItem(entry, topList);
+                });
+            }
+
+            if (hedgeSlice.length === 0) {
+                hedgeList.innerHTML = '<li>該当なし（強い逆相関がありません）</li>';
+            } else {
+                hedgeSlice.forEach((entry) => {
+                    createSummaryItem(entry, hedgeList);
+                });
+            }
+        }
+
+        function getMutualDataIndex(pairX, pairY, pairs) {
+            const colIndex = pairs.indexOf(pairX);
+            const rowIndex = pairs.indexOf(pairY);
+            if (colIndex === -1 || rowIndex === -1) {
+                return null;
+            }
+            return rowIndex * pairs.length + colIndex;
+        }
+
+        function highlightMutualPair(pairX, pairY, pairs) {
+            const dataIndex = getMutualDataIndex(pairX, pairY, pairs);
+            if (dataIndex === null) {
+                return;
+            }
+            chartMutual.dispatchAction({ type: 'downplay' });
+            chartMutual.dispatchAction({ type: 'highlight', seriesIndex: 0, dataIndex });
+            chartMutual.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex });
+        }
+
+        function updateMutualCharts({ offset, minRequiredLength }) {
+            if (!appState.cachedMarketData) {
+                return;
+            }
+
+            const pairs = getActivePairs();
+            const heatmapData = buildMutualHeatmapData(appState.cachedMarketData, offset, minRequiredLength, pairs);
+
+            const mutualOption = {
+                backgroundColor: '#151932',
+                title: {
+                    text: '通貨ペア相互相関ヒートマップ',
+                    left: 'center',
+                    top: 10,
+                    textStyle: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+                },
+                tooltip: {
+                    position: 'top',
+                    formatter: (params) => {
+                        const value = getHeatmapValue(params);
+                        const xPair = pairs[value[0]];
+                        const yPair = pairs[value[1]];
+                        if (value[2] === null || value[2] === undefined) {
+                            return `<strong>${yPair} × ${xPair}</strong><br/>相関計算不可`;
+                        }
+                        return `<strong>${yPair} × ${xPair}</strong><br/>相関係数: <span style="color:${HIGHLIGHT_COLOR};">${value[2].toFixed(4)}</span>`;
+                    }
+                },
+                grid: {
+                    left: 90,
+                    right: 40,
+                    top: 50,
+                    bottom: 80
+                },
+                xAxis: {
+                    type: 'category',
+                    data: pairs,
+                    axisLabel: { color: '#fff', fontSize: 10, rotate: 45 },
+                    axisLine: { lineStyle: { color: '#2a3150' } },
+                    splitArea: { show: true }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: pairs,
+                    axisLabel: { color: '#fff', fontSize: 10 },
+                    axisLine: { lineStyle: { color: '#2a3150' } },
+                    splitArea: { show: true }
+                },
+                visualMap: {
+                    min: -1,
+                    max: 1,
+                    calculable: true,
+                    orient: 'vertical',
+                    right: 2,
+                    top: 80,
+                    bottom: 80,
+                    textStyle: { color: '#fff' },
+                    inRange: {
+                        color: [
+                            '#0d47a1',
+                            '#1976d2',
+                            '#42a5f5',
+                            '#90caf9',
+                            '#e0e0e0',
+                            '#ffcdd2',
+                            '#ef5350',
+                            '#e53935',
+                            '#b71c1c'
+                        ]
+                    },
+                    outOfRange: {
+                        color: [HEATMAP_NULL_COLOR]
+                    }
+                },
+                series: [
+                    {
+                        name: '相互相関',
+                        type: 'heatmap',
+                        data: heatmapData,
+                        label: {
+                            show: true,
+                            formatter: (params) => {
+                                const value = getHeatmapValue(params);
+                                if (value[2] === null || value[2] === undefined) {
+                                    return 'N/A';
+                                }
+                                return value[2].toFixed(2);
+                            },
+                            color: '#fff',
+                            fontSize: 9,
+                            fontWeight: 'bold'
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowColor: 'rgba(0, 212, 255, 0.5)',
+                                borderColor: HIGHLIGHT_COLOR,
+                                borderWidth: 2
+                            }
+                        }
+                    }
+                ]
+            };
+
+            chartMutual.setOption(mutualOption, true);
+            updatePairSummaries(appState.cachedMarketData, offset, minRequiredLength, pairs);
+
+            if (appState.selectedMutualPair) {
+                highlightMutualPair(appState.selectedMutualPair.compare, appState.selectedMutualPair.base, pairs);
+            }
+        }
+
+        function setSelectionVisibility(isVisible) {
+            overlayPane.classList.toggle('pane-hidden', !isVisible);
+            detailPane.classList.toggle('pane-hidden', !isVisible);
+            galleryPane.classList.toggle('pane-hidden', !isVisible);
+            if (isVisible) {
+                chartOverlay.resize();
+                chartDetail.resize();
+            }
+            updateGalleryControls();
+        }
+
+        function setMutualVisibility(isVisible) {
+            mutualPane.classList.toggle('pane-hidden', !isVisible);
+            if (isVisible) {
+                chartMutual.resize();
+            }
+        }
+
+        function setDataControlState(isGenerated) {
+            const disableControls = isGenerated;
+            document.getElementById('endDateTime').disabled = disableControls;
+            document.getElementById('timeframe').disabled = disableControls;
+            document.getElementById('dataCount').disabled = disableControls;
+            document.getElementById('generateDataButton').disabled = disableControls;
+            document.getElementById('offset').disabled = disableControls;
+            document.getElementById('divisions').disabled = disableControls;
+            document.querySelectorAll('.pair-checkbox').forEach((checkbox) => {
+                checkbox.disabled = disableControls;
+            });
+            selectAllPairsButton.disabled = disableControls;
+            clearPairsButton.disabled = disableControls;
+            clearButton.disabled = !isGenerated;
+            copyHeatmapCsvButton.disabled = !isGenerated;
+            copyHeatmapJsonButton.disabled = !isGenerated;
+            downloadHeatmapPngButton.disabled = !isGenerated;
+            downloadHeatmapSvgButton.disabled = !isGenerated;
+            updateGenerateButtonAvailability();
+        }
+
+        function getSelectedEndDateTime() {
+            const value = document.getElementById('endDateTime').value;
+            if (!value) {
+                return new Date();
+            }
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+        }
+
+        function getSnapshotTooltipText() {
+            const timeframeSelect = document.getElementById('timeframe');
+            const timeframeLabel = timeframeSelect.options[timeframeSelect.selectedIndex]?.text || timeframeSelect.value;
+            const dataCount = document.getElementById('dataCount').value;
+            const offset = document.getElementById('offset').value;
+            const divisions = document.getElementById('divisions').value;
+            const endTime = formatDateTime(getSelectedEndDateTime());
+            return [
+                'データ条件',
+                `末尾日時: ${endTime}`,
+                `時間足: ${timeframeLabel}`,
+                `データ数: ${dataCount}`,
+                '分析設定',
+                `オフセット: ${offset}`,
+                `X軸分割数: ${divisions}`
+            ].join('\n');
+        }
+
+        function toggleExportButtons(forceOpen) {
+            const shouldOpen = typeof forceOpen === 'boolean'
+                ? forceOpen
+                : exportButtons.classList.contains('is-collapsed');
+            exportButtons.classList.toggle('is-collapsed', !shouldOpen);
+            toggleExportButton.setAttribute('aria-expanded', String(shouldOpen));
+            toggleExportButton.querySelector('span').textContent = shouldOpen ? '閉じる' : '開く';
+        }
+
+        function resetCharts() {
+            chartMutual.clear();
+            chartOverlay.clear();
+            chartDetail.clear();
+            document.getElementById('topPairsList').innerHTML = '';
+            document.getElementById('hedgePairsList').innerHTML = '';
+        }
+
+        function clearData() {
+            appState.cachedMarketData = null;
+            appState.cachedTimeframe = null;
+            appState.cachedDataCount = null;
+            appState.selectedMutualPair = null;
+            appState.selectedHeatmapCell = null;
+            appState.detailAlignedMeta = null;
+            appState.activePairs = getSelectedPairsFromUI();
+            setSelectionVisibility(false);
+            setMutualVisibility(false);
+            resetCharts();
+            setDataControlState(false);
+        }
+
+        function getSnapshotWithoutSelectionLines() {
+            const currentOption = chartOverlay.getOption();
+            const tooltipBackup = currentOption.tooltip
+                ? JSON.parse(JSON.stringify(currentOption.tooltip[0] || currentOption.tooltip))
+                : null;
+            const markLineBackup = Array.isArray(currentOption.series)
+                ? currentOption.series.map((series) => series.markLine ? JSON.parse(JSON.stringify(series.markLine)) : null)
+                : [];
+
+            chartOverlay.setOption({
+                tooltip: { show: false },
+                series: markLineBackup.map(() => ({ markLine: { data: [] } }))
+            }, false);
+
+            const dataUrl = chartOverlay.getDataURL({
+                type: 'png',
+                pixelRatio: 2,
+                backgroundColor: '#151932'
+            });
+
+            chartOverlay.setOption({
+                tooltip: tooltipBackup || { show: true },
+                series: markLineBackup.map((markLine) => ({ markLine: markLine || { data: [] } }))
+            }, false);
+
+            return dataUrl;
+        }
+
+        function createGalleryItem({ dataUrl, title, tooltip }) {
+            const item = document.createElement('div');
+            item.classList.add('gallery-item');
+
+            const media = document.createElement('div');
+            media.classList.add('gallery-item-media');
+
+            const image = document.createElement('img');
+            image.src = dataUrl;
+            image.alt = title;
+            media.append(image);
+
+            const info = document.createElement('div');
+            info.classList.add('gallery-item-info');
+
+            const meta = document.createElement('div');
+            meta.classList.add('gallery-item-meta');
+
+            const name = document.createElement('div');
+            name.classList.add('gallery-item-title');
+            name.textContent = title;
+
+            const tooltipPanel = document.createElement('details');
+            tooltipPanel.classList.add('gallery-tooltip-panel');
+
+            const tooltipSummary = document.createElement('summary');
+            tooltipSummary.textContent = 'データ生成条件を表示';
+
+            const tooltipContent = document.createElement('div');
+            tooltipContent.classList.add('gallery-tooltip-content');
+            tooltipContent.textContent = tooltip || 'ツールチップ情報はありません。';
+
+            tooltipPanel.append(tooltipSummary, tooltipContent);
+            meta.append(name, tooltipPanel);
+
+            const actions = document.createElement('div');
+            actions.classList.add('gallery-item-actions');
+
+            const upButton = document.createElement('button');
+            upButton.type = 'button';
+            upButton.dataset.action = 'up';
+            upButton.textContent = '▲ 上へ';
+            upButton.addEventListener('click', () => {
+                const previous = item.previousElementSibling;
+                if (previous) {
+                    galleryList.insertBefore(item, previous);
+                    updateGalleryControls();
+                }
+            });
+
+            const downButton = document.createElement('button');
+            downButton.type = 'button';
+            downButton.dataset.action = 'down';
+            downButton.textContent = '▼ 下へ';
+            downButton.addEventListener('click', () => {
+                const next = item.nextElementSibling;
+                if (next) {
+                    galleryList.insertBefore(next, item);
+                    updateGalleryControls();
+                }
+            });
+
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.dataset.action = 'delete';
+            deleteButton.textContent = '削除';
+            deleteButton.addEventListener('click', () => {
+                item.remove();
+                updateGalleryControls();
+            });
+
+            actions.append(upButton, downButton, deleteButton);
+            info.append(meta, actions);
+            item.append(media, info);
+
+            return item;
+        }
+
+        function addOverlaySnapshotToGallery() {
+            if (!appState.selectedMutualPair || !appState.cachedMarketData) {
+                return;
+            }
+            if (galleryList.children.length >= GALLERY_LIMIT) {
+                alert('ギャラリーは10枚まで保存できます。');
+                return;
+            }
+
+            const { base, compare } = appState.selectedMutualPair;
+            const dataUrl = getSnapshotWithoutSelectionLines();
+            const title = `${base} × ${compare}`;
+            const tooltip = getSnapshotTooltipText();
+            const item = createGalleryItem({ dataUrl, title, tooltip });
+            galleryList.appendChild(item);
+            updateGalleryControls();
+        }
+
+        function selectMutualPair(base, compare) {
+            if (!appState.cachedMarketData || !base || !compare || base === compare) {
+                return;
+            }
+            const pairs = getActivePairs();
+            if (!pairs.includes(base) || !pairs.includes(compare)) {
+                return;
+            }
+            appState.selectedMutualPair = { base, compare };
+            appState.selectedHeatmapCell = null;
+            highlightMutualPair(compare, base, pairs);
+            setSelectionVisibility(true);
+            updateOverlayChart();
+            updateOverlayMarkers(null, null);
+            updateDetailHeatmap();
+            updateGalleryControls();
+        }
+
+        async function generateAndRenderData() {
+            if (appState.isGeneratingData) {
+                appState.pendingGeneration = true;
+                return;
+            }
+            appState.isGeneratingData = true;
+            do {
+                appState.pendingGeneration = false;
+                const selectedPairs = getSelectedPairsFromUI();
+                if (selectedPairs.length < 2) {
+                    alert('相関を表示するには通貨ペアを2つ以上選択してください。');
+                    appState.isGeneratingData = false;
+                    updateGenerateButtonAvailability();
+                    return;
+                }
+                const timeframe = document.getElementById('timeframe').value;
+                const dataCount = parseInt(document.getElementById('dataCount').value);
+                const offset = parseInt(document.getElementById('offset').value);
+                const fetchCount = dataCount + Math.abs(offset);
+                const endTime = getSelectedEndDateTime();
+                appState.activePairs = selectedPairs;
+                appState.cachedMarketData = await generateMarketData(fetchCount, timeframe, endTime, selectedPairs);
+                appState.cachedTimeframe = timeframe;
+                appState.cachedDataCount = dataCount;
+                updateMutualCharts({ offset, minRequiredLength: MIN_REQUIRED_LENGTH });
+                setMutualVisibility(true);
+                if (appState.selectedMutualPair) {
+                    setSelectionVisibility(true);
+                    updateOverlayChart();
+                    updateDetailHeatmap();
+                } else {
+                    setSelectionVisibility(false);
+                }
+            } while (appState.pendingGeneration);
+            appState.isGeneratingData = false;
+            setDataControlState(true);
+        }
+
+        chartMutual.on('click', (params) => {
+            if (params.seriesType !== 'heatmap' || !Array.isArray(params.data)) {
+                return;
+            }
+            const pairs = getActivePairs();
+            const pairX = pairs[params.data[0]];
+            const pairY = pairs[params.data[1]];
+            if (!pairX || !pairY) {
+                return;
+            }
+            selectMutualPair(pairY, pairX);
+        });
+
+        chartDetail.on('click', (params) => {
+            if (params.seriesType !== 'heatmap' || !Array.isArray(params.data)) {
+                return;
+            }
+            applyHeatmapSelection(params.data[0]);
+        });
+
+        chartOverlay.on('click', (params) => {
+            if (params.seriesType !== 'candlestick' || !appState.selectedMutualPair || !appState.cachedMarketData) {
+                return;
+            }
+            const { base, compare } = appState.selectedMutualPair;
+            const offset = parseInt(document.getElementById('offset').value);
+            const divisions = parseInt(document.getElementById('divisions').value);
+            const baseCandles = appState.cachedMarketData[base] || [];
+            const compareCandles = appState.cachedMarketData[compare] || [];
+            const alignedMeta = getAlignedMeta(baseCandles.length, compareCandles.length, offset);
+            if (alignedMeta.minLength === 0) {
+                return;
+            }
+            const alignedIndex = params.dataIndex;
+            updateOverlayMarkers(alignedIndex + 1, alignedIndex + 1);
+            const divisionIndex = Math.min(divisions - 1, Math.floor((alignedIndex * divisions) / alignedMeta.minLength));
+            applyHeatmapSelection(divisionIndex, false);
+        });
+
+        document.getElementById('generateDataButton').addEventListener('click', generateAndRenderData);
+        clearButton.addEventListener('click', clearData);
+        selectAllPairsButton.addEventListener('click', () => {
+            document.querySelectorAll('.pair-checkbox').forEach((checkbox) => {
+                checkbox.checked = true;
+            });
+            updatePairSelectionMeta();
+        });
+        clearPairsButton.addEventListener('click', () => {
+            document.querySelectorAll('.pair-checkbox').forEach((checkbox) => {
+                checkbox.checked = false;
+            });
+            updatePairSelectionMeta();
+        });
+        addGalleryItemButton.addEventListener('click', addOverlaySnapshotToGallery);
+        clearGalleryButton.addEventListener('click', () => {
+            galleryList.innerHTML = '';
+            updateGalleryControls();
+        });
+        toggleExportButton.addEventListener('click', () => toggleExportButtons());
+        copyHeatmapCsvButton.addEventListener('click', async () => {
+            if (!appState.cachedMarketData) {
+                return;
+            }
+            const offset = parseInt(document.getElementById('offset').value);
+            const records = buildMutualCorrelationRecords(offset, MIN_REQUIRED_LENGTH, getActivePairs());
+            await copyTextToClipboard(formatCorrelationCsv(records));
+        });
+        copyHeatmapJsonButton.addEventListener('click', async () => {
+            if (!appState.cachedMarketData) {
+                return;
+            }
+            const offset = parseInt(document.getElementById('offset').value);
+            const records = buildMutualCorrelationRecords(offset, MIN_REQUIRED_LENGTH, getActivePairs());
+            await copyTextToClipboard(JSON.stringify(records, null, 2));
+        });
+        downloadHeatmapPngButton.addEventListener('click', () => {
+            if (!appState.cachedMarketData) {
+                return;
+            }
+            downloadChartImage(chartMutual, 'png');
+        });
+        downloadHeatmapSvgButton.addEventListener('click', () => {
+            if (!appState.cachedMarketData) {
+                return;
+            }
+            downloadChartImage(chartMutual, 'svg');
+        });
+
+        document.getElementById('dataCount').addEventListener('input', function() {
+            document.getElementById('dataCountValue').textContent = this.value;
+        });
+
+        document.getElementById('divisions').addEventListener('input', function() {
+            document.getElementById('divisionsValue').textContent = this.value;
+            if (appState.cachedMarketData) {
+                updateDetailHeatmap();
+            }
+        });
+
+        document.getElementById('offset').addEventListener('input', function() {
+            document.getElementById('offsetValue').textContent = this.value;
+            if (appState.cachedMarketData) {
+                updateMutualCharts({ offset: parseInt(this.value), minRequiredLength: MIN_REQUIRED_LENGTH });
+                if (appState.selectedMutualPair) {
+                    updateOverlayChart();
+                    updateDetailHeatmap();
+                }
+            }
+        });
+
+        function debounce(callback, delay) {
+            let timerId;
+            return (...args) => {
+                if (timerId) {
+                    clearTimeout(timerId);
+                }
+                timerId = setTimeout(() => {
+                    callback(...args);
+                }, delay);
+            };
+        }
+
+        const handleResize = debounce(() => {
+            chartMutual.resize();
+            chartOverlay.resize();
+            chartDetail.resize();
+        }, RESIZE_DEBOUNCE_MS);
+
+        window.addEventListener('resize', handleResize);
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        function activateTab(tabId) {
+            tabButtons.forEach((button) => {
+                const isActive = button.dataset.tab === tabId;
+                button.classList.toggle('is-active', isActive);
+                button.setAttribute('aria-selected', isActive);
+            });
+            tabPanels.forEach((panel) => {
+                panel.classList.toggle('is-active', panel.id === `tab-${tabId}`);
+            });
+        }
+
+        tabButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                activateTab(button.dataset.tab);
+            });
+        });
+
+        document.getElementById('dataCountValue').textContent = document.getElementById('dataCount').value;
+        document.getElementById('offsetValue').textContent = document.getElementById('offset').value;
+        document.getElementById('divisionsValue').textContent = document.getElementById('divisions').value;
+        document.getElementById('endDateTime').value = new Date().toISOString().slice(0, 16);
+        renderPairSelection();
+        setSelectionVisibility(false);
+        setMutualVisibility(false);
+        setDataControlState(false);
+        updateGalleryControls();
+    </script>
+</body>
+</html>
