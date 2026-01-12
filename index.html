@@ -697,7 +697,7 @@
             <div id="detailHeatmap" class="chart-panel"></div>
         </div>
 
-        <div class="pane-section pane-hidden" id="galleryPane">
+        <div class="pane-section" id="galleryPane">
             <h2 class="pane-title">ローソク足スナップショットギャラリー</h2>
             <div class="gallery-section">
                 <div class="gallery-toolbar">
@@ -1150,22 +1150,11 @@
             return Math.floor((start + end - 1) / 2);
         }
 
-        function updateOverlayMarkers(baseIndex, compareIndex) {
-            const buildLine = (index, color) => {
-                if (index === null || index === undefined) {
-                    return { data: [] };
-                }
-                return {
-                    symbol: 'none',
-                    lineStyle: { type: 'dashed', color, width: 1 },
-                    data: [{ xAxis: index }]
-                };
-            };
-
+        function updateOverlayMarkers() {
             chartOverlay.setOption({
                 series: [
-                    { markLine: buildLine(baseIndex, '#b2ebf2') },
-                    { markLine: buildLine(compareIndex, '#ffcc80') }
+                    { markLine: { data: [] } },
+                    { markLine: { data: [] } }
                 ]
             });
         }
@@ -1712,12 +1701,11 @@
         function setSelectionVisibility(isVisible) {
             overlayPane.classList.toggle('pane-hidden', !isVisible);
             detailPane.classList.toggle('pane-hidden', !isVisible);
-            galleryPane.classList.toggle('pane-hidden', !isVisible);
             if (isVisible) {
                 chartOverlay.resize();
                 chartDetail.resize();
-                resizeGalleryCharts();
             }
+            resizeGalleryCharts();
             updateGalleryControls();
         }
 
@@ -1801,7 +1789,6 @@
             appState.selectedHeatmapCell = null;
             appState.detailAlignedMeta = null;
             appState.activePairs = getSelectedPairsFromUI();
-            clearGalleryItems();
             setSelectionVisibility(false);
             setMutualVisibility(false);
             resetCharts();
