@@ -1200,7 +1200,19 @@
                 tooltip: {
                     trigger: 'axis',
                     axisPointer: {
-                        type: 'none'
+                        type: 'cross',
+                        lineStyle: {
+                            color: '#00d4ff',
+                            width: 1
+                        },
+                        crossStyle: {
+                            color: '#00d4ff',
+                            width: 1
+                        },
+                        label: {
+                            backgroundColor: '#1e2440',
+                            color: '#fff'
+                        }
                     },
                     formatter: (params) => {
                         const items = Array.isArray(params) ? params : [params];
@@ -1789,6 +1801,7 @@
             appState.selectedHeatmapCell = null;
             appState.detailAlignedMeta = null;
             appState.activePairs = getSelectedPairsFromUI();
+            clearGalleryItems();
             setSelectionVisibility(false);
             setMutualVisibility(false);
             resetCharts();
@@ -1892,6 +1905,15 @@
             galleryCharts.forEach((chart) => {
                 chart.resize();
             });
+        }
+
+        function clearGalleryItems() {
+            galleryCharts.forEach((chart) => {
+                chart.dispose();
+            });
+            galleryCharts.clear();
+            galleryList.innerHTML = '';
+            updateGalleryControls();
         }
 
         function addOverlaySnapshotToGallery() {
@@ -2029,12 +2051,7 @@
         });
         addGalleryItemButton.addEventListener('click', addOverlaySnapshotToGallery);
         clearGalleryButton.addEventListener('click', () => {
-            galleryCharts.forEach((chart, item) => {
-                chart.dispose();
-                galleryCharts.delete(item);
-            });
-            galleryList.innerHTML = '';
-            updateGalleryControls();
+            clearGalleryItems();
         });
         toggleExportButton.addEventListener('click', () => toggleExportButtons());
         copyHeatmapCsvButton.addEventListener('click', async () => {
