@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ビンゴ スロットセレクター</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            inset: -150px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.25), transparent 60%),
+                radial-gradient(circle, rgba(255, 105, 180, 0.2), transparent 55%),
+                radial-gradient(circle, rgba(0, 242, 254, 0.18), transparent 50%);
+            animation: glowPulse 10s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .settings {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-group label {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .setting-group input {
+            width: 80px;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .slot-display {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            border-radius: 20px;
+            padding: 60px;
+            margin: 30px 0;
+            text-align: center;
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slot-display::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.35), transparent 40%, rgba(255, 255, 255, 0.2) 60%, transparent);
+            opacity: 0.6;
+            animation: shineMove 4s linear infinite;
+        }
+
+        @keyframes shineMove {
+            0% { transform: translateX(-80%); }
+            100% { transform: translateX(80%); }
+        }
+
+        .slot-number {
+            font-size: 8em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            animation: pulse 1s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .slot-spinning {
+            animation: spin 0.1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-20px); }
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.3em;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #startBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        #startBtn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        #resetBtn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        #resetBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .usage {
+            margin-top: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .usage h2 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.4em;
+        }
+
+        .usage ul {
+            padding-left: 20px;
+            color: #333;
+            line-height: 1.6;
+            font-size: 1.05em;
+        }
+
+        .history-numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .history-number {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+            animation: sparkleTwinkle 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes sparkleTwinkle {
+            0%, 100% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.4); opacity: 1; }
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f0f;
+            position: absolute;
+            animation: confettiFall 3s linear;
+        }
+
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .container {
+                padding: 28px 20px;
+                border-radius: 24px;
+            }
+
+            h1 {
+                font-size: 2.2em;
+            }
+
+            .slot-display {
+                padding: 40px 20px;
+            }
+
+            .slot-number {
+                font-size: 5em;
+            }
+
+            button {
+                width: 100%;
+                max-width: 260px;
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .setting-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .setting-group input {
+                width: 110px;
+            }
+
+            .slot-number {
+                font-size: 4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎊 ビンゴ スロット 🎊</h1>
+        
+        <div class="settings">
+            <div class="setting-group">
+                <label for="startNum">開始:</label>
+                <input type="number" id="startNum" value="1" min="1">
+            </div>
+            <div class="setting-group">
+                <label for="endNum">終了:</label>
+                <input type="number" id="endNum" value="99" min="1">
+            </div>
+        </div>
+
+        <div class="slot-display">
+            <div class="slot-number" id="slotNumber">?</div>
+        </div>
+
+        <div class="buttons">
+            <button id="startBtn">🎰 スタート</button>
+            <button id="resetBtn">🔄 リセット</button>
+        </div>
+
+        <div class="status" id="status">スタートボタンを押してください</div>
+
+        <div class="history">
+            <h2>📋 既出の数字</h2>
+            <div class="history-numbers" id="historyNumbers"></div>
+        </div>
+
+        <div class="usage">
+            <h2>📝 使い方</h2>
+            <ul>
+                <li>開始と終了の数字を設定して「スタート」を押すと抽選が始まります。</li>
+                <li>一度出た数字は画面下の一覧に表示され、同じ数字は再び出ません。</li>
+                <li>途中で画面を閉じても続きから再開できます。</li>
+                <li>リセットすると履歴と設定がクリアされます。</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let availableNumbers = [];
+        let usedNumbers = [];
+        let isSpinning = false;
+        let spinInterval;
+        let settingsLocked = false;
+        const STORAGE_KEY = 'bingoSlotState';
+
+        // 効果音を生成
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        async function ensureAudioContext() {
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+        }
+
+        function playSlotSound() {
+            if (audioContext.state === 'suspended') {
+                return;
+            }
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 400;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.05);
+        }
+
+        function playWinSound() {
+            if (audioContext.state === 'suspended') {
+                return;
+            }
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function updateStatus() {
+            if (availableNumbers.length === 0) {
+                document.getElementById('status').textContent = '🎉 全ての数字が出ました！';
+            } else if (usedNumbers.length === 0) {
+                document.getElementById('status').textContent = 'スタートボタンを押してください';
+            } else {
+                document.getElementById('status').textContent = `残り: ${availableNumbers.length} 個`;
+            }
+        }
+
+        function saveState() {
+            const start = parseInt(document.getElementById('startNum').value);
+            const end = parseInt(document.getElementById('endNum').value);
+            const state = {
+                start,
+                end,
+                usedNumbers
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function initializeNumbers(resetUsed = true) {
+            const start = parseInt(document.getElementById('startNum').value);
+            const end = parseInt(document.getElementById('endNum').value);
+            
+            if (start >= end) {
+                alert('開始数は終了数より小さくしてください');
+                return false;
+            }
+            
+            availableNumbers = [];
+            for (let i = start; i <= end; i++) {
+                availableNumbers.push(i);
+            }
+            if (resetUsed) {
+                usedNumbers = [];
+            } else {
+                availableNumbers = availableNumbers.filter(num => !usedNumbers.includes(num));
+            }
+            updateHistory();
+            document.getElementById('slotNumber').textContent = usedNumbers.length
+                ? usedNumbers[usedNumbers.length - 1]
+                : '?';
+            updateStatus();
+            saveState();
+            return true;
+        }
+
+        function lockSettings() {
+            settingsLocked = true;
+            document.getElementById('startNum').disabled = true;
+            document.getElementById('endNum').disabled = true;
+        }
+
+        function unlockSettings() {
+            settingsLocked = false;
+            document.getElementById('startNum').disabled = false;
+            document.getElementById('endNum').disabled = false;
+        }
+
+        async function startSlot() {
+            if (isSpinning || availableNumbers.length === 0) return;
+
+            isSpinning = true;
+            document.getElementById('startBtn').disabled = true;
+            if (!settingsLocked) {
+                lockSettings();
+            }
+
+            await ensureAudioContext();
+
+            const slotElement = document.getElementById('slotNumber');
+            slotElement.classList.add('slot-spinning');
+            
+            let spinCount = 0;
+            const maxSpins = 20;
+            
+            spinInterval = setInterval(() => {
+                const randomNum = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+                slotElement.textContent = randomNum;
+                playSlotSound();
+                
+                spinCount++;
+                
+                if (spinCount >= maxSpins) {
+                    clearInterval(spinInterval);
+                    selectFinalNumber();
+                }
+            }, 100);
+        }
+
+        function selectFinalNumber() {
+            const slotElement = document.getElementById('slotNumber');
+            slotElement.classList.remove('slot-spinning');
+            
+            const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+            const selectedNumber = availableNumbers[randomIndex];
+            
+            slotElement.textContent = selectedNumber;
+            playWinSound();
+            createConfettiBurst();
+            
+            availableNumbers.splice(randomIndex, 1);
+            usedNumbers.push(selectedNumber);
+            
+            updateHistory();
+            updateStatus();
+            saveState();
+            
+            isSpinning = false;
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        function updateHistory() {
+            const historyElement = document.getElementById('historyNumbers');
+            historyElement.innerHTML = '';
+            
+            usedNumbers.forEach(num => {
+                const numElement = document.createElement('div');
+                numElement.className = 'history-number';
+                numElement.textContent = num;
+                historyElement.appendChild(numElement);
+            });
+        }
+
+        function resetGame() {
+            if (confirm('ゲームをリセットしますか？')) {
+                if (isSpinning) {
+                    clearInterval(spinInterval);
+                    isSpinning = false;
+                    document.getElementById('slotNumber').classList.remove('slot-spinning');
+                }
+                localStorage.removeItem(STORAGE_KEY);
+                initializeNumbers();
+                document.getElementById('startBtn').disabled = false;
+                unlockSettings();
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startSlot);
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        
+        document.getElementById('startNum').addEventListener('change', () => {
+            if (!settingsLocked) {
+                initializeNumbers();
+            }
+        });
+        document.getElementById('endNum').addEventListener('change', () => {
+            if (!settingsLocked) {
+                initializeNumbers();
+            }
+        });
+
+        function createSparkles() {
+            const container = document.querySelector('.container');
+            for (let i = 0; i < 14; i++) {
+                const sparkle = document.createElement('span');
+                sparkle.className = 'sparkle';
+                sparkle.style.top = `${Math.random() * 100}%`;
+                sparkle.style.left = `${Math.random() * 100}%`;
+                sparkle.style.animationDelay = `${Math.random() * 3}s`;
+                container.appendChild(sparkle);
+            }
+        }
+
+        function createConfettiBurst() {
+            for (let i = 0; i < 40; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.background = `hsl(${Math.random() * 360}, 90%, 60%)`;
+                confetti.style.animationDuration = `${2 + Math.random() * 2}s`;
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 3500);
+            }
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) {
+                return false;
+            }
+            try {
+                const state = JSON.parse(saved);
+                if (typeof state.start !== 'number' || typeof state.end !== 'number') {
+                    return false;
+                }
+                document.getElementById('startNum').value = state.start;
+                document.getElementById('endNum').value = state.end;
+                usedNumbers = Array.isArray(state.usedNumbers) ? state.usedNumbers : [];
+                usedNumbers = usedNumbers.filter(num => Number.isInteger(num));
+                initializeNumbers(false);
+                if (usedNumbers.length > 0) {
+                    lockSettings();
+                }
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // 初期化
+        if (!loadState()) {
+            initializeNumbers();
+        }
+        createSparkles();
+    </script>
+</body>
+</html>
