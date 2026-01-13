@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パスキーとAAGUIDの仕組み</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg viewBox="0 0 1200 2000" xmlns="http://www.w3.org/2000/svg">
+            <!-- 定義セクション -->
+            <defs>
+                <!-- グラデーション -->
+                <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#f0f9ff;stop-opacity:1" />
+                </linearGradient>
+
+                <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+                </linearGradient>
+
+                <linearGradient id="passkeyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+                </linearGradient>
+
+                <linearGradient id="aaguidGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+                </linearGradient>
+
+                <!-- アニメーション用のマーカー -->
+                <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#0ea5e9" />
+                </marker>
+
+                <!-- パルスアニメーション -->
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <!-- 背景 -->
+            <rect width="1200" height="2000" fill="url(#bgGrad)"/>
+
+            <!-- ヘッダー -->
+            <rect x="0" y="0" width="1200" height="100" fill="url(#headerGrad)"/>
+            <text x="600" y="65" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="white" text-anchor="middle">
+                🔐 パスキーとAAGUIDの仕組み
+            </text>
+
+            <!-- セクション1: パスキーとは -->
+            <g id="section1">
+                <rect x="50" y="130" width="1100" height="180" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="165" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    パスキーとは？
+                </text>
+                <text x="100" y="200" font-size="18" fill="#4b5563">
+                    • パスワード不要の次世代認証方式
+                </text>
+                <text x="100" y="230" font-size="18" fill="#4b5563">
+                    • 公開鍵暗号方式を使用し、フィッシング耐性が高い
+                </text>
+                <text x="100" y="260" font-size="18" fill="#4b5563">
+                    • 秘密鍵はデバイスから外に出ず、安全性が高い
+                </text>
+                <text x="100" y="290" font-size="18" fill="#4b5563">
+                    • 生体認証（顔認証・指紋認証）やPINで簡単にログイン
+                </text>
+            </g>
+
+            <!-- セクション2: パスキーストアの種類 -->
+            <g id="section2">
+                <rect x="50" y="340" width="1100" height="280" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="375" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    パスキーストア（認証器）の種類
+                </text>
+
+                <!-- iCloud Keychain -->
+                <g transform="translate(100, 400)">
+                    <rect x="0" y="0" width="310" height="180" rx="10" fill="url(#passkeyGrad)" opacity="0.1" stroke="#8b5cf6" stroke-width="2">
+                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="1s" fill="freeze"/>
+                    </rect>
+                    <text x="155" y="35" font-size="40" text-anchor="middle">🍎</text>
+                    <text x="155" y="70" font-size="20" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                        iCloud Keychain
+                    </text>
+                    <text x="155" y="100" font-size="14" text-anchor="middle" fill="#4b5563">
+                        Apple製品間で同期
+                    </text>
+                    <rect x="20" y="120" width="270" height="35" rx="5" fill="#f3f4f6" stroke="#8b5cf6" stroke-width="1"/>
+                    <text x="155" y="143" font-size="13" text-anchor="middle" fill="#6b21a8" font-family="monospace">
+                        AAGUID: adce0002-...
+                    </text>
+                </g>
+
+                <!-- Google Password Manager -->
+                <g transform="translate(445, 400)">
+                    <rect x="0" y="0" width="310" height="180" rx="10" fill="url(#passkeyGrad)" opacity="0.1" stroke="#8b5cf6" stroke-width="2">
+                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="1.2s" fill="freeze"/>
+                    </rect>
+                    <text x="155" y="35" font-size="40" text-anchor="middle">🔑</text>
+                    <text x="155" y="70" font-size="20" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                        Google Password
+                    </text>
+                    <text x="155" y="95" font-size="20" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                        Manager
+                    </text>
+                    <text x="155" y="120" font-size="14" text-anchor="middle" fill="#4b5563">
+                        Android/Chrome間で同期
+                    </text>
+                    <rect x="20" y="140" width="270" height="35" rx="5" fill="#f3f4f6" stroke="#8b5cf6" stroke-width="1"/>
+                    <text x="155" y="163" font-size="13" text-anchor="middle" fill="#6b21a8" font-family="monospace">
+                        AAGUID: ea9b8d66-...
+                    </text>
+                </g>
+
+                <!-- Windows Hello -->
+                <g transform="translate(790, 400)">
+                    <rect x="0" y="0" width="310" height="180" rx="10" fill="url(#passkeyGrad)" opacity="0.1" stroke="#8b5cf6" stroke-width="2">
+                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="1.4s" fill="freeze"/>
+                    </rect>
+                    <text x="155" y="35" font-size="40" text-anchor="middle">🪟</text>
+                    <text x="155" y="70" font-size="20" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                        Windows Hello
+                    </text>
+                    <text x="155" y="100" font-size="14" text-anchor="middle" fill="#4b5563">
+                        Windows PCで利用
+                    </text>
+                    <rect x="20" y="120" width="270" height="35" rx="5" fill="#f3f4f6" stroke="#8b5cf6" stroke-width="1"/>
+                    <text x="155" y="143" font-size="13" text-anchor="middle" fill="#6b21a8" font-family="monospace">
+                        AAGUID: 08987058-...
+                    </text>
+                </g>
+            </g>
+
+            <!-- セクション3: AAGUIDとは -->
+            <g id="section3">
+                <rect x="50" y="650" width="1100" height="200" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.6s" fill="freeze"/>
+                </rect>
+                <text x="600" y="685" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    AAGUIDとは？
+                </text>
+                <text x="600" y="720" font-size="20" text-anchor="middle" fill="#f59e0b" font-weight="bold">
+                    Authenticator Attestation GUID
+                </text>
+                <text x="100" y="755" font-size="18" fill="#4b5563">
+                    • 認証器の種類を識別する128ビットの一意な識別子（UUID形式）
+                </text>
+                <text x="100" y="785" font-size="18" fill="#4b5563">
+                    • 同じ製造元・モデルの認証器は同じAAGUIDを持つ
+                </text>
+                <text x="100" y="815" font-size="18" fill="#4b5563">
+                    • このIDを使って認証器の詳細情報（名前、アイコンなど）を取得できる
+                </text>
+            </g>
+
+            <!-- セクション4: 認証フローとAAGUID使用の仕組み -->
+            <g id="section4">
+                <rect x="50" y="880" width="1100" height="650" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                </rect>
+                <text x="600" y="920" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    認証フローとAAGUIDの役割
+                </text>
+
+                <!-- ユーザー -->
+                <g transform="translate(150, 970)">
+                    <circle cx="80" cy="50" r="40" fill="#dbeafe" stroke="#0ea5e9" stroke-width="3">
+                        <animate attributeName="r" values="40;45;40" dur="2s" begin="2.5s" repeatCount="indefinite"/>
+                    </circle>
+                    <text x="80" y="60" font-size="35" text-anchor="middle">👤</text>
+                    <text x="80" y="110" font-size="18" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                        ユーザー
+                    </text>
+                </g>
+
+                <!-- 認証器/パスキーストア -->
+                <g transform="translate(430, 970)">
+                    <rect x="0" y="0" width="180" height="100" rx="10" fill="url(#passkeyGrad)" stroke="#8b5cf6" stroke-width="3">
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="2.5s" repeatCount="indefinite"/>
+                    </rect>
+                    <text x="90" y="45" font-size="35" text-anchor="middle">🔐</text>
+                    <text x="90" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+                        認証器
+                    </text>
+                    <text x="90" y="135" font-size="14" text-anchor="middle" fill="#4b5563">
+                        秘密鍵で署名
+                    </text>
+                </g>
+
+                <!-- Webサービス -->
+                <g transform="translate(850, 970)">
+                    <rect x="0" y="0" width="180" height="100" rx="10" fill="#dbeafe" stroke="#0ea5e9" stroke-width="3">
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="2.5s" repeatCount="indefinite"/>
+                    </rect>
+                    <text x="90" y="45" font-size="35" text-anchor="middle">🌐</text>
+                    <text x="90" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="#1e3a8a">
+                        Webサービス
+                    </text>
+                    <text x="90" y="135" font-size="14" text-anchor="middle" fill="#4b5563">
+                        公開鍵で検証
+                    </text>
+                </g>
+
+                <!-- ステップ1: 認証リクエスト -->
+                <g>
+                    <path d="M 240 1020 L 420 1020" stroke="#0ea5e9" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" begin="3s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="1000;0" dur="1.5s" begin="3s" fill="freeze"/>
+                    </path>
+                    <text x="330" y="1010" font-size="14" fill="#0ea5e9" text-anchor="middle">
+                        ①認証要求
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="4.5s" fill="freeze"/>
+                    </text>
+                </g>
+
+                <!-- ステップ2: 署名生成とAAGUID -->
+                <g>
+                    <rect x="350" y="1140" width="340" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4.5s" fill="freeze"/>
+                    </rect>
+                    <text x="520" y="1170" font-size="16" font-weight="bold" text-anchor="middle" fill="#92400e">
+                        ②認証器が生成する情報
+                    </text>
+                    <text x="370" y="1200" font-size="14" fill="#78350f">
+                        • 秘密鍵で署名データを生成
+                    </text>
+                    <text x="370" y="1225" font-size="14" fill="#78350f">
+                        • AAGUIDを含む認証器データを作成
+                    </text>
+                    <text x="520" y="1250" font-size="13" text-anchor="middle" fill="#92400e" font-family="monospace">
+                        AAGUID: adce0002-35bc-c60a-648b-0b25f1f05503
+                    </text>
+                </g>
+
+                <!-- ステップ3: サーバーへ送信 -->
+                <g>
+                    <path d="M 620 1020 L 840 1020" stroke="#0ea5e9" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" begin="5s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="1000;0" dur="1.5s" begin="5s" fill="freeze"/>
+                    </path>
+                    <text x="730" y="1000" font-size="14" fill="#0ea5e9" text-anchor="middle">
+                        ③署名+AAGUID
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="6.5s" fill="freeze"/>
+                    </text>
+                    <text x="730" y="1020" font-size="14" fill="#0ea5e9" text-anchor="middle">
+                        を送信
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="6.5s" fill="freeze"/>
+                    </text>
+                </g>
+
+                <!-- AAGUIDからの名前導出 -->
+                <g transform="translate(750, 1140)">
+                    <rect x="0" y="0" width="360" height="180" rx="10" fill="#f0fdf4" stroke="#10b981" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.5s" fill="freeze"/>
+                    </rect>
+                    <text x="180" y="30" font-size="16" font-weight="bold" text-anchor="middle" fill="#065f46">
+                        ④AAGUIDから名前を導出
+                    </text>
+                    <text x="20" y="60" font-size="13" fill="#047857">
+                        FIDOメタデータサービス（MDS）に照会
+                    </text>
+                    <rect x="20" y="75" width="320" height="85" rx="5" fill="white" stroke="#10b981" stroke-width="1"/>
+                    <text x="180" y="95" font-size="12" text-anchor="middle" fill="#6b7280" font-family="monospace">
+                        AAGUID: adce0002-...
+                    </text>
+                    <text x="180" y="115" font-size="20" text-anchor="middle" fill="#065f46">
+                        ↓
+                    </text>
+                    <text x="180" y="135" font-size="14" font-weight="bold" text-anchor="middle" fill="#047857">
+                        "iCloud Keychain"
+                    </text>
+                    <text x="180" y="152" font-size="12" text-anchor="middle" fill="#059669">
+                        + アイコン、証明書情報など
+                    </text>
+                </g>
+
+                <!-- 検証成功 -->
+                <g>
+                    <path d="M 940 1080 L 940 1130" stroke="#10b981" stroke-width="4" fill="none">
+                        <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="1s" begin="7s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="100;0" dur="1s" begin="7s" fill="freeze"/>
+                    </path>
+                    <circle cx="940" y="1350" r="35" fill="#10b981" opacity="0.2">
+                        <animate attributeName="r" values="0;35" dur="0.5s" begin="8s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;0.2" dur="0.5s" begin="8s" fill="freeze"/>
+                    </circle>
+                    <text x="940" y="1363" font-size="40" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="8s" fill="freeze"/>
+                        ✅
+                    </text>
+                    <text x="940" y="1405" font-size="16" font-weight="bold" text-anchor="middle" fill="#047857">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="8s" fill="freeze"/>
+                        認証成功！
+                    </text>
+                </g>
+            </g>
+
+            <!-- セクション5: AAGUIDのメリット -->
+            <g id="section5">
+                <rect x="50" y="1560" width="1100" height="220" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="1600" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    AAGUIDを使うメリット
+                </text>
+
+                <g transform="translate(100, 1630)">
+                    <circle cx="25" cy="-5" r="20" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2"/>
+                    <text x="25" y="3" font-size="20" text-anchor="middle">1</text>
+                    <text x="60" y="0" font-size="18" fill="#4b5563">
+                        <tspan font-weight="bold" fill="#0ea5e9">認証器の識別：</tspan>どのデバイス・サービスで認証したか分かる
+                    </text>
+                </g>
+
+                <g transform="translate(100, 1680)">
+                    <circle cx="25" cy="-5" r="20" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2"/>
+                    <text x="25" y="3" font-size="20" text-anchor="middle">2</text>
+                    <text x="60" y="0" font-size="18" fill="#4b5563">
+                        <tspan font-weight="bold" fill="#0ea5e9">ユーザーフレンドリー：</tspan>「iCloud Keychain」など分かりやすい名前で表示
+                    </text>
+                </g>
+
+                <g transform="translate(100, 1730)">
+                    <circle cx="25" cy="-5" r="20" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2"/>
+                    <text x="25" y="3" font-size="20" text-anchor="middle">3</text>
+                    <text x="60" y="0" font-size="18" fill="#4b5563">
+                        <tspan font-weight="bold" fill="#0ea5e9">セキュリティ管理：</tspan>特定の認証器のみ許可/拒否などポリシー設定が可能
+                    </text>
+                </g>
+            </g>
+
+            <!-- セクション6: 参考情報 -->
+            <g id="section6">
+                <rect x="50" y="1810" width="1100" height="150" rx="15" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="9s" fill="freeze"/>
+                </rect>
+                <text x="600" y="1845" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    📚 参考情報
+                </text>
+                <text x="100" y="1880" font-size="16" fill="#4b5563">
+                    • FIDO Metadata Service (MDS): 認証器のメタデータを提供する公式サービス
+                </text>
+                <text x="100" y="1910" font-size="16" fill="#4b5563">
+                    • WebAuthn仕様: W3Cが策定したWeb認証の標準規格
+                </text>
+                <text x="100" y="1940" font-size="16" fill="#4b5563">
+                    • FIDO2: パスワードレス認証を実現する認証規格の総称
+                </text>
+            </g>
+
+            <!-- フッター -->
+            <text x="600" y="1985" font-size="14" text-anchor="middle" fill="#9ca3af">
+                パスキーで、より安全で便利な認証体験を 🚀
+            </text>
+        </svg>
+    </div>
+</body>
+</html>
