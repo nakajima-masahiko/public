@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenerativeAIExplanation</title>
+</head>
+<body>
+<svg viewBox="0 0 1200 1600" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f4f8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e6eef5;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d97706;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="1200" height="1600" fill="url(#bgGrad)"/>
+  
+  <!-- ヘッダー -->
+  <rect x="0" y="0" width="1200" height="120" fill="url(#headerGrad)"/>
+  <text x="600" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">
+    Claude.ai で出来ること
+  </text>
+  
+  <!-- アイコン共通スタイル用の円 -->
+  <g id="section1" transform="translate(100, 180)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#3b82f6" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">💬</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      対話・質問回答
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      あらゆるトピックについて自然な
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      日本語で対話。専門知識から日常
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      会話まで幅広く対応
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#1e40af">
+      知識cutoff: 2025年1月
+    </text>
+  </g>
+  
+  <g id="section2" transform="translate(620, 180)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#10b981" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">🔍</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      Web検索
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      最新情報をリアルタイムで検索
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      ニュース、株価、天気など現在の
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      情報を取得可能
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#047857">
+      設定でON/OFF可能
+    </text>
+  </g>
+  
+  <g id="section3" transform="translate(100, 490)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#8b5cf6" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">💻</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      プログラミング支援
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      コード生成、デバッグ、説明
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      Python実行環境で動作確認も可能
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      複数言語に対応
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#faf5ff" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#6b21a8">
+      コード実行機能あり
+    </text>
+  </g>
+  
+  <g id="section4" transform="translate(620, 490)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#ef4444" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">📄</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      文書作成・編集
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      Word、Excel、PowerPoint、PDF
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      作成・編集・分析が可能
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      ダウンロードして利用
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#b91c1c">
+      ファイル作成機能
+    </text>
+  </g>
+  
+  <g id="section5" transform="translate(100, 800)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#f59e0b" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">🎨</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      Artifacts作成
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      HTML、React、SVG、マークダウン
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      インタラクティブなコンテンツを
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      その場で生成・プレビュー
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#b45309">
+      リアルタイム表示
+    </text>
+  </g>
+  
+  <g id="section6" transform="translate(620, 800)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#06b6d4" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">🖼️</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      画像分析
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      画像をアップロードして内容を
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      分析、説明、テキスト抽出
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      図表やグラフの解読も可能
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#ecfeff" stroke="#06b6d4" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#0e7490">
+      Vision機能搭載
+    </text>
+  </g>
+  
+  <g id="section7" transform="translate(100, 1110)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#ec4899" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">📅</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      スケジュール管理
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      カレンダー、リマインダーの
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      作成・検索・更新が可能
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      タスク管理をサポート
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#be185d">
+      アプリ連携
+    </text>
+  </g>
+  
+  <g id="section8" transform="translate(620, 1110)">
+    <rect x="0" y="0" width="480" height="280" rx="15" fill="white" stroke="#d1d5db" stroke-width="2"/>
+    <circle cx="240" cy="50" r="35" fill="#14b8a6" opacity="0.2"/>
+    <text x="240" y="58" font-size="36" text-anchor="middle">🧠</text>
+    <text x="240" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+      記憶機能
+    </text>
+    <text x="240" y="135" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      過去の会話内容を記憶
+    </text>
+    <text x="240" y="160" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      あなたの好みや背景を理解し
+    </text>
+    <text x="240" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4b5563">
+      よりパーソナライズされた対応
+    </text>
+    <rect x="20" y="210" width="200" height="50" rx="8" fill="#f0fdfa" stroke="#14b8a6" stroke-width="1"/>
+    <text x="120" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#0f766e">
+      継続的な学習
+    </text>
+  </g>
+  
+  <!-- フッター情報 -->
+  <rect x="100" y="1430" width="1000" height="120" rx="15" fill="#1f2937"/>
+  <text x="600" y="1475" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">
+    その他の特徴
+  </text>
+  <text x="600" y="1505" font-family="Arial, sans-serif" font-size="16" fill="#d1d5db" text-anchor="middle">
+    • 多言語対応（日本語完全サポート） • 長文コンテキスト理解 • APIアクセス可能
+  </text>
+  <text x="600" y="1530" font-family="Arial, sans-serif" font-size="16" fill="#d1d5db" text-anchor="middle">
+    • モバイル・デスクトップアプリあり • スタイルカスタマイズ機能 • プロジェクト管理
+  </text>
+</svg>
+
+</body>
+</html>
