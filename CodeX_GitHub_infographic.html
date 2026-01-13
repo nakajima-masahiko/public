@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ChatGPT codeX × GitHub 連動フロー インフォグラフィック</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f6f8fb;
+      color: #1b1f2a;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      font-size: 28px;
+      margin: 0 0 8px;
+    }
+    header p {
+      margin: 0;
+      color: #4b5563;
+    }
+    .note {
+      margin-top: 24px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      font-size: 14px;
+      color: #374151;
+    }
+    .note strong {
+      color: #111827;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>ChatGPT codeX × GitHub 連動コーディングの仕組み</h1>
+      <p>インフォグラフィック形式で、準備からマージまでの流れを一目で整理</p>
+    </header>
+
+    <svg viewBox="0 0 1100 720" role="img" aria-labelledby="title desc">
+      <title id="title">ChatGPT codeX と GitHub を連動したコーディングの手順</title>
+      <desc id="desc">準備、連携、指示、実装、レビュー、マージの6ステップを矢印で示すインフォグラフィック</desc>
+
+      <defs>
+        <linearGradient id="headerGradient" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#4f46e5" />
+          <stop offset="100%" stop-color="#22c55e" />
+        </linearGradient>
+        <linearGradient id="cardGradient" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#eef2ff" />
+          <stop offset="100%" stop-color="#f0fdf4" />
+        </linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.15" />
+        </filter>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+        </marker>
+      </defs>
+
+      <rect x="0" y="0" width="1100" height="140" fill="url(#headerGradient)" rx="24" />
+      <text x="60" y="80" fill="#ffffff" font-size="32" font-weight="700">
+        連動の全体像 : 人間 &rarr; ChatGPT codeX &rarr; GitHub
+      </text>
+      <text x="60" y="112" fill="#e2e8f0" font-size="16">
+        GitHub連携により、AIがリポジトリ操作やレビュー支援を担う共同作業フロー
+      </text>
+
+      <g font-size="14" font-weight="600" fill="#111827">
+        <rect x="60" y="170" width="980" height="150" rx="22" fill="url(#cardGradient)" filter="url(#shadow)" />
+        <text x="90" y="210" font-size="20">STEP 1: 事前準備</text>
+        <text x="90" y="240">・GitHubアカウントと対象リポジトリを用意</text>
+        <text x="90" y="264">・ChatGPT codeX 側でGitHub連携を許可</text>
+        <text x="90" y="288">・作業ブランチや目的を明文化</text>
+
+        <rect x="60" y="350" width="980" height="150" rx="22" fill="#ffffff" filter="url(#shadow)" />
+        <text x="90" y="390" font-size="20">STEP 2: 連携セットアップ</text>
+        <text x="90" y="420">・対象リポジトリを接続して権限を確認</text>
+        <text x="90" y="444">・ブランチ/環境/タスク条件を共有</text>
+        <text x="90" y="468">・CIやテスト環境の前提を擦り合わせ</text>
+
+        <rect x="60" y="530" width="980" height="150" rx="22" fill="#eef2ff" filter="url(#shadow)" />
+        <text x="90" y="570" font-size="20">STEP 3: 指示 & 実装サイクル</text>
+        <text x="90" y="600">・タスク指示 &rarr; codeXが実装案/変更を作成</text>
+        <text x="90" y="624">・差分確認し、必要に応じて修正指示</text>
+        <text x="90" y="648">・ローカル/CIでテストを実施</text>
+
+        <rect x="600" y="170" width="440" height="150" rx="22" fill="#ffffff" filter="url(#shadow)" />
+        <text x="630" y="210" font-size="20">STEP 4: PR作成</text>
+        <text x="630" y="240">・変更内容をコミット</text>
+        <text x="630" y="264">・Pull Requestを生成</text>
+        <text x="630" y="288">・要点/影響範囲を記載</text>
+
+        <rect x="600" y="350" width="440" height="150" rx="22" fill="#ffffff" filter="url(#shadow)" />
+        <text x="630" y="390" font-size="20">STEP 5: レビュー</text>
+        <text x="630" y="420">・チームでレビュー/QA</text>
+        <text x="630" y="444">・codeXが修正案を提示</text>
+        <text x="630" y="468">・合意形成 &amp; 変更確定</text>
+
+        <rect x="600" y="530" width="440" height="150" rx="22" fill="#ffffff" filter="url(#shadow)" />
+        <text x="630" y="570" font-size="20">STEP 6: マージ & 運用</text>
+        <text x="630" y="600">・本番/共有ブランチへマージ</text>
+        <text x="630" y="624">・リリースノート更新</text>
+        <text x="630" y="648">・次タスクへフィードバック</text>
+      </g>
+
+      <g stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#arrow)">
+        <line x1="550" y1="320" x2="550" y2="350" />
+        <line x1="550" y1="500" x2="550" y2="530" />
+        <line x1="520" y1="245" x2="600" y2="245" />
+        <line x1="520" y1="425" x2="600" y2="425" />
+        <line x1="520" y1="605" x2="600" y2="605" />
+      </g>
+
+      <g>
+        <rect x="80" y="120" width="160" height="40" rx="20" fill="#ffffff" />
+        <text x="98" y="146" font-size="14" fill="#4338ca" font-weight="700">Human Planner</text>
+        <rect x="260" y="120" width="180" height="40" rx="20" fill="#ffffff" />
+        <text x="278" y="146" font-size="14" fill="#16a34a" font-weight="700">ChatGPT codeX</text>
+        <rect x="460" y="120" width="150" height="40" rx="20" fill="#ffffff" />
+        <text x="478" y="146" font-size="14" fill="#0f172a" font-weight="700">GitHub</text>
+      </g>
+    </svg>
+
+    <div class="note">
+      <strong>補足:</strong>
+      codeXは「指示の理解」「変更提案」「差分作成」「PR作成」などを担い、
+      人間は「目的の明確化」「レビュー」「最終判断」に集中することで、
+      コーディング速度と品質を両立できます。
+    </div>
+  </div>
+</body>
+</html>
