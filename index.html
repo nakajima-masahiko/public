@@ -218,7 +218,7 @@
             text-transform: uppercase;
         }
 
-        select, input[type="range"] {
+        select, input[type="range"], input[type="text"] {
             background: #1e2440;
             color: #fff;
             border: 1px solid #2a3150;
@@ -665,6 +665,32 @@
             </div>
         </div>
 
+        <div class="controls-section">
+            <div class="controls-title">保存データ</div>
+            <div class="controls action-controls">
+                <div class="control-group">
+                    <label for="snapshotName">保存名</label>
+                    <input type="text" id="snapshotName" placeholder="例: 2024-05-01 分析1">
+                </div>
+                <div class="control-group">
+                    <label>保存</label>
+                    <button class="action-button" id="saveSnapshotButton" disabled>保存</button>
+                </div>
+                <div class="control-group">
+                    <label for="snapshotList">保存済みデータ</label>
+                    <select id="snapshotList"></select>
+                </div>
+                <div class="control-group">
+                    <label>操作</label>
+                    <div class="pair-selection-actions">
+                        <button class="action-button small" type="button" id="refreshSnapshotList">一覧更新</button>
+                        <button class="action-button small" type="button" id="loadSnapshotButton" disabled>読み込み</button>
+                        <button class="action-button small" type="button" id="deleteSnapshotButton" disabled>削除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="pane-section pane-hidden" id="mutualPane">
             <div class="summary-row">
                 <div class="summary-card">
@@ -756,6 +782,12 @@
         const galleryList = document.getElementById('galleryList');
         const galleryCount = document.getElementById('galleryCount');
         const galleryCharts = new Map();
+        const snapshotNameInput = document.getElementById('snapshotName');
+        const saveSnapshotButton = document.getElementById('saveSnapshotButton');
+        const snapshotList = document.getElementById('snapshotList');
+        const refreshSnapshotListButton = document.getElementById('refreshSnapshotList');
+        const loadSnapshotButton = document.getElementById('loadSnapshotButton');
+        const deleteSnapshotButton = document.getElementById('deleteSnapshotButton');
 
         const appState = {
             selectedMutualPair: null,
@@ -770,6 +802,11 @@
         };
 
         const GALLERY_LIMIT = 10;
+        const SNAPSHOT_DB_NAME = 'fx-heatmap-analysis';
+        const SNAPSHOT_STORE_NAME = 'analysisSnapshots';
+        const SNAPSHOT_DB_VERSION = 1;
+        let snapshotCache = [];
+        const snapshotSerialByEndTime = new Map();
 
         function getTimeframeStepMs(timeframe) {
             const map = {
@@ -788,6 +825,233 @@
             }
             const pad = (value) => String(value).padStart(2, '0');
             return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        }
+
+        function formatDateTimeInputValue(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                return '';
+            }
+            const pad = (value) => String(value).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function formatSnapshotEndTimeKey(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                return 'unknown';
+            }
+            const pad = (value) => String(value).padStart(2, '0');
+            return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}${pad(date.getHours())}${pad(date.getMinutes())}`;
+        }
+
+        function getNextSnapshotSequence(endTimeKey) {
+            const current = snapshotSerialByEndTime.get(endTimeKey) || 0;
+            const next = current + 1;
+            snapshotSerialByEndTime.set(endTimeKey, next);
+            return String(next).padStart(2, '0');
+        }
+
+        let snapshotDbInstance = null;
+
+        function openSnapshotDb() {
+            if (snapshotDbInstance) {
+                return Promise.resolve(snapshotDbInstance);
+            }
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(SNAPSHOT_DB_NAME, SNAPSHOT_DB_VERSION);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(SNAPSHOT_STORE_NAME)) {
+                        db.createObjectStore(SNAPSHOT_STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    snapshotDbInstance = request.result;
+                    snapshotDbInstance.onclose = () => {
+                        snapshotDbInstance = null;
+                    };
+                    resolve(snapshotDbInstance);
+                };
+                request.onblocked = () => {
+                    console.warn('データベースが他のタブでブロックされています');
+                    reject(new Error('Database blocked by another tab'));
+                };
+            });
+        }
+
+        function withSnapshotStore(mode, callback) {
+            return openSnapshotDb().then((db) => new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction(SNAPSHOT_STORE_NAME, mode);
+                    const store = transaction.objectStore(SNAPSHOT_STORE_NAME);
+                    const request = callback(store);
+                    transaction.oncomplete = () => {
+                        resolve(request ? request.result : undefined);
+                    };
+                    transaction.onerror = () => reject(transaction.error || new Error('Transaction failed'));
+                    transaction.onabort = () => reject(transaction.error || new Error('Transaction aborted'));
+                } catch (error) {
+                    reject(error);
+                }
+            }));
+        }
+
+        function serializeMarketData(marketData) {
+            return Object.fromEntries(
+                Object.entries(marketData || {}).map(([pair, candles]) => [
+                    pair,
+                    (candles || []).map((candle) => ({
+                        ...candle,
+                        time: candle?.time instanceof Date ? candle.time.toISOString() : candle?.time ?? null
+                    }))
+                ])
+            );
+        }
+
+        function deserializeMarketData(serialized) {
+            return Object.fromEntries(
+                Object.entries(serialized || {}).map(([pair, candles]) => [
+                    pair,
+                    (candles || []).map((candle) => ({
+                        ...candle,
+                        time: candle?.time ? new Date(candle.time) : null
+                    }))
+                ])
+            );
+        }
+
+        function getSnapshotDisplayName(snapshot) {
+            const name = snapshot?.name || '保存データ';
+            const savedAt = snapshot?.savedAt ? new Date(snapshot.savedAt) : null;
+            const stamp = savedAt ? formatDateTime(savedAt) : '日時不明';
+            return `${name} (${stamp})`;
+        }
+
+        function updateSnapshotActionButtons() {
+            const hasSelection = Boolean(snapshotList.value);
+            loadSnapshotButton.disabled = !hasSelection;
+            deleteSnapshotButton.disabled = !hasSelection;
+        }
+
+        function refreshSnapshotList() {
+            return withSnapshotStore('readonly', (store) => store.getAll()).then((snapshots) => {
+                snapshotCache = (snapshots || []).sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+                snapshotList.innerHTML = '';
+                if (!snapshotCache.length) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '保存データがありません';
+                    snapshotList.appendChild(option);
+                    snapshotList.disabled = true;
+                } else {
+                    snapshotList.disabled = false;
+                    snapshotCache.forEach((snapshot) => {
+                        const option = document.createElement('option');
+                        option.value = snapshot.id;
+                        option.textContent = getSnapshotDisplayName(snapshot);
+                        snapshotList.appendChild(option);
+                    });
+                }
+                updateSnapshotActionButtons();
+            }).catch((error) => {
+                console.error('保存データ一覧の取得に失敗しました', error);
+                alert('データの読み込みに失敗しました。ページを再読み込みしてください。');
+            });
+        }
+
+        function buildSnapshotPayload() {
+            const name = snapshotNameInput.value.trim() || `保存データ ${formatDateTime(new Date())}`;
+            const endTime = getSelectedEndDateTime();
+            const offset = parseInt(document.getElementById('offset').value);
+            const divisions = parseInt(document.getElementById('divisions').value);
+            const id = (window.crypto?.randomUUID && window.crypto.randomUUID()) || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            return {
+                id,
+                name,
+                savedAt: new Date().toISOString(),
+                endTimeIso: endTime instanceof Date && !Number.isNaN(endTime.getTime()) ? endTime.toISOString() : null,
+                timeframe: appState.cachedTimeframe,
+                dataCount: appState.cachedDataCount,
+                offset,
+                divisions,
+                activePairs: appState.activePairs,
+                marketData: serializeMarketData(appState.cachedMarketData)
+            };
+        }
+
+        function saveSnapshot() {
+            if (!appState.cachedMarketData) {
+                return;
+            }
+            const payload = buildSnapshotPayload();
+            return withSnapshotStore('readwrite', (store) => store.put(payload))
+                .then(() => {
+                    snapshotNameInput.value = '';
+                    return refreshSnapshotList();
+                })
+                .catch((error) => {
+                    console.error('保存に失敗しました', error);
+                    alert('保存に失敗しました。');
+                });
+        }
+
+        function loadSnapshot(snapshotId) {
+            return withSnapshotStore('readonly', (store) => store.get(snapshotId)).then((snapshot) => {
+                if (!snapshot) {
+                    alert('保存データが見つかりません。');
+                    return;
+                }
+                appState.cachedMarketData = deserializeMarketData(snapshot.marketData);
+                appState.cachedTimeframe = snapshot.timeframe;
+                appState.cachedDataCount = snapshot.dataCount;
+                appState.activePairs = snapshot.activePairs || [];
+                appState.selectedMutualPair = null;
+                appState.selectedHeatmapCell = null;
+                appState.detailAlignedMeta = null;
+
+                if (snapshot.timeframe) {
+                    document.getElementById('timeframe').value = snapshot.timeframe;
+                }
+                if (snapshot.dataCount) {
+                    document.getElementById('dataCount').value = snapshot.dataCount;
+                    document.getElementById('dataCountValue').textContent = snapshot.dataCount;
+                }
+                if (typeof snapshot.offset === 'number') {
+                    document.getElementById('offset').value = snapshot.offset;
+                    document.getElementById('offsetValue').textContent = snapshot.offset;
+                }
+                if (typeof snapshot.divisions === 'number') {
+                    document.getElementById('divisions').value = snapshot.divisions;
+                    document.getElementById('divisionsValue').textContent = snapshot.divisions;
+                }
+                if (snapshot.endTimeIso) {
+                    const endTime = new Date(snapshot.endTimeIso);
+                    document.getElementById('endDateTime').value = formatDateTimeInputValue(endTime);
+                }
+
+                document.querySelectorAll('.pair-checkbox').forEach((checkbox) => {
+                    checkbox.checked = snapshot.activePairs?.includes(checkbox.value);
+                });
+                updatePairSelectionMeta();
+
+                updateMutualCharts({ offset: parseInt(document.getElementById('offset').value), minRequiredLength: MIN_REQUIRED_LENGTH });
+                setMutualVisibility(true);
+                setSelectionVisibility(false);
+                setDataControlState(true);
+                updateGalleryControls();
+            }).catch((error) => {
+                console.error('読み込みに失敗しました', error);
+                alert('読み込みに失敗しました。');
+            });
+        }
+
+        function deleteSnapshot(snapshotId) {
+            return withSnapshotStore('readwrite', (store) => store.delete(snapshotId))
+                .then(() => refreshSnapshotList())
+                .catch((error) => {
+                    console.error('削除に失敗しました', error);
+                    alert('削除に失敗しました。');
+                });
         }
 
         function getSelectedPairsFromUI() {
@@ -1738,6 +2002,7 @@
             copyHeatmapJsonButton.disabled = !isGenerated;
             downloadHeatmapPngButton.disabled = !isGenerated;
             downloadHeatmapSvgButton.disabled = !isGenerated;
+            saveSnapshotButton.disabled = !isGenerated;
             updateGenerateButtonAvailability();
         }
 
@@ -1969,6 +2234,9 @@
                 const offset = parseInt(document.getElementById('offset').value);
                 const fetchCount = dataCount + Math.abs(offset);
                 const endTime = getSelectedEndDateTime();
+                const endTimeKey = formatSnapshotEndTimeKey(endTime);
+                const sequence = getNextSnapshotSequence(endTimeKey);
+                snapshotNameInput.value = `${endTimeKey}_${timeframe}_${dataCount}_${sequence}`;
                 appState.activePairs = selectedPairs;
                 appState.cachedMarketData = await generateMarketData(fetchCount, timeframe, endTime, selectedPairs);
                 appState.cachedTimeframe = timeframe;
@@ -2073,6 +2341,30 @@
             }
             downloadChartImage(chartMutual, 'svg');
         });
+        saveSnapshotButton.addEventListener('click', () => {
+            saveSnapshot();
+        });
+        refreshSnapshotListButton.addEventListener('click', () => {
+            refreshSnapshotList();
+        });
+        snapshotList.addEventListener('change', updateSnapshotActionButtons);
+        loadSnapshotButton.addEventListener('click', () => {
+            if (!snapshotList.value) {
+                return;
+            }
+            loadSnapshot(snapshotList.value);
+        });
+        deleteSnapshotButton.addEventListener('click', () => {
+            if (!snapshotList.value) {
+                return;
+            }
+            const snapshot = snapshotCache.find((entry) => entry.id === snapshotList.value);
+            const label = snapshot ? getSnapshotDisplayName(snapshot) : '選択されたデータ';
+            if (!confirm(`${label} を削除しますか？`)) {
+                return;
+            }
+            deleteSnapshot(snapshotList.value);
+        });
 
         document.getElementById('dataCount').addEventListener('input', function() {
             document.getElementById('dataCountValue').textContent = this.value;
@@ -2146,6 +2438,7 @@
         setMutualVisibility(false);
         setDataControlState(false);
         updateGalleryControls();
+        refreshSnapshotList();
     </script>
 </body>
 </html>
