@@ -339,6 +339,10 @@
             display: none;
         }
 
+        .collapsible-panel.is-collapsed {
+            display: none;
+        }
+
         .export-toggle {
             display: inline-flex;
             align-items: center;
@@ -666,8 +670,13 @@
         </div>
 
         <div class="controls-section">
-            <div class="controls-title">保存データ</div>
-            <div class="controls action-controls">
+            <div class="export-toolbar">
+                <div class="export-title">保存データ</div>
+                <button class="action-button small export-toggle" type="button" id="toggleSnapshot" aria-expanded="false">
+                    <span>開く</span>
+                </button>
+            </div>
+            <div class="controls action-controls collapsible-panel is-collapsed" id="snapshotControls">
                 <div class="control-group">
                     <label for="snapshotName">保存名</label>
                     <input type="text" id="snapshotName" placeholder="例: 2024-05-01 分析1">
@@ -692,7 +701,13 @@
         </div>
 
         <div class="pane-section pane-hidden" id="mutualPane">
-            <div class="summary-row">
+            <div class="export-toolbar">
+                <div class="export-title">注目ペア抽出・リスク分散候補</div>
+                <button class="action-button small export-toggle" type="button" id="toggleSummary" aria-expanded="false">
+                    <span>開く</span>
+                </button>
+            </div>
+            <div class="summary-row collapsible-panel is-collapsed" id="summaryGroup">
                 <div class="summary-card">
                     <h3>🔥 注目ペア抽出 (|r| ≥ 0.8)</h3>
                     <ul id="topPairsList"></ul>
@@ -714,17 +729,17 @@
                 <button class="action-button" id="downloadHeatmapPng" disabled>PNG出力</button>
                 <button class="action-button" id="downloadHeatmapSvg" disabled>SVG出力</button>
             </div>
-            <div id="mutualChart" class="chart-panel"></div>
+            <div id="mutualChart" class="chart-panel" role="img" aria-label="通貨ペア相互相関ヒートマップ。複数の通貨ペアの相関関係を表示します。"></div>
         </div>
 
         <div class="pane-section pane-hidden" id="overlayPane">
             <h2 class="pane-title">選択通貨ペアのローソク足 (重ね合わせ)</h2>
-            <div id="overlayChart" class="chart-panel"></div>
+            <div id="overlayChart" class="chart-panel" role="img" aria-label="選択された2つの通貨ペアのローソク足チャートを重ね合わせて表示します。"></div>
         </div>
 
         <div class="pane-section pane-hidden" id="detailPane">
             <h2 class="pane-title">選択通貨ペアの相関ヒートマップ</h2>
-            <div id="detailHeatmap" class="chart-panel"></div>
+            <div id="detailHeatmap" class="chart-panel" role="img" aria-label="選択された通貨ペアの期間別相関係数ヒートマップです。"></div>
         </div>
 
         <div class="pane-section" id="galleryPane">
@@ -743,7 +758,10 @@
     </div>
 
     <script>
-        const currencyPairs = [
+        (function() {
+            'use strict';
+
+            const currencyPairs = [
             'USDJPY', 'EURUSD', 'GBPUSD', 'AUDUSD',
             'USDCHF', 'USDCAD', 'NZDUSD', 'EURJPY',
             'GBPJPY', 'AUDJPY', 'CHFJPY', 'CADJPY',
@@ -777,6 +795,10 @@
         const downloadHeatmapSvgButton = document.getElementById('downloadHeatmapSvg');
         const exportButtons = document.getElementById('exportButtons');
         const toggleExportButton = document.getElementById('toggleExport');
+        const snapshotControls = document.getElementById('snapshotControls');
+        const toggleSnapshotButton = document.getElementById('toggleSnapshot');
+        const summaryGroup = document.getElementById('summaryGroup');
+        const toggleSummaryButton = document.getElementById('toggleSummary');
         const addGalleryItemButton = document.getElementById('addGalleryItem');
         const clearGalleryButton = document.getElementById('clearGallery');
         const galleryList = document.getElementById('galleryList');
@@ -819,6 +841,30 @@
             return map[timeframe] || 60 * 1000;
         }
 
+        function sanitizeText(text) {
+            if (typeof text !== 'string') {
+                return String(text);
+            }
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.textContent;
+        }
+
+        function validateSnapshotName(name) {
+            const maxLength = 100;
+            const sanitized = sanitizeText(name).trim();
+
+            if (sanitized.length === 0) {
+                return null;
+            }
+
+            if (sanitized.length > maxLength) {
+                throw new Error(`保存名は${maxLength}文字以内で入力してください`);
+            }
+
+            return sanitized;
+        }
+
         function formatDateTime(date) {
             if (!(date instanceof Date)) {
                 return 'N/A';
@@ -851,12 +897,21 @@
         }
 
         let snapshotDbInstance = null;
+        let snapshotDbPromise = null;
 
         function openSnapshotDb() {
             if (snapshotDbInstance) {
                 return Promise.resolve(snapshotDbInstance);
             }
-            return new Promise((resolve, reject) => {
+            if (snapshotDbPromise) {
+                return snapshotDbPromise;
+            }
+
+            if (!window.indexedDB) {
+                return Promise.reject(new Error('IndexedDB is not available in this browser'));
+            }
+
+            snapshotDbPromise = new Promise((resolve, reject) => {
                 const request = indexedDB.open(SNAPSHOT_DB_NAME, SNAPSHOT_DB_VERSION);
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
@@ -864,19 +919,29 @@
                         db.createObjectStore(SNAPSHOT_STORE_NAME, { keyPath: 'id' });
                     }
                 };
-                request.onerror = () => reject(request.error);
+                request.onerror = () => {
+                    snapshotDbPromise = null;
+                    reject(request.error);
+                };
                 request.onsuccess = () => {
                     snapshotDbInstance = request.result;
                     snapshotDbInstance.onclose = () => {
                         snapshotDbInstance = null;
+                        snapshotDbPromise = null;
                     };
                     resolve(snapshotDbInstance);
                 };
                 request.onblocked = () => {
                     console.warn('データベースが他のタブでブロックされています');
+                    snapshotDbPromise = null;
                     reject(new Error('Database blocked by another tab'));
                 };
+            }).catch((error) => {
+                snapshotDbPromise = null;
+                throw error;
             });
+
+            return snapshotDbPromise;
         }
 
         function withSnapshotStore(mode, callback) {
@@ -960,7 +1025,14 @@
         }
 
         function buildSnapshotPayload() {
-            const name = snapshotNameInput.value.trim() || `保存データ ${formatDateTime(new Date())}`;
+            let name;
+            try {
+                name = validateSnapshotName(snapshotNameInput.value) || `保存データ ${formatDateTime(new Date())}`;
+            } catch (error) {
+                alert(error.message);
+                throw error;
+            }
+
             const endTime = getSelectedEndDateTime();
             const offset = parseInt(document.getElementById('offset').value);
             const divisions = parseInt(document.getElementById('divisions').value);
@@ -1234,11 +1306,18 @@
             if (x.length !== y.length || x.length === 0) return 0;
 
             const n = x.length;
-            const sumX = x.reduce((a, b) => a + b, 0);
-            const sumY = y.reduce((a, b) => a + b, 0);
-            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
-            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+
+            // 1パスで全ての統計量を計算 (5回のreduceから1回のループへ最適化)
+            for (let i = 0; i < n; i++) {
+                const xi = x[i];
+                const yi = y[i];
+                sumX += xi;
+                sumY += yi;
+                sumXY += xi * yi;
+                sumX2 += xi * xi;
+                sumY2 += yi * yi;
+            }
 
             const numerator = n * sumXY - sumX * sumY;
             const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
@@ -1295,6 +1374,57 @@
             return params.data;
         }
 
+        function createBaseChartOption({ title, tooltip, grid, xAxis, yAxis, visualMap, series }) {
+            return {
+                backgroundColor: '#151932',
+                title: {
+                    text: title,
+                    left: 'center',
+                    textStyle: { color: '#fff', fontWeight: 'bold' }
+                },
+                tooltip: tooltip || { position: 'top' },
+                grid: grid || { left: 90, right: 80, top: 50, bottom: 40 },
+                xAxis: {
+                    type: 'category',
+                    axisLabel: { color: '#fff' },
+                    axisLine: { lineStyle: { color: '#2a3150' } },
+                    ...xAxis
+                },
+                yAxis: yAxis,
+                visualMap: visualMap,
+                series: series
+            };
+        }
+
+        function createHeatmapVisualMap({ right = 6, top = 60, bottom = 30 } = {}) {
+            return {
+                min: -1,
+                max: 1,
+                calculable: true,
+                orient: 'vertical',
+                right,
+                top,
+                bottom,
+                textStyle: { color: '#fff' },
+                inRange: {
+                    color: [
+                        '#0d47a1',
+                        '#1976d2',
+                        '#42a5f5',
+                        '#90caf9',
+                        '#e0e0e0',
+                        '#ffcdd2',
+                        '#ef5350',
+                        '#e53935',
+                        '#b71c1c'
+                    ]
+                },
+                outOfRange: {
+                    color: [HEATMAP_NULL_COLOR]
+                }
+            };
+        }
+
         function buildAlignedSeries(baseSeries, compareSeries, offset) {
             const offsetSeries = applyOffset(compareSeries, offset);
             const baseAdjusted = offset >= 0
@@ -1310,6 +1440,8 @@
 
         function buildMutualHeatmapData(data, offset, minRequiredLength, pairs) {
             const heatmapData = [];
+            const correlationCache = new Map(); // 相関係数キャッシュを追加
+
             pairs.forEach((rowPair, rowIndex) => {
                 const rowCloses = extractCloses(data[rowPair]);
                 pairs.forEach((colPair, colIndex) => {
@@ -1325,16 +1457,20 @@
                     }
                     const correlation = calculateCorrelation(aligned.base, aligned.compare);
                     heatmapData.push([colIndex, rowIndex, correlation]);
+
+                    // キャッシュに保存（updatePairSummariesで再利用）
+                    const key = `${rowPair}:${colPair}`;
+                    correlationCache.set(key, { correlation, minLength: aligned.minLength });
                 });
             });
-            return heatmapData;
+            return { heatmapData, correlationCache };
         }
 
         function buildMutualCorrelationRecords(offset, minRequiredLength, pairs) {
             if (!appState.cachedMarketData) {
                 return [];
             }
-            const heatmapData = buildMutualHeatmapData(appState.cachedMarketData, offset, minRequiredLength, pairs);
+            const { heatmapData } = buildMutualHeatmapData(appState.cachedMarketData, offset, minRequiredLength, pairs);
             return heatmapData.map((entry) => {
                 const value = Array.isArray(entry) ? entry : entry?.value;
                 if (!Array.isArray(value)) {
@@ -1427,11 +1563,7 @@
             });
         }
 
-        function buildOverlayOption({ base, compare, offset, baseCandles, compareCandles }) {
-            const alignedMeta = getAlignedMeta(baseCandles.length, compareCandles.length, offset);
-            if (alignedMeta.minLength === 0) {
-                return { option: null, alignedMeta };
-            }
+        function prepareAlignedCandles(baseCandles, compareCandles, alignedMeta) {
             const baseAligned = baseCandles.slice(
                 alignedMeta.baseStartIndex,
                 alignedMeta.baseStartIndex + alignedMeta.minLength
@@ -1440,9 +1572,54 @@
                 alignedMeta.compareStartIndex,
                 alignedMeta.compareStartIndex + alignedMeta.minLength
             );
-            const candleXAxisData = Array.from({ length: alignedMeta.minLength }, (_, index) => index + 1);
-            const baseSeries = baseAligned.map((candle) => [candle.open, candle.close, candle.low, candle.high]);
-            const compareSeries = compareAligned.map((candle) => [candle.open, candle.close, candle.low, candle.high]);
+            return { baseAligned, compareAligned };
+        }
+
+        function buildCandleXAxisData(minLength) {
+            return Array.from({ length: minLength }, (_, index) => index + 1);
+        }
+
+        function buildCandlestickSeries(candles) {
+            return candles.map((candle) => [candle.open, candle.close, candle.low, candle.high]);
+        }
+
+        function createOverlayTooltipFormatter(baseAligned, compareAligned) {
+            return (params) => {
+                const items = Array.isArray(params) ? params : [params];
+                return items
+                    .filter((item) => item.seriesType === 'candlestick')
+                    .map((item) => {
+                        const isBaseSeries = item.seriesIndex === 0;
+                        const sourceCandles = isBaseSeries ? baseAligned : compareAligned;
+                        const candle = sourceCandles[item.dataIndex];
+                        if (!candle) {
+                            return `<strong>${item.seriesName}</strong><br/>データなし`;
+                        }
+                        const timeText = candle?.time ? formatDateTime(candle.time) : 'N/A';
+                        if (!Array.isArray(item.data) || item.data.some((value) => value === null || value === undefined)) {
+                            return `<strong>${item.seriesName}</strong><br/>${timeText}<br/>データなし`;
+                        }
+                        const values = item.data;
+                        const open = values[0];
+                        const close = values[1];
+                        const low = values[2];
+                        const high = values[3];
+                        return `<strong>${item.seriesName}</strong><br/>${timeText}<br/>始値: ${open.toFixed(5)} 高値: ${high.toFixed(5)}<br/>安値: ${low.toFixed(5)} 終値: ${close.toFixed(5)}`;
+                    })
+                    .join('<br/><br/>');
+            };
+        }
+
+        function buildOverlayOption({ base, compare, offset, baseCandles, compareCandles }) {
+            const alignedMeta = getAlignedMeta(baseCandles.length, compareCandles.length, offset);
+            if (alignedMeta.minLength === 0) {
+                return { option: null, alignedMeta };
+            }
+
+            const { baseAligned, compareAligned } = prepareAlignedCandles(baseCandles, compareCandles, alignedMeta);
+            const candleXAxisData = buildCandleXAxisData(alignedMeta.minLength);
+            const baseSeries = buildCandlestickSeries(baseAligned);
+            const compareSeries = buildCandlestickSeries(compareAligned);
             const baseAxisRange = calculateAxisRange(baseCandles, AXIS_DATA_RATIO);
             const compareAxisRange = calculateAxisRange(compareCandles, AXIS_DATA_RATIO);
 
@@ -1471,30 +1648,7 @@
                             color: '#fff'
                         }
                     },
-                    formatter: (params) => {
-                        const items = Array.isArray(params) ? params : [params];
-                        return items
-                            .filter((item) => item.seriesType === 'candlestick')
-                            .map((item) => {
-                                const isBaseSeries = item.seriesIndex === 0;
-                                const sourceCandles = isBaseSeries ? baseAligned : compareAligned;
-                                const candle = sourceCandles[item.dataIndex];
-                                if (!candle) {
-                                    return `<strong>${item.seriesName}</strong><br/>データなし`;
-                                }
-                                const timeText = candle?.time ? formatDateTime(candle.time) : 'N/A';
-                                if (!Array.isArray(item.data) || item.data.some((value) => value === null || value === undefined)) {
-                                    return `<strong>${item.seriesName}</strong><br/>${timeText}<br/>データなし`;
-                                }
-                                const values = item.data;
-                                const open = values[0];
-                                const close = values[1];
-                                const low = values[2];
-                                const high = values[3];
-                                return `<strong>${item.seriesName}</strong><br/>${timeText}<br/>始値: ${open.toFixed(5)} 高値: ${high.toFixed(5)}<br/>安値: ${low.toFixed(5)} 終値: ${close.toFixed(5)}`;
-                            })
-                            .join('<br/><br/>');
-                    }
+                    formatter: createOverlayTooltipFormatter(baseAligned, compareAligned)
                 },
                 legend: {
                     top: 36,
@@ -1759,7 +1913,7 @@
             updateOverlayMarkers(centerIndex + 1, centerIndex + 1);
         }
 
-        function updatePairSummaries(data, offset, minRequiredLength, pairs) {
+        function updatePairSummaries(data, offset, minRequiredLength, pairs, correlationCache) {
             const topPairs = [];
             const hedgePairs = [];
 
@@ -1767,13 +1921,16 @@
                 for (let j = i + 1; j < pairs.length; j++) {
                     const pairX = pairs[i];
                     const pairY = pairs[j];
-                    const baseCloses = extractCloses(data[pairX]);
-                    const compareCloses = extractCloses(data[pairY]);
-                    const aligned = buildAlignedSeries(baseCloses, compareCloses, offset);
-                    if (aligned.minLength < minRequiredLength) {
+
+                    // キャッシュから相関係数を取得（重複計算を排除）
+                    const key = `${pairY}:${pairX}`;
+                    const cached = correlationCache.get(key);
+
+                    if (!cached || cached.minLength < minRequiredLength) {
                         continue;
                     }
-                    const correlation = calculateCorrelation(aligned.base, aligned.compare);
+
+                    const correlation = cached.correlation;
                     if (correlation >= CORRELATION_THRESHOLD) {
                         topPairs.push({ pairX, pairY, correlation });
                     }
@@ -1860,7 +2017,7 @@
             }
 
             const pairs = getActivePairs();
-            const heatmapData = buildMutualHeatmapData(appState.cachedMarketData, offset, minRequiredLength, pairs);
+            const { heatmapData, correlationCache } = buildMutualHeatmapData(appState.cachedMarketData, offset, minRequiredLength, pairs);
 
             const mutualOption = {
                 backgroundColor: '#151932',
@@ -1959,7 +2116,7 @@
             };
 
             chartMutual.setOption(mutualOption, true);
-            updatePairSummaries(appState.cachedMarketData, offset, minRequiredLength, pairs);
+            updatePairSummaries(appState.cachedMarketData, offset, minRequiredLength, pairs, correlationCache);
 
             if (appState.selectedMutualPair) {
                 highlightMutualPair(appState.selectedMutualPair.compare, appState.selectedMutualPair.base, pairs);
@@ -2033,13 +2190,17 @@
             ].join('\n');
         }
 
-        function toggleExportButtons(forceOpen) {
+        function toggleCollapsiblePanel(panel, toggleButton, forceOpen) {
             const shouldOpen = typeof forceOpen === 'boolean'
                 ? forceOpen
-                : exportButtons.classList.contains('is-collapsed');
-            exportButtons.classList.toggle('is-collapsed', !shouldOpen);
-            toggleExportButton.setAttribute('aria-expanded', String(shouldOpen));
-            toggleExportButton.querySelector('span').textContent = shouldOpen ? '閉じる' : '開く';
+                : panel.classList.contains('is-collapsed');
+            panel.classList.toggle('is-collapsed', !shouldOpen);
+            toggleButton.setAttribute('aria-expanded', String(shouldOpen));
+            toggleButton.querySelector('span').textContent = shouldOpen ? '閉じる' : '開く';
+        }
+
+        function toggleExportButtons(forceOpen) {
+            toggleCollapsiblePanel(exportButtons, toggleExportButton, forceOpen);
         }
 
         function resetCharts() {
@@ -2048,6 +2209,19 @@
             chartDetail.clear();
             document.getElementById('topPairsList').innerHTML = '';
             document.getElementById('hedgePairsList').innerHTML = '';
+        }
+
+        function disposeAllCharts() {
+            if (chartMutual && !chartMutual.isDisposed()) {
+                chartMutual.dispose();
+            }
+            if (chartOverlay && !chartOverlay.isDisposed()) {
+                chartOverlay.dispose();
+            }
+            if (chartDetail && !chartDetail.isDisposed()) {
+                chartDetail.dispose();
+            }
+            clearGalleryItems();
         }
 
         function clearData() {
@@ -2219,38 +2393,53 @@
                 appState.pendingGeneration = true;
                 return;
             }
-            appState.isGeneratingData = true;
-            do {
+
+            while (true) {
+                appState.isGeneratingData = true;
                 appState.pendingGeneration = false;
-                const selectedPairs = getSelectedPairsFromUI();
-                if (selectedPairs.length < 2) {
-                    alert('相関を表示するには通貨ペアを2つ以上選択してください。');
+
+                try {
+                    const selectedPairs = getSelectedPairsFromUI();
+                    if (selectedPairs.length < 2) {
+                        alert('相関を表示するには通貨ペアを2つ以上選択してください。');
+                        appState.isGeneratingData = false;
+                        updateGenerateButtonAvailability();
+                        return;
+                    }
+                    const timeframe = document.getElementById('timeframe').value;
+                    const dataCount = parseInt(document.getElementById('dataCount').value);
+                    const offset = parseInt(document.getElementById('offset').value);
+                    const fetchCount = dataCount + Math.abs(offset);
+                    const endTime = getSelectedEndDateTime();
+                    const endTimeKey = formatSnapshotEndTimeKey(endTime);
+                    const sequence = getNextSnapshotSequence(endTimeKey);
+                    snapshotNameInput.value = `${endTimeKey}_${timeframe}_${dataCount}_${sequence}`;
+                    appState.activePairs = selectedPairs;
+                    appState.cachedMarketData = await generateMarketData(fetchCount, timeframe, endTime, selectedPairs);
+                    appState.cachedTimeframe = timeframe;
+                    appState.cachedDataCount = dataCount;
+                    updateMutualCharts({ offset, minRequiredLength: MIN_REQUIRED_LENGTH });
+                    setMutualVisibility(true);
+                    if (appState.selectedMutualPair) {
+                        setSelectionVisibility(true);
+                        updateOverlayChart();
+                        updateDetailHeatmap();
+                    } else {
+                        setSelectionVisibility(false);
+                    }
+                } catch (error) {
+                    console.error('データ生成に失敗しました:', error);
+                    alert('データ生成に失敗しました。もう一度お試しください。');
                     appState.isGeneratingData = false;
                     updateGenerateButtonAvailability();
                     return;
                 }
-                const timeframe = document.getElementById('timeframe').value;
-                const dataCount = parseInt(document.getElementById('dataCount').value);
-                const offset = parseInt(document.getElementById('offset').value);
-                const fetchCount = dataCount + Math.abs(offset);
-                const endTime = getSelectedEndDateTime();
-                const endTimeKey = formatSnapshotEndTimeKey(endTime);
-                const sequence = getNextSnapshotSequence(endTimeKey);
-                snapshotNameInput.value = `${endTimeKey}_${timeframe}_${dataCount}_${sequence}`;
-                appState.activePairs = selectedPairs;
-                appState.cachedMarketData = await generateMarketData(fetchCount, timeframe, endTime, selectedPairs);
-                appState.cachedTimeframe = timeframe;
-                appState.cachedDataCount = dataCount;
-                updateMutualCharts({ offset, minRequiredLength: MIN_REQUIRED_LENGTH });
-                setMutualVisibility(true);
-                if (appState.selectedMutualPair) {
-                    setSelectionVisibility(true);
-                    updateOverlayChart();
-                    updateDetailHeatmap();
-                } else {
-                    setSelectionVisibility(false);
+
+                if (!appState.pendingGeneration) {
+                    break;
                 }
-            } while (appState.pendingGeneration);
+            }
+
             appState.isGeneratingData = false;
             setDataControlState(true);
         }
@@ -2313,6 +2502,8 @@
             clearGalleryItems();
         });
         toggleExportButton.addEventListener('click', () => toggleExportButtons());
+        toggleSnapshotButton.addEventListener('click', () => toggleCollapsiblePanel(snapshotControls, toggleSnapshotButton));
+        toggleSummaryButton.addEventListener('click', () => toggleCollapsiblePanel(summaryGroup, toggleSummaryButton));
         copyHeatmapCsvButton.addEventListener('click', async () => {
             if (!appState.cachedMarketData) {
                 return;
@@ -2359,7 +2550,7 @@
                 return;
             }
             const snapshot = snapshotCache.find((entry) => entry.id === snapshotList.value);
-            const label = snapshot ? getSnapshotDisplayName(snapshot) : '選択されたデータ';
+            const label = snapshot ? sanitizeText(getSnapshotDisplayName(snapshot)) : '選択されたデータ';
             if (!confirm(`${label} を削除しますか？`)) {
                 return;
             }
@@ -2408,6 +2599,7 @@
         }, RESIZE_DEBOUNCE_MS);
 
         window.addEventListener('resize', handleResize);
+        window.addEventListener('beforeunload', disposeAllCharts);
 
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabPanels = document.querySelectorAll('.tab-panel');
@@ -2432,13 +2624,14 @@
         document.getElementById('dataCountValue').textContent = document.getElementById('dataCount').value;
         document.getElementById('offsetValue').textContent = document.getElementById('offset').value;
         document.getElementById('divisionsValue').textContent = document.getElementById('divisions').value;
-        document.getElementById('endDateTime').value = new Date().toISOString().slice(0, 16);
+        document.getElementById('endDateTime').value = formatDateTimeInputValue(new Date());
         renderPairSelection();
         setSelectionVisibility(false);
         setMutualVisibility(false);
         setDataControlState(false);
         updateGalleryControls();
         refreshSnapshotList();
+        })();
     </script>
 </body>
 </html>
