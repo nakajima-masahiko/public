@@ -23,7 +23,7 @@
 </head>
 <body>
     <div class="container">
-        <svg viewBox="0 0 1200 2000" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 1200 2600" xmlns="http://www.w3.org/2000/svg">
             <!-- 定義セクション -->
             <defs>
                 <!-- グラデーション -->
@@ -63,7 +63,7 @@
             </defs>
 
             <!-- 背景 -->
-            <rect width="1200" height="2000" fill="url(#bgGrad)"/>
+            <rect width="1200" height="2600" fill="url(#bgGrad)"/>
 
             <!-- ヘッダー -->
             <rect x="0" y="0" width="1200" height="100" fill="url(#headerGrad)"/>
@@ -71,41 +71,360 @@
                 🔐 パスキーとAAGUIDの仕組み
             </text>
 
-            <!-- セクション1: パスキーとは -->
-            <g id="section1">
-                <rect x="50" y="130" width="1100" height="180" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+            <!-- 新セクション: パスキーの登録と認証の流れ -->
+            <g id="registration-auth-section">
+                <rect x="50" y="130" width="1100" height="550" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
                     <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze"/>
                 </rect>
                 <text x="600" y="165" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    パスキーの登録と認証の流れ
+                </text>
+
+                <!-- 登録フロー -->
+                <g id="registration-flow">
+                    <text x="120" y="210" font-size="22" font-weight="bold" fill="#8b5cf6">
+                        📝 登録（Registration）
+                    </text>
+
+                    <!-- ステップ1: ユーザー -->
+                    <g transform="translate(120, 230)">
+                        <circle cx="50" cy="30" r="35" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.5s" fill="freeze"/>
+                        </circle>
+                        <text x="50" y="40" font-size="30" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.5s" fill="freeze"/>
+                            👤
+                        </text>
+                        <text x="50" y="75" font-size="14" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.5s" fill="freeze"/>
+                            ユーザー
+                        </text>
+                        <text x="50" y="92" font-size="12" text-anchor="middle" fill="#6b7280">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.5s" fill="freeze"/>
+                            アカウント作成
+                        </text>
+                    </g>
+
+                    <!-- 矢印1 -->
+                    <path d="M 220 260 L 330 260" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="1s" begin="1s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="200;0" dur="1s" begin="1s" fill="freeze"/>
+                    </path>
+                    <text x="275" y="250" font-size="11" fill="#8b5cf6" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="2s" fill="freeze"/>
+                        ①チャレンジ要求
+                    </text>
+
+                    <!-- ステップ2: Webサイト -->
+                    <g transform="translate(330, 230)">
+                        <rect x="0" y="0" width="90" height="65" rx="8" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1s" fill="freeze"/>
+                        </rect>
+                        <text x="45" y="30" font-size="25" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1s" fill="freeze"/>
+                            🌐
+                        </text>
+                        <text x="45" y="52" font-size="12" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1s" fill="freeze"/>
+                            Webサイト
+                        </text>
+                    </g>
+
+                    <!-- 矢印2 -->
+                    <path d="M 375 230 L 375 180 L 505 180" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="1s" begin="2s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="300;0" dur="1s" begin="2s" fill="freeze"/>
+                    </path>
+                    <text x="440" y="172" font-size="11" fill="#8b5cf6" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="3s" fill="freeze"/>
+                        ②チャレンジ送信
+                    </text>
+
+                    <!-- ステップ3: 認証器 -->
+                    <g transform="translate(505, 150)">
+                        <rect x="0" y="0" width="110" height="80" rx="8" fill="#faf5ff" stroke="#8b5cf6" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                        </rect>
+                        <text x="55" y="35" font-size="28" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                            🔐
+                        </text>
+                        <text x="55" y="60" font-size="12" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                            認証器
+                        </text>
+                        <text x="55" y="75" font-size="10" text-anchor="middle" fill="#7c3aed">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                            (デバイス内)
+                        </text>
+                    </g>
+
+                    <!-- 鍵ペア生成 -->
+                    <g transform="translate(645, 150)">
+                        <rect x="0" y="0" width="150" height="80" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="3s" fill="freeze"/>
+                        </rect>
+                        <text x="75" y="20" font-size="11" font-weight="bold" text-anchor="middle" fill="#92400e">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="3s" fill="freeze"/>
+                            ③鍵ペア生成
+                        </text>
+                        <text x="75" y="40" font-size="18" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="3s" fill="freeze"/>
+                            🔑
+                        </text>
+                        <text x="75" y="58" font-size="10" text-anchor="middle" fill="#78350f">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="3s" fill="freeze"/>
+                            公開鍵
+                        </text>
+                        <text x="75" y="73" font-size="10" text-anchor="middle" fill="#78350f">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="3s" fill="freeze"/>
+                            秘密鍵🔒
+                        </text>
+                    </g>
+
+                    <!-- 矢印3 -->
+                    <path d="M 560 230 L 560 310 L 420 310" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="1s" begin="3.5s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="300;0" dur="1s" begin="3.5s" fill="freeze"/>
+                    </path>
+                    <text x="490" y="303" font-size="11" fill="#8b5cf6" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="4.5s" fill="freeze"/>
+                        ④公開鍵を送信
+                    </text>
+
+                    <!-- ステップ4: サーバー -->
+                    <g transform="translate(830, 230)">
+                        <rect x="0" y="0" width="100" height="80" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4.5s" fill="freeze"/>
+                        </rect>
+                        <text x="50" y="30" font-size="28" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4.5s" fill="freeze"/>
+                            💾
+                        </text>
+                        <text x="50" y="55" font-size="12" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4.5s" fill="freeze"/>
+                            サーバー
+                        </text>
+                        <text x="50" y="70" font-size="10" text-anchor="middle" fill="#059669">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4.5s" fill="freeze"/>
+                            公開鍵保存✓
+                        </text>
+                    </g>
+
+                    <!-- 矢印4 -->
+                    <path d="M 420 262 L 830 262" stroke="#10b981" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,500;500,0" dur="1.5s" begin="5s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="500;0" dur="1.5s" begin="5s" fill="freeze"/>
+                    </path>
+                </g>
+
+                <!-- 区切り線 -->
+                <line x1="100" y1="370" x2="1100" y2="370" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="5,5">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="5.5s" fill="freeze"/>
+                </line>
+
+                <!-- 認証フロー -->
+                <g id="authentication-flow">
+                    <text x="120" y="410" font-size="22" font-weight="bold" fill="#10b981">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6s" fill="freeze"/>
+                        🔓 認証（Authentication）
+                    </text>
+
+                    <!-- ステップ1: ユーザー -->
+                    <g transform="translate(120, 430)">
+                        <circle cx="50" cy="30" r="35" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.5s" fill="freeze"/>
+                        </circle>
+                        <text x="50" y="40" font-size="30" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.5s" fill="freeze"/>
+                            👤
+                        </text>
+                        <text x="50" y="75" font-size="14" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.5s" fill="freeze"/>
+                            ユーザー
+                        </text>
+                        <text x="50" y="92" font-size="12" text-anchor="middle" fill="#6b7280">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.5s" fill="freeze"/>
+                            ログイン試行
+                        </text>
+                    </g>
+
+                    <!-- 矢印1 -->
+                    <path d="M 220 460 L 330 460" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="1s" begin="7s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="200;0" dur="1s" begin="7s" fill="freeze"/>
+                    </path>
+                    <text x="275" y="450" font-size="11" fill="#10b981" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="8s" fill="freeze"/>
+                        ①チャレンジ要求
+                    </text>
+
+                    <!-- ステップ2: Webサイト -->
+                    <g transform="translate(330, 430)">
+                        <rect x="0" y="0" width="90" height="65" rx="8" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="7s" fill="freeze"/>
+                        </rect>
+                        <text x="45" y="30" font-size="25" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="7s" fill="freeze"/>
+                            🌐
+                        </text>
+                        <text x="45" y="52" font-size="12" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="7s" fill="freeze"/>
+                            Webサイト
+                        </text>
+                    </g>
+
+                    <!-- 矢印2 -->
+                    <path d="M 375 430 L 375 380 L 505 380" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="1s" begin="8s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="300;0" dur="1s" begin="8s" fill="freeze"/>
+                    </path>
+                    <text x="440" y="372" font-size="11" fill="#10b981" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="9s" fill="freeze"/>
+                        ②チャレンジ送信
+                    </text>
+
+                    <!-- ステップ3: 認証器 -->
+                    <g transform="translate(505, 350)">
+                        <rect x="0" y="0" width="110" height="80" rx="8" fill="#faf5ff" stroke="#8b5cf6" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8s" fill="freeze"/>
+                        </rect>
+                        <text x="55" y="35" font-size="28" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8s" fill="freeze"/>
+                            🔐
+                        </text>
+                        <text x="55" y="60" font-size="12" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8s" fill="freeze"/>
+                            認証器
+                        </text>
+                        <text x="55" y="75" font-size="10" text-anchor="middle" fill="#7c3aed">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8s" fill="freeze"/>
+                            (デバイス内)
+                        </text>
+                    </g>
+
+                    <!-- 署名生成 -->
+                    <g transform="translate(645, 350)">
+                        <rect x="0" y="0" width="150" height="80" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="9s" fill="freeze"/>
+                        </rect>
+                        <text x="75" y="20" font-size="11" font-weight="bold" text-anchor="middle" fill="#92400e">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="9s" fill="freeze"/>
+                            ③秘密鍵で署名
+                        </text>
+                        <text x="75" y="45" font-size="20" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="9s" fill="freeze"/>
+                            🔒✍️
+                        </text>
+                        <text x="75" y="65" font-size="10" text-anchor="middle" fill="#78350f">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="9s" fill="freeze"/>
+                            デジタル署名生成
+                        </text>
+                    </g>
+
+                    <!-- 矢印3 -->
+                    <path d="M 560 430 L 560 510 L 420 510" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="1s" begin="9.5s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="300;0" dur="1s" begin="9.5s" fill="freeze"/>
+                    </path>
+                    <text x="490" y="503" font-size="11" fill="#10b981" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="10.5s" fill="freeze"/>
+                        ④署名を送信
+                    </text>
+
+                    <!-- ステップ4: サーバー -->
+                    <g transform="translate(830, 430)">
+                        <rect x="0" y="0" width="100" height="80" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="10.5s" fill="freeze"/>
+                        </rect>
+                        <text x="50" y="30" font-size="28" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="10.5s" fill="freeze"/>
+                            💾
+                        </text>
+                        <text x="50" y="55" font-size="12" text-anchor="middle" fill="#1f2937">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="10.5s" fill="freeze"/>
+                            サーバー
+                        </text>
+                        <text x="50" y="70" font-size="10" text-anchor="middle" fill="#059669">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="10.5s" fill="freeze"/>
+                            公開鍵で検証
+                        </text>
+                    </g>
+
+                    <!-- 矢印4 -->
+                    <path d="M 420 462 L 830 462" stroke="#10b981" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,500;500,0" dur="1.5s" begin="11s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="500;0" dur="1.5s" begin="11s" fill="freeze"/>
+                    </path>
+
+                    <!-- 認証成功 -->
+                    <g transform="translate(880, 530)">
+                        <circle cx="0" cy="0" r="30" fill="#10b981" opacity="0.2">
+                            <animate attributeName="r" values="0;30" dur="0.5s" begin="12.5s" fill="freeze"/>
+                            <animate attributeName="opacity" values="0;0.2" dur="0.5s" begin="12.5s" fill="freeze"/>
+                        </circle>
+                        <text x="0" y="10" font-size="35" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.3s" begin="12.5s" fill="freeze"/>
+                            ✅
+                        </text>
+                        <text x="0" y="50" font-size="14" font-weight="bold" text-anchor="middle" fill="#047857">
+                            <animate attributeName="opacity" values="0;1" dur="0.3s" begin="12.5s" fill="freeze"/>
+                            認証成功！
+                        </text>
+                    </g>
+                </g>
+
+                <!-- 補足説明 -->
+                <g transform="translate(100, 600)">
+                    <rect x="0" y="0" width="1000" height="60" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="13s" fill="freeze"/>
+                    </rect>
+                    <text x="20" y="25" font-size="14" font-weight="bold" fill="#1e40af">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="13s" fill="freeze"/>
+                        💡 重要ポイント：
+                    </text>
+                    <text x="40" y="45" font-size="13" fill="#1e40af">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="13s" fill="freeze"/>
+                        秘密鍵はデバイス内に保存され、外部に送信されることはありません。公開鍵のみがサーバーに保存されます。
+                    </text>
+                </g>
+            </g>
+
+            <!-- セクション1: パスキーとは -->
+            <g id="section1">
+                <rect x="50" y="730" width="1100" height="180" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="13.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="765" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
                     パスキーとは？
                 </text>
-                <text x="100" y="200" font-size="18" fill="#4b5563">
+                <text x="100" y="800" font-size="18" fill="#4b5563">
                     • パスワード不要の次世代認証方式
                 </text>
-                <text x="100" y="230" font-size="18" fill="#4b5563">
+                <text x="100" y="830" font-size="18" fill="#4b5563">
                     • 公開鍵暗号方式を使用し、フィッシング耐性が高い
                 </text>
-                <text x="100" y="260" font-size="18" fill="#4b5563">
+                <text x="100" y="860" font-size="18" fill="#4b5563">
                     • 秘密鍵はデバイスから外に出ず、安全性が高い
                 </text>
-                <text x="100" y="290" font-size="18" fill="#4b5563">
+                <text x="100" y="890" font-size="18" fill="#4b5563">
                     • 生体認証（顔認証・指紋認証）やPINで簡単にログイン
                 </text>
             </g>
 
             <!-- セクション2: パスキーストアの種類 -->
             <g id="section2">
-                <rect x="50" y="340" width="1100" height="280" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
-                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.5s" fill="freeze"/>
+                <rect x="50" y="940" width="1100" height="280" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="14s" fill="freeze"/>
                 </rect>
-                <text x="600" y="375" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                <text x="600" y="975" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
                     パスキーストア（認証器）の種類
                 </text>
 
                 <!-- iCloud Keychain -->
-                <g transform="translate(100, 400)">
+                <g transform="translate(100, 1000)">
                     <rect x="0" y="0" width="310" height="180" rx="10" fill="url(#passkeyGrad)" opacity="0.1" stroke="#8b5cf6" stroke-width="2">
-                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="1s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="14.5s" fill="freeze"/>
                     </rect>
                     <text x="155" y="35" font-size="40" text-anchor="middle">🍎</text>
                     <text x="155" y="70" font-size="20" font-weight="bold" text-anchor="middle" fill="#1f2937">
@@ -121,9 +440,9 @@
                 </g>
 
                 <!-- Google Password Manager -->
-                <g transform="translate(445, 400)">
+                <g transform="translate(445, 1000)">
                     <rect x="0" y="0" width="310" height="180" rx="10" fill="url(#passkeyGrad)" opacity="0.1" stroke="#8b5cf6" stroke-width="2">
-                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="1.2s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="14.7s" fill="freeze"/>
                     </rect>
                     <text x="155" y="35" font-size="40" text-anchor="middle">🔑</text>
                     <text x="155" y="70" font-size="20" font-weight="bold" text-anchor="middle" fill="#1f2937">
@@ -142,9 +461,9 @@
                 </g>
 
                 <!-- Windows Hello -->
-                <g transform="translate(790, 400)">
+                <g transform="translate(790, 1000)">
                     <rect x="0" y="0" width="310" height="180" rx="10" fill="url(#passkeyGrad)" opacity="0.1" stroke="#8b5cf6" stroke-width="2">
-                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="1.4s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;0.1" dur="0.5s" begin="14.9s" fill="freeze"/>
                     </rect>
                     <text x="155" y="35" font-size="40" text-anchor="middle">🪟</text>
                     <text x="155" y="70" font-size="20" font-weight="bold" text-anchor="middle" fill="#1f2937">
@@ -162,39 +481,39 @@
 
             <!-- セクション3: AAGUIDとは -->
             <g id="section3">
-                <rect x="50" y="650" width="1100" height="200" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
-                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.6s" fill="freeze"/>
+                <rect x="50" y="1250" width="1100" height="200" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="15.1s" fill="freeze"/>
                 </rect>
-                <text x="600" y="685" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                <text x="600" y="1285" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
                     AAGUIDとは？
                 </text>
-                <text x="600" y="720" font-size="20" text-anchor="middle" fill="#f59e0b" font-weight="bold">
+                <text x="600" y="1320" font-size="20" text-anchor="middle" fill="#f59e0b" font-weight="bold">
                     Authenticator Attestation GUID
                 </text>
-                <text x="100" y="755" font-size="18" fill="#4b5563">
+                <text x="100" y="1355" font-size="18" fill="#4b5563">
                     • 認証器の種類を識別する128ビットの一意な識別子（UUID形式）
                 </text>
-                <text x="100" y="785" font-size="18" fill="#4b5563">
+                <text x="100" y="1385" font-size="18" fill="#4b5563">
                     • 同じ製造元・モデルの認証器は同じAAGUIDを持つ
                 </text>
-                <text x="100" y="815" font-size="18" fill="#4b5563">
+                <text x="100" y="1415" font-size="18" fill="#4b5563">
                     • このIDを使って認証器の詳細情報（名前、アイコンなど）を取得できる
                 </text>
             </g>
 
             <!-- セクション4: 認証フローとAAGUID使用の仕組み -->
             <g id="section4">
-                <rect x="50" y="880" width="1100" height="650" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
-                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                <rect x="50" y="1480" width="1100" height="650" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="15.5s" fill="freeze"/>
                 </rect>
-                <text x="600" y="920" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                <text x="600" y="1520" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
                     認証フローとAAGUIDの役割
                 </text>
 
                 <!-- ユーザー -->
-                <g transform="translate(150, 970)">
+                <g transform="translate(150, 1570)">
                     <circle cx="80" cy="50" r="40" fill="#dbeafe" stroke="#0ea5e9" stroke-width="3">
-                        <animate attributeName="r" values="40;45;40" dur="2s" begin="2.5s" repeatCount="indefinite"/>
+                        <animate attributeName="r" values="40;45;40" dur="2s" begin="16s" repeatCount="indefinite"/>
                     </circle>
                     <text x="80" y="60" font-size="35" text-anchor="middle">👤</text>
                     <text x="80" y="110" font-size="18" font-weight="bold" text-anchor="middle" fill="#1f2937">
@@ -203,9 +522,9 @@
                 </g>
 
                 <!-- 認証器/パスキーストア -->
-                <g transform="translate(430, 970)">
+                <g transform="translate(430, 1570)">
                     <rect x="0" y="0" width="180" height="100" rx="10" fill="url(#passkeyGrad)" stroke="#8b5cf6" stroke-width="3">
-                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="2.5s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="16s" repeatCount="indefinite"/>
                     </rect>
                     <text x="90" y="45" font-size="35" text-anchor="middle">🔐</text>
                     <text x="90" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
@@ -217,9 +536,9 @@
                 </g>
 
                 <!-- Webサービス -->
-                <g transform="translate(850, 970)">
+                <g transform="translate(850, 1570)">
                     <rect x="0" y="0" width="180" height="100" rx="10" fill="#dbeafe" stroke="#0ea5e9" stroke-width="3">
-                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="2.5s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="16s" repeatCount="indefinite"/>
                     </rect>
                     <text x="90" y="45" font-size="35" text-anchor="middle">🌐</text>
                     <text x="90" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="#1e3a8a">
@@ -232,55 +551,55 @@
 
                 <!-- ステップ1: 認証リクエスト -->
                 <g>
-                    <path d="M 240 1020 L 420 1020" stroke="#0ea5e9" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
-                        <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" begin="3s" fill="freeze"/>
-                        <animate attributeName="stroke-dashoffset" values="1000;0" dur="1.5s" begin="3s" fill="freeze"/>
+                    <path d="M 240 1620 L 420 1620" stroke="#0ea5e9" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" begin="16.5s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="1000;0" dur="1.5s" begin="16.5s" fill="freeze"/>
                     </path>
-                    <text x="330" y="1010" font-size="14" fill="#0ea5e9" text-anchor="middle">
+                    <text x="330" y="1610" font-size="14" fill="#0ea5e9" text-anchor="middle">
                         ①認証要求
-                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="4.5s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="18s" fill="freeze"/>
                     </text>
                 </g>
 
                 <!-- ステップ2: 署名生成とAAGUID -->
                 <g>
-                    <rect x="350" y="1140" width="340" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
-                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4.5s" fill="freeze"/>
+                    <rect x="350" y="1740" width="340" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="18s" fill="freeze"/>
                     </rect>
-                    <text x="520" y="1170" font-size="16" font-weight="bold" text-anchor="middle" fill="#92400e">
+                    <text x="520" y="1770" font-size="16" font-weight="bold" text-anchor="middle" fill="#92400e">
                         ②認証器が生成する情報
                     </text>
-                    <text x="370" y="1200" font-size="14" fill="#78350f">
+                    <text x="370" y="1800" font-size="14" fill="#78350f">
                         • 秘密鍵で署名データを生成
                     </text>
-                    <text x="370" y="1225" font-size="14" fill="#78350f">
+                    <text x="370" y="1825" font-size="14" fill="#78350f">
                         • AAGUIDを含む認証器データを作成
                     </text>
-                    <text x="520" y="1250" font-size="13" text-anchor="middle" fill="#92400e" font-family="monospace">
+                    <text x="520" y="1850" font-size="13" text-anchor="middle" fill="#92400e" font-family="monospace">
                         AAGUID: adce0002-35bc-c60a-648b-0b25f1f05503
                     </text>
                 </g>
 
                 <!-- ステップ3: サーバーへ送信 -->
                 <g>
-                    <path d="M 620 1020 L 840 1020" stroke="#0ea5e9" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
-                        <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" begin="5s" fill="freeze"/>
-                        <animate attributeName="stroke-dashoffset" values="1000;0" dur="1.5s" begin="5s" fill="freeze"/>
+                    <path d="M 620 1620 L 840 1620" stroke="#0ea5e9" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" begin="18.5s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="1000;0" dur="1.5s" begin="18.5s" fill="freeze"/>
                     </path>
-                    <text x="730" y="1000" font-size="14" fill="#0ea5e9" text-anchor="middle">
+                    <text x="730" y="1600" font-size="14" fill="#0ea5e9" text-anchor="middle">
                         ③署名+AAGUID
-                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="6.5s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="20s" fill="freeze"/>
                     </text>
-                    <text x="730" y="1020" font-size="14" fill="#0ea5e9" text-anchor="middle">
+                    <text x="730" y="1620" font-size="14" fill="#0ea5e9" text-anchor="middle">
                         を送信
-                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="6.5s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="20s" fill="freeze"/>
                     </text>
                 </g>
 
                 <!-- AAGUIDからの名前導出 -->
-                <g transform="translate(750, 1140)">
+                <g transform="translate(750, 1740)">
                     <rect x="0" y="0" width="360" height="180" rx="10" fill="#f0fdf4" stroke="#10b981" stroke-width="2">
-                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.5s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="20s" fill="freeze"/>
                     </rect>
                     <text x="180" y="30" font-size="16" font-weight="bold" text-anchor="middle" fill="#065f46">
                         ④AAGUIDから名前を導出
@@ -305,20 +624,20 @@
 
                 <!-- 検証成功 -->
                 <g>
-                    <path d="M 940 1080 L 940 1130" stroke="#10b981" stroke-width="4" fill="none">
-                        <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="1s" begin="7s" fill="freeze"/>
-                        <animate attributeName="stroke-dashoffset" values="100;0" dur="1s" begin="7s" fill="freeze"/>
+                    <path d="M 940 1680 L 940 1730" stroke="#10b981" stroke-width="4" fill="none">
+                        <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="1s" begin="20.5s" fill="freeze"/>
+                        <animate attributeName="stroke-dashoffset" values="100;0" dur="1s" begin="20.5s" fill="freeze"/>
                     </path>
-                    <circle cx="940" y="1350" r="35" fill="#10b981" opacity="0.2">
-                        <animate attributeName="r" values="0;35" dur="0.5s" begin="8s" fill="freeze"/>
-                        <animate attributeName="opacity" values="0;0.2" dur="0.5s" begin="8s" fill="freeze"/>
+                    <circle cx="940" cy="1950" r="35" fill="#10b981" opacity="0.2">
+                        <animate attributeName="r" values="0;35" dur="0.5s" begin="21.5s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;0.2" dur="0.5s" begin="21.5s" fill="freeze"/>
                     </circle>
-                    <text x="940" y="1363" font-size="40" text-anchor="middle">
-                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="8s" fill="freeze"/>
+                    <text x="940" y="1963" font-size="40" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="21.5s" fill="freeze"/>
                         ✅
                     </text>
-                    <text x="940" y="1405" font-size="16" font-weight="bold" text-anchor="middle" fill="#047857">
-                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="8s" fill="freeze"/>
+                    <text x="940" y="2005" font-size="16" font-weight="bold" text-anchor="middle" fill="#047857">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="21.5s" fill="freeze"/>
                         認証成功！
                     </text>
                 </g>
@@ -326,14 +645,14 @@
 
             <!-- セクション5: AAGUIDのメリット -->
             <g id="section5">
-                <rect x="50" y="1560" width="1100" height="220" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
-                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8.5s" fill="freeze"/>
+                <rect x="50" y="2160" width="1100" height="220" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="22s" fill="freeze"/>
                 </rect>
-                <text x="600" y="1600" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                <text x="600" y="2200" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
                     AAGUIDを使うメリット
                 </text>
 
-                <g transform="translate(100, 1630)">
+                <g transform="translate(100, 2230)">
                     <circle cx="25" cy="-5" r="20" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2"/>
                     <text x="25" y="3" font-size="20" text-anchor="middle">1</text>
                     <text x="60" y="0" font-size="18" fill="#4b5563">
@@ -341,7 +660,7 @@
                     </text>
                 </g>
 
-                <g transform="translate(100, 1680)">
+                <g transform="translate(100, 2280)">
                     <circle cx="25" cy="-5" r="20" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2"/>
                     <text x="25" y="3" font-size="20" text-anchor="middle">2</text>
                     <text x="60" y="0" font-size="18" fill="#4b5563">
@@ -349,7 +668,7 @@
                     </text>
                 </g>
 
-                <g transform="translate(100, 1730)">
+                <g transform="translate(100, 2330)">
                     <circle cx="25" cy="-5" r="20" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2"/>
                     <text x="25" y="3" font-size="20" text-anchor="middle">3</text>
                     <text x="60" y="0" font-size="18" fill="#4b5563">
@@ -360,25 +679,25 @@
 
             <!-- セクション6: 参考情報 -->
             <g id="section6">
-                <rect x="50" y="1810" width="1100" height="150" rx="15" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2">
-                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="9s" fill="freeze"/>
+                <rect x="50" y="2410" width="1100" height="150" rx="15" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="22.5s" fill="freeze"/>
                 </rect>
-                <text x="600" y="1845" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                <text x="600" y="2445" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
                     📚 参考情報
                 </text>
-                <text x="100" y="1880" font-size="16" fill="#4b5563">
+                <text x="100" y="2480" font-size="16" fill="#4b5563">
                     • FIDO Metadata Service (MDS): 認証器のメタデータを提供する公式サービス
                 </text>
-                <text x="100" y="1910" font-size="16" fill="#4b5563">
+                <text x="100" y="2510" font-size="16" fill="#4b5563">
                     • WebAuthn仕様: W3Cが策定したWeb認証の標準規格
                 </text>
-                <text x="100" y="1940" font-size="16" fill="#4b5563">
+                <text x="100" y="2540" font-size="16" fill="#4b5563">
                     • FIDO2: パスワードレス認証を実現する認証規格の総称
                 </text>
             </g>
 
             <!-- フッター -->
-            <text x="600" y="1985" font-size="14" text-anchor="middle" fill="#9ca3af">
+            <text x="600" y="2585" font-size="14" text-anchor="middle" fill="#9ca3af">
                 パスキーで、より安全で便利な認証体験を 🚀
             </text>
         </svg>
