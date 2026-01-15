@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パスキーのブートストラッピングと再認証</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg viewBox="0 0 1200 3400" xmlns="http://www.w3.org/2000/svg">
+            <!-- 定義セクション -->
+            <defs>
+                <!-- グラデーション -->
+                <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#f0f9ff;stop-opacity:1" />
+                </linearGradient>
+
+                <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+                </linearGradient>
+
+                <linearGradient id="bootstrapGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+                </linearGradient>
+
+                <linearGradient id="reauthGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+                </linearGradient>
+
+                <!-- アニメーション用のマーカー -->
+                <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#0ea5e9" />
+                </marker>
+
+                <marker id="arrowheadPurple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#8b5cf6" />
+                </marker>
+
+                <marker id="arrowheadOrange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#f59e0b" />
+                </marker>
+
+                <!-- パルスアニメーション -->
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <!-- 背景 -->
+            <rect width="1200" height="3400" fill="url(#bgGrad)"/>
+
+            <!-- ヘッダー -->
+            <rect x="0" y="0" width="1200" height="100" fill="url(#headerGrad)"/>
+            <text x="600" y="65" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="white" text-anchor="middle">
+                🔐 パスキーのブートストラッピングと再認証
+            </text>
+
+            <!-- セクション1: ブートストラッピングとは -->
+            <g id="bootstrapping-intro">
+                <rect x="50" y="130" width="1100" height="240" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="165" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    📱 ブートストラッピング（Bootstrapping）とは？
+                </text>
+
+                <text x="100" y="210" font-size="20" font-weight="bold" fill="#8b5cf6">
+                    パスワードからパスキーへの移行プロセス
+                </text>
+
+                <text x="100" y="245" font-size="18" fill="#4b5563">
+                    • 従来のパスワードでログイン後、新しいパスキーを設定するプロセス
+                </text>
+                <text x="100" y="275" font-size="18" fill="#4b5563">
+                    • ユーザーが好きなデバイスで自分のパスキーを作成できる（自己プロビジョニング）
+                </text>
+                <text x="100" y="305" font-size="18" fill="#4b5563">
+                    • パスワードが有効な間は、パスキーを紛失しても再作成可能
+                </text>
+                <text x="100" y="335" font-size="18" fill="#4b5563">
+                    • 2026年は大規模なパスワードレス移行の転換点として注目されている
+                </text>
+            </g>
+
+            <!-- セクション2: ブートストラッピングのフロー -->
+            <g id="bootstrapping-flow">
+                <rect x="50" y="400" width="1100" height="700" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="435" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    ブートストラッピングの流れ
+                </text>
+
+                <!-- ステップ1: 従来のログイン -->
+                <g transform="translate(120, 480)">
+                    <rect x="0" y="0" width="200" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1s" fill="freeze"/>
+                    </rect>
+                    <text x="100" y="30" font-size="18" font-weight="bold" text-anchor="middle" fill="#92400e">
+                        ステップ 1
+                    </text>
+                    <text x="100" y="60" font-size="35" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1s" fill="freeze"/>
+                        🔑
+                    </text>
+                    <text x="100" y="90" font-size="16" text-anchor="middle" fill="#78350f">
+                        従来の認証方法
+                    </text>
+                    <text x="100" y="110" font-size="14" text-anchor="middle" fill="#92400e">
+                        ID + パスワード
+                    </text>
+                </g>
+
+                <!-- 矢印1 -->
+                <path d="M 330 540 L 450 540" stroke="#8b5cf6" stroke-width="3" fill="none" marker-end="url(#arrowheadPurple)">
+                    <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="1s" begin="1.5s" fill="freeze"/>
+                    <animate attributeName="stroke-dashoffset" values="200;0" dur="1s" begin="1.5s" fill="freeze"/>
+                </path>
+
+                <!-- ステップ2: ログイン成功 -->
+                <g transform="translate(450, 480)">
+                    <rect x="0" y="0" width="200" height="120" rx="10" fill="#dcfce7" stroke="#10b981" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                    </rect>
+                    <text x="100" y="30" font-size="18" font-weight="bold" text-anchor="middle" fill="#065f46">
+                        ステップ 2
+                    </text>
+                    <text x="100" y="60" font-size="35" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="2s" fill="freeze"/>
+                        ✅
+                    </text>
+                    <text x="100" y="90" font-size="16" text-anchor="middle" fill="#047857">
+                        認証成功
+                    </text>
+                    <text x="100" y="110" font-size="14" text-anchor="middle" fill="#059669">
+                        ログイン完了
+                    </text>
+                </g>
+
+                <!-- 矢印2 -->
+                <path d="M 660 540 L 780 540" stroke="#8b5cf6" stroke-width="3" fill="none" marker-end="url(#arrowheadPurple)">
+                    <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="1s" begin="2.5s" fill="freeze"/>
+                    <animate attributeName="stroke-dashoffset" values="200;0" dur="1s" begin="2.5s" fill="freeze"/>
+                </path>
+
+                <!-- ステップ3: パスキー作成プロンプト -->
+                <g transform="translate(780, 480)">
+                    <rect x="0" y="0" width="200" height="120" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="3s" fill="freeze"/>
+                    </rect>
+                    <text x="100" y="30" font-size="18" font-weight="bold" text-anchor="middle" fill="#3730a3">
+                        ステップ 3
+                    </text>
+                    <text x="100" y="60" font-size="35" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="3s" fill="freeze"/>
+                        💬
+                    </text>
+                    <text x="100" y="85" font-size="14" text-anchor="middle" fill="#4338ca">
+                        「パスキーを
+                    </text>
+                    <text x="100" y="105" font-size="14" text-anchor="middle" fill="#4338ca">
+                        作成しますか?」
+                    </text>
+                </g>
+
+                <!-- 下向き矢印 -->
+                <path d="M 550 610 L 550 680" stroke="#8b5cf6" stroke-width="3" fill="none" marker-end="url(#arrowheadPurple)">
+                    <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="0.8s" begin="3.5s" fill="freeze"/>
+                    <animate attributeName="stroke-dashoffset" values="100;0" dur="0.8s" begin="3.5s" fill="freeze"/>
+                </path>
+
+                <!-- ステップ4: パスキー登録 -->
+                <g transform="translate(350, 680)">
+                    <rect x="0" y="0" width="400" height="180" rx="10" fill="#faf5ff" stroke="#8b5cf6" stroke-width="3">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4s" fill="freeze"/>
+                    </rect>
+                    <text x="200" y="35" font-size="20" font-weight="bold" text-anchor="middle" fill="#6b21a8">
+                        ステップ 4: パスキー登録
+                    </text>
+                    <text x="200" y="70" font-size="40" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="4s" fill="freeze"/>
+                        🔐
+                    </text>
+
+                    <text x="200" y="110" font-size="16" text-anchor="middle" fill="#7c3aed">
+                        • 秘密鍵と公開鍵のペアを生成
+                    </text>
+                    <text x="200" y="135" font-size="16" text-anchor="middle" fill="#7c3aed">
+                        • 秘密鍵はデバイス内に安全に保存
+                    </text>
+                    <text x="200" y="160" font-size="16" text-anchor="middle" fill="#7c3aed">
+                        • 公開鍵のみをサーバーに送信・保存
+                    </text>
+                </g>
+
+                <!-- 下向き矢印 -->
+                <path d="M 550 870 L 550 940" stroke="#8b5cf6" stroke-width="3" fill="none" marker-end="url(#arrowheadPurple)">
+                    <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="0.8s" begin="4.5s" fill="freeze"/>
+                    <animate attributeName="stroke-dashoffset" values="100;0" dur="0.8s" begin="4.5s" fill="freeze"/>
+                </path>
+
+                <!-- ステップ5: 完了 -->
+                <g transform="translate(350, 940)">
+                    <rect x="0" y="0" width="400" height="120" rx="10" fill="#dcfce7" stroke="#10b981" stroke-width="3">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="5s" fill="freeze"/>
+                    </rect>
+                    <circle cx="200" cy="60" r="40" fill="#10b981" opacity="0.2">
+                        <animate attributeName="r" values="0;40" dur="0.5s" begin="5s" fill="freeze"/>
+                        <animate attributeName="opacity" values="0;0.2" dur="0.5s" begin="5s" fill="freeze"/>
+                    </circle>
+                    <text x="200" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#065f46">
+                        ステップ 5: 完了！
+                    </text>
+                    <text x="200" y="73" font-size="45" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="5s" fill="freeze"/>
+                        🎉
+                    </text>
+                    <text x="200" y="105" font-size="16" font-weight="bold" text-anchor="middle" fill="#047857">
+                        次回からパスキーでログイン可能！
+                    </text>
+                </g>
+            </g>
+
+            <!-- セクション3: 再認証とは -->
+            <g id="reauth-intro">
+                <rect x="50" y="1130" width="1100" height="240" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="5.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="1165" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    🔒 再認証（Reauthentication）とは？
+                </text>
+
+                <text x="100" y="1210" font-size="20" font-weight="bold" fill="#f59e0b">
+                    セキュリティが重要な操作前の追加認証
+                </text>
+
+                <text x="100" y="1245" font-size="18" fill="#4b5563">
+                    • すでにログイン中でも、重要な操作の前に再度本人確認を行う
+                </text>
+                <text x="100" y="1275" font-size="18" fill="#4b5563">
+                    • セッション期限切れ時や、機密性の高い操作（決済、住所変更など）の前に実施
+                </text>
+                <text x="100" y="1305" font-size="18" fill="#4b5563">
+                    • パスワード方式: 再度パスワード入力 → パスキー方式: デバイスのロック解除のみ
+                </text>
+                <text x="100" y="1335" font-size="18" fill="#4b5563">
+                    • より簡単で安全な本人確認が可能
+                </text>
+            </g>
+
+            <!-- セクション4: 再認証が必要なシーン -->
+            <g id="reauth-scenarios">
+                <rect x="50" y="1400" width="1100" height="450" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6s" fill="freeze"/>
+                </rect>
+                <text x="600" y="1440" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    再認証が必要な主なシーン
+                </text>
+
+                <!-- シーン1: オンライン決済 -->
+                <g transform="translate(120, 1480)">
+                    <rect x="0" y="0" width="300" height="140" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.5s" fill="freeze"/>
+                    </rect>
+                    <text x="150" y="35" font-size="40" text-anchor="middle">
+                        💳
+                    </text>
+                    <text x="150" y="70" font-size="18" font-weight="bold" text-anchor="middle" fill="#92400e">
+                        オンライン決済
+                    </text>
+                    <text x="150" y="95" font-size="14" text-anchor="middle" fill="#78350f">
+                        購入確定・支払い処理の前に
+                    </text>
+                    <text x="150" y="115" font-size="14" text-anchor="middle" fill="#78350f">
+                        本人確認が必要
+                    </text>
+                </g>
+
+                <!-- シーン2: 個人情報変更 -->
+                <g transform="translate(450, 1480)">
+                    <rect x="0" y="0" width="300" height="140" rx="10" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.7s" fill="freeze"/>
+                    </rect>
+                    <text x="150" y="35" font-size="40" text-anchor="middle">
+                        📝
+                    </text>
+                    <text x="150" y="70" font-size="18" font-weight="bold" text-anchor="middle" fill="#0c4a6e">
+                        個人情報変更
+                    </text>
+                    <text x="150" y="95" font-size="14" text-anchor="middle" fill="#075985">
+                        メールアドレス、住所、
+                    </text>
+                    <text x="150" y="115" font-size="14" text-anchor="middle" fill="#075985">
+                        電話番号などの変更時
+                    </text>
+                </g>
+
+                <!-- シーン3: パスワード変更 -->
+                <g transform="translate(780, 1480)">
+                    <rect x="0" y="0" width="300" height="140" rx="10" fill="#fae8ff" stroke="#c026d3" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="6.9s" fill="freeze"/>
+                    </rect>
+                    <text x="150" y="35" font-size="40" text-anchor="middle">
+                        🔐
+                    </text>
+                    <text x="150" y="70" font-size="18" font-weight="bold" text-anchor="middle" fill="#86198f">
+                        セキュリティ設定変更
+                    </text>
+                    <text x="150" y="95" font-size="14" text-anchor="middle" fill="#a21caf">
+                        パスワード変更、
+                    </text>
+                    <text x="150" y="115" font-size="14" text-anchor="middle" fill="#a21caf">
+                        二要素認証の設定時
+                    </text>
+                </g>
+
+                <!-- シーン4: セッション期限切れ -->
+                <g transform="translate(120, 1650)">
+                    <rect x="0" y="0" width="300" height="140" rx="10" fill="#fee2e2" stroke="#ef4444" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="7.1s" fill="freeze"/>
+                    </rect>
+                    <text x="150" y="35" font-size="40" text-anchor="middle">
+                        ⏱️
+                    </text>
+                    <text x="150" y="70" font-size="18" font-weight="bold" text-anchor="middle" fill="#7f1d1d">
+                        セッション期限切れ
+                    </text>
+                    <text x="150" y="95" font-size="14" text-anchor="middle" fill="#991b1b">
+                        一定時間操作がない場合、
+                    </text>
+                    <text x="150" y="115" font-size="14" text-anchor="middle" fill="#991b1b">
+                        セキュリティのため再認証
+                    </text>
+                </g>
+
+                <!-- シーン5: 機密データアクセス -->
+                <g transform="translate(450, 1650)">
+                    <rect x="0" y="0" width="300" height="140" rx="10" fill="#dcfce7" stroke="#10b981" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="7.3s" fill="freeze"/>
+                    </rect>
+                    <text x="150" y="35" font-size="40" text-anchor="middle">
+                        🗂️
+                    </text>
+                    <text x="150" y="70" font-size="18" font-weight="bold" text-anchor="middle" fill="#065f46">
+                        機密データアクセス
+                    </text>
+                    <text x="150" y="95" font-size="14" text-anchor="middle" fill="#047857">
+                        医療記録、金融情報など
+                    </text>
+                    <text x="150" y="115" font-size="14" text-anchor="middle" fill="#047857">
+                        重要データの閲覧時
+                    </text>
+                </g>
+
+                <!-- シーン6: アカウント削除 -->
+                <g transform="translate(780, 1650)">
+                    <rect x="0" y="0" width="300" height="140" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="7.5s" fill="freeze"/>
+                    </rect>
+                    <text x="150" y="35" font-size="40" text-anchor="middle">
+                        ⚠️
+                    </text>
+                    <text x="150" y="70" font-size="18" font-weight="bold" text-anchor="middle" fill="#92400e">
+                        重要な操作
+                    </text>
+                    <text x="150" y="95" font-size="14" text-anchor="middle" fill="#78350f">
+                        アカウント削除、
+                    </text>
+                    <text x="150" y="115" font-size="14" text-anchor="middle" fill="#78350f">
+                        デバイス登録解除など
+                    </text>
+                </g>
+            </g>
+
+            <!-- セクション5: 再認証フロー比較 -->
+            <g id="reauth-comparison">
+                <rect x="50" y="1880" width="1100" height="620" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8s" fill="freeze"/>
+                </rect>
+                <text x="600" y="1920" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    再認証フローの比較
+                </text>
+
+                <!-- パスワードベースの再認証 -->
+                <g id="password-reauth">
+                    <text x="120" y="1970" font-size="22" font-weight="bold" fill="#ef4444">
+                        ❌ パスワードベースの再認証
+                    </text>
+
+                    <g transform="translate(150, 1990)">
+                        <circle cx="50" cy="30" r="35" fill="#fee2e2" stroke="#ef4444" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8.5s" fill="freeze"/>
+                        </circle>
+                        <text x="50" y="40" font-size="30" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="8.5s" fill="freeze"/>
+                            👤
+                        </text>
+                        <text x="50" y="75" font-size="14" text-anchor="middle" fill="#1f2937">
+                            ユーザー
+                        </text>
+                    </g>
+
+                    <path d="M 255 2020 L 370 2020" stroke="#ef4444" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="1s" begin="9s" fill="freeze"/>
+                    </path>
+                    <text x="312" y="2010" font-size="11" fill="#ef4444" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="10s" fill="freeze"/>
+                        機密操作を実行
+                    </text>
+
+                    <g transform="translate(370, 1990)">
+                        <rect x="0" y="0" width="180" height="65" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="9s" fill="freeze"/>
+                        </rect>
+                        <text x="90" y="25" font-size="25" text-anchor="middle">🔒</text>
+                        <text x="90" y="50" font-size="14" text-anchor="middle" fill="#1f2937">
+                            パスワード要求
+                        </text>
+                    </g>
+
+                    <path d="M 370 2055 L 370 2110 L 255 2110" stroke="#ef4444" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="1s" begin="10s" fill="freeze"/>
+                    </path>
+                    <text x="312" y="2103" font-size="11" fill="#ef4444" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="11s" fill="freeze"/>
+                        パスワード入力画面
+                    </text>
+
+                    <g transform="translate(570, 1990)">
+                        <rect x="0" y="0" width="180" height="90" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="11s" fill="freeze"/>
+                        </rect>
+                        <text x="90" y="25" font-size="14" font-weight="bold" text-anchor="middle" fill="#7f1d1d">
+                            問題点
+                        </text>
+                        <text x="90" y="45" font-size="12" text-anchor="middle" fill="#991b1b">
+                            • パスワード入力が面倒
+                        </text>
+                        <text x="90" y="63" font-size="12" text-anchor="middle" fill="#991b1b">
+                            • パスワード忘れリスク
+                        </text>
+                        <text x="90" y="81" font-size="12" text-anchor="middle" fill="#991b1b">
+                            • フィッシングの危険性
+                        </text>
+                    </g>
+                </g>
+
+                <!-- 区切り線 -->
+                <line x1="100" y1="2150" x2="1100" y2="2150" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="5,5">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="11.5s" fill="freeze"/>
+                </line>
+
+                <!-- パスキーベースの再認証 -->
+                <g id="passkey-reauth">
+                    <text x="120" y="2200" font-size="22" font-weight="bold" fill="#10b981">
+                        <animate attributeName="opacity" values="0;1" dur="0.5s" begin="12s" fill="freeze"/>
+                        ✅ パスキーベースの再認証
+                    </text>
+
+                    <g transform="translate(150, 2220)">
+                        <circle cx="50" cy="30" r="35" fill="#dbeafe" stroke="#0ea5e9" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="12.5s" fill="freeze"/>
+                        </circle>
+                        <text x="50" y="40" font-size="30" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="12.5s" fill="freeze"/>
+                            👤
+                        </text>
+                        <text x="50" y="75" font-size="14" text-anchor="middle" fill="#1f2937">
+                            ユーザー
+                        </text>
+                    </g>
+
+                    <path d="M 255 2250 L 370 2250" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="1s" begin="13s" fill="freeze"/>
+                    </path>
+                    <text x="312" y="2240" font-size="11" fill="#10b981" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="14s" fill="freeze"/>
+                        機密操作を実行
+                    </text>
+
+                    <g transform="translate(370, 2220)">
+                        <rect x="0" y="0" width="180" height="65" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="13s" fill="freeze"/>
+                        </rect>
+                        <text x="90" y="25" font-size="25" text-anchor="middle">🔐</text>
+                        <text x="90" y="50" font-size="14" text-anchor="middle" fill="#1f2937">
+                            デバイス認証要求
+                        </text>
+                    </g>
+
+                    <path d="M 370 2285 L 370 2340 L 255 2340" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+                        <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="1s" begin="14s" fill="freeze"/>
+                    </path>
+                    <text x="312" y="2333" font-size="11" fill="#10b981" text-anchor="middle">
+                        <animate attributeName="opacity" values="0;1" dur="0.3s" begin="15s" fill="freeze"/>
+                        指紋/顔認証/PIN
+                    </text>
+
+                    <g transform="translate(570, 2220)">
+                        <rect x="0" y="0" width="180" height="110" rx="8" fill="#dcfce7" stroke="#10b981" stroke-width="2">
+                            <animate attributeName="opacity" values="0;1" dur="0.5s" begin="15s" fill="freeze"/>
+                        </rect>
+                        <text x="90" y="25" font-size="14" font-weight="bold" text-anchor="middle" fill="#065f46">
+                            メリット
+                        </text>
+                        <text x="90" y="45" font-size="12" text-anchor="middle" fill="#047857">
+                            • デバイスロック解除のみ
+                        </text>
+                        <text x="90" y="63" font-size="12" text-anchor="middle" fill="#047857">
+                            • パスワード不要
+                        </text>
+                        <text x="90" y="81" font-size="12" text-anchor="middle" fill="#047857">
+                            • 素早く簡単
+                        </text>
+                        <text x="90" y="99" font-size="12" text-anchor="middle" fill="#047857">
+                            • フィッシング耐性
+                        </text>
+                    </g>
+
+                    <g transform="translate(380, 2360)">
+                        <circle cx="0" cy="0" r="30" fill="#10b981" opacity="0.2">
+                            <animate attributeName="r" values="0;30" dur="0.5s" begin="15.5s" fill="freeze"/>
+                            <animate attributeName="opacity" values="0;0.2" dur="0.5s" begin="15.5s" fill="freeze"/>
+                        </circle>
+                        <text x="0" y="10" font-size="35" text-anchor="middle">
+                            <animate attributeName="opacity" values="0;1" dur="0.3s" begin="15.5s" fill="freeze"/>
+                            ✅
+                        </text>
+                        <text x="0" y="50" font-size="14" font-weight="bold" text-anchor="middle" fill="#047857">
+                            <animate attributeName="opacity" values="0;1" dur="0.3s" begin="15.5s" fill="freeze"/>
+                            再認証成功！
+                        </text>
+                    </g>
+                </g>
+            </g>
+
+            <!-- セクション6: まとめ -->
+            <g id="summary">
+                <rect x="50" y="2530" width="1100" height="380" rx="15" fill="white" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="16s" fill="freeze"/>
+                </rect>
+                <text x="600" y="2570" font-size="28" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    💡 重要ポイントのまとめ
+                </text>
+
+                <!-- ブートストラッピング -->
+                <g transform="translate(100, 2610)">
+                    <rect x="0" y="0" width="480" height="250" rx="10" fill="#faf5ff" stroke="#8b5cf6" stroke-width="2"/>
+                    <text x="240" y="35" font-size="20" font-weight="bold" text-anchor="middle" fill="#6b21a8">
+                        🚀 ブートストラッピング
+                    </text>
+                    <text x="30" y="70" font-size="16" fill="#4b5563">
+                        <tspan font-weight="bold" fill="#8b5cf6">目的：</tspan>
+                    </text>
+                    <text x="30" y="92" font-size="14" fill="#4b5563">
+                        パスワード認証からパスキー認証への移行
+                    </text>
+
+                    <text x="30" y="125" font-size="16" fill="#4b5563">
+                        <tspan font-weight="bold" fill="#8b5cf6">プロセス：</tspan>
+                    </text>
+                    <text x="30" y="147" font-size="14" fill="#4b5563">
+                        1. パスワードでログイン
+                    </text>
+                    <text x="30" y="167" font-size="14" fill="#4b5563">
+                        2. ログイン成功後にパスキー作成を促す
+                    </text>
+                    <text x="30" y="187" font-size="14" fill="#4b5563">
+                        3. ユーザーがパスキーを登録
+                    </text>
+                    <text x="30" y="207" font-size="14" fill="#4b5563">
+                        4. 次回からパスキーでログイン可能
+                    </text>
+
+                    <text x="30" y="235" font-size="13" font-style="italic" fill="#7c3aed">
+                        2026年は大規模移行の転換点！
+                    </text>
+                </g>
+
+                <!-- 再認証 -->
+                <g transform="translate(620, 2610)">
+                    <rect x="0" y="0" width="480" height="250" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+                    <text x="240" y="35" font-size="20" font-weight="bold" text-anchor="middle" fill="#92400e">
+                        🔒 再認証
+                    </text>
+                    <text x="30" y="70" font-size="16" fill="#4b5563">
+                        <tspan font-weight="bold" fill="#f59e0b">目的：</tspan>
+                    </text>
+                    <text x="30" y="92" font-size="14" fill="#4b5563">
+                        重要な操作前の本人確認強化
+                    </text>
+
+                    <text x="30" y="125" font-size="16" fill="#4b5563">
+                        <tspan font-weight="bold" fill="#f59e0b">利用シーン：</tspan>
+                    </text>
+                    <text x="30" y="147" font-size="14" fill="#4b5563">
+                        • オンライン決済
+                    </text>
+                    <text x="30" y="167" font-size="14" fill="#4b5563">
+                        • 個人情報の変更
+                    </text>
+                    <text x="30" y="187" font-size="14" fill="#4b5563">
+                        • セキュリティ設定の変更
+                    </text>
+                    <text x="30" y="207" font-size="14" fill="#4b5563">
+                        • セッション期限切れ後
+                    </text>
+
+                    <text x="30" y="235" font-size="13" font-style="italic" fill="#92400e">
+                        パスキーなら簡単・安全に再認証！
+                    </text>
+                </g>
+            </g>
+
+            <!-- セクション7: 参考情報 -->
+            <g id="references">
+                <rect x="50" y="2940" width="1100" height="170" rx="15" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2">
+                    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="16.5s" fill="freeze"/>
+                </rect>
+                <text x="600" y="2980" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+                    📚 参考情報
+                </text>
+                <text x="100" y="3015" font-size="16" fill="#4b5563">
+                    • パスキーは2026年に大規模普及の転換点を迎えると予測されています
+                </text>
+                <text x="100" y="3045" font-size="16" fill="#4b5563">
+                    • ブートストラッピングにより、既存ユーザーもスムーズにパスキー移行が可能
+                </text>
+                <text x="100" y="3075" font-size="16" fill="#4b5563">
+                    • 再認証でパスキーを使えば、セキュリティを保ちつつUXを大幅改善
+                </text>
+            </g>
+
+            <!-- フッター -->
+            <text x="600" y="3150" font-size="18" font-weight="bold" text-anchor="middle" fill="#0ea5e9">
+                パスキーで、より安全で快適な認証体験を実現しましょう 🚀
+            </text>
+
+            <text x="600" y="3200" font-size="14" text-anchor="middle" fill="#9ca3af">
+                ブートストラッピング + 再認証 = 最強のセキュリティ体験
+            </text>
+        </svg>
+    </div>
+</body>
+</html>
