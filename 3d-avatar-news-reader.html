@@ -489,6 +489,7 @@
             <button class="control-btn" id="btn-play" title="再生">▶</button>
             <button class="control-btn" id="btn-pause" title="一時停止" disabled>⏸</button>
             <button class="control-btn" id="btn-stop" title="停止" disabled>⏹</button>
+            <button class="control-btn" id="btn-dance" title="ダンス" disabled>💃</button>
             <span class="status" id="status">待機中</span>
             <div class="emotion-indicator" id="emotion-indicator" style="display: none;">
                 <span class="emotion-icon" id="emotion-icon">😊</span>
@@ -608,6 +609,13 @@
         let mixer = null;
         let blinkTimer = 0;
         let mouthOpenValue = 0;
+        let isDancing = false;
+        let danceStartTime = 0;
+        let danceBaseRotations = null;
+        let danceBasePositionY = 0;
+        let danceStopTimer = null;
+        let danceAudioContext = null;
+        let danceAudioNodes = [];
 
         // Text highlight sync state
         let sentences = [];
@@ -691,6 +699,7 @@
                 startupAnimationTime = 0;
 
                 console.log('VRM loaded successfully - starting intro animation');
+                document.getElementById('btn-dance').disabled = false;
             },
             (progress) => {
                 const percent = Math.round((progress.loaded / progress.total) * 100);
@@ -738,13 +747,17 @@
                 // Update emotion smoothly
                 updateEmotionSmooth(deltaTime);
 
-                // Idle animation - subtle head movement
-                const time = clock.elapsedTime;
-                if (currentVrm.humanoid) {
-                    const head = currentVrm.humanoid.getNormalizedBoneNode('head');
-                    if (head) {
-                        head.rotation.y = Math.sin(time * 0.5) * 0.05;
-                        head.rotation.x = Math.sin(time * 0.3) * 0.02;
+                if (isDancing) {
+                    updateDanceAnimation();
+                } else {
+                    // Idle animation - subtle head movement
+                    const time = clock.elapsedTime;
+                    if (currentVrm.humanoid) {
+                        const head = currentVrm.humanoid.getNormalizedBoneNode('head');
+                        if (head) {
+                            head.rotation.y = Math.sin(time * 0.5) * 0.05;
+                            head.rotation.x = Math.sin(time * 0.3) * 0.02;
+                        }
                     }
                 }
             }
@@ -782,6 +795,198 @@
             // Try different expression names for mouth
             currentVrm.expressionManager.setValue('aa', value);
             currentVrm.expressionManager.setValue('oh', value * 0.3);
+        }
+
+        function startDance() {
+            if (!currentVrm || isDancing || startupAnimationActive) return;
+            isDancing = true;
+            danceStartTime = clock.elapsedTime;
+            cacheDanceBasePose();
+            playDanceBgm(5);
+            const danceButton = document.getElementById('btn-dance');
+            if (danceButton) {
+                danceButton.disabled = true;
+            }
+
+            if (danceStopTimer) {
+                clearTimeout(danceStopTimer);
+            }
+            danceStopTimer = setTimeout(() => {
+                stopDance();
+            }, 5000);
+        }
+
+        function stopDance() {
+            if (!isDancing) return;
+            isDancing = false;
+            resetDancePose();
+            stopDanceBgm();
+            const danceButton = document.getElementById('btn-dance');
+            if (danceButton) {
+                danceButton.disabled = false;
+            }
+            if (danceStopTimer) {
+                clearTimeout(danceStopTimer);
+                danceStopTimer = null;
+            }
+        }
+
+        function cacheDanceBasePose() {
+            if (!currentVrm || !currentVrm.humanoid) return;
+            const getRotation = (boneName) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (!bone) return null;
+                return { x: bone.rotation.x, y: bone.rotation.y, z: bone.rotation.z };
+            };
+            danceBasePositionY = currentVrm.scene.position.y;
+            danceBaseRotations = {
+                hips: getRotation('hips'),
+                spine: getRotation('spine'),
+                chest: getRotation('chest'),
+                upperArmL: getRotation('leftUpperArm'),
+                upperArmR: getRotation('rightUpperArm'),
+                lowerArmL: getRotation('leftLowerArm'),
+                lowerArmR: getRotation('rightLowerArm')
+            };
+        }
+
+        function resetDancePose() {
+            if (!currentVrm || !currentVrm.humanoid || !danceBaseRotations) return;
+            const restoreRotation = (boneName, rotation) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (bone && rotation) {
+                    bone.rotation.set(rotation.x, rotation.y, rotation.z);
+                }
+            };
+            currentVrm.scene.position.y = danceBasePositionY;
+            restoreRotation('hips', danceBaseRotations.hips);
+            restoreRotation('spine', danceBaseRotations.spine);
+            restoreRotation('chest', danceBaseRotations.chest);
+            restoreRotation('leftUpperArm', danceBaseRotations.upperArmL);
+            restoreRotation('rightUpperArm', danceBaseRotations.upperArmR);
+            restoreRotation('leftLowerArm', danceBaseRotations.lowerArmL);
+            restoreRotation('rightLowerArm', danceBaseRotations.lowerArmR);
+        }
+
+        function updateDanceAnimation() {
+            if (!currentVrm || !currentVrm.humanoid || !danceBaseRotations) return;
+            const danceTime = clock.elapsedTime - danceStartTime;
+            const sway = Math.sin(danceTime * 6) * 0.25;
+            const bounce = Math.abs(Math.sin(danceTime * 6)) * 0.08;
+            const armSwing = Math.sin(danceTime * 8) * 0.8;
+            const armLift = Math.cos(danceTime * 6) * 0.3;
+
+            currentVrm.scene.position.y = danceBasePositionY + bounce;
+
+            const hips = currentVrm.humanoid.getNormalizedBoneNode('hips');
+            const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
+            const chest = currentVrm.humanoid.getNormalizedBoneNode('chest');
+            const leftUpperArm = currentVrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+            const rightUpperArm = currentVrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+            const leftLowerArm = currentVrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+            const rightLowerArm = currentVrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+
+            if (hips && danceBaseRotations.hips) {
+                hips.rotation.y = danceBaseRotations.hips.y + sway * 0.6;
+                hips.rotation.x = danceBaseRotations.hips.x + Math.sin(danceTime * 4) * 0.12;
+            }
+
+            if (spine && danceBaseRotations.spine) {
+                spine.rotation.y = danceBaseRotations.spine.y + sway * 0.5;
+                spine.rotation.x = danceBaseRotations.spine.x + Math.sin(danceTime * 5) * 0.08;
+            }
+
+            if (chest && danceBaseRotations.chest) {
+                chest.rotation.y = danceBaseRotations.chest.y + sway * 0.4;
+                chest.rotation.x = danceBaseRotations.chest.x + Math.cos(danceTime * 4) * 0.06;
+            }
+
+            if (leftUpperArm && danceBaseRotations.upperArmL) {
+                leftUpperArm.rotation.z = danceBaseRotations.upperArmL.z + armSwing;
+                leftUpperArm.rotation.x = danceBaseRotations.upperArmL.x + armLift;
+            }
+
+            if (rightUpperArm && danceBaseRotations.upperArmR) {
+                rightUpperArm.rotation.z = danceBaseRotations.upperArmR.z - armSwing;
+                rightUpperArm.rotation.x = danceBaseRotations.upperArmR.x + armLift;
+            }
+
+            if (leftLowerArm && danceBaseRotations.lowerArmL) {
+                leftLowerArm.rotation.x = danceBaseRotations.lowerArmL.x + Math.sin(danceTime * 10) * 0.4;
+            }
+
+            if (rightLowerArm && danceBaseRotations.lowerArmR) {
+                rightLowerArm.rotation.x = danceBaseRotations.lowerArmR.x + Math.cos(danceTime * 10) * 0.4;
+            }
+        }
+
+        function playDanceBgm(durationSeconds) {
+            stopDanceBgm();
+            const AudioContextRef = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextRef) return;
+
+            danceAudioContext = new AudioContextRef();
+            const ctx = danceAudioContext;
+            const masterGain = ctx.createGain();
+            masterGain.gain.value = 0.08;
+            masterGain.connect(ctx.destination);
+
+            const bass = ctx.createOscillator();
+            bass.type = 'sawtooth';
+            bass.frequency.value = 120;
+            const bassGain = ctx.createGain();
+            bassGain.gain.value = 0.001;
+            bass.connect(bassGain);
+            bassGain.connect(masterGain);
+
+            const lead = ctx.createOscillator();
+            lead.type = 'square';
+            lead.frequency.value = 480;
+            const leadGain = ctx.createGain();
+            leadGain.gain.value = 0.001;
+            lead.connect(leadGain);
+            leadGain.connect(masterGain);
+
+            danceAudioNodes = [bass, bassGain, lead, leadGain, masterGain];
+
+            const bpm = 120;
+            const beatDuration = 60 / bpm;
+            const startTime = ctx.currentTime;
+            for (let t = 0; t < durationSeconds; t += beatDuration) {
+                const beatTime = startTime + t;
+                bassGain.gain.setValueAtTime(0.001, beatTime);
+                bassGain.gain.exponentialRampToValueAtTime(0.14, beatTime + 0.02);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, beatTime + 0.2);
+
+                const offbeatTime = beatTime + beatDuration * 0.5;
+                leadGain.gain.setValueAtTime(0.001, offbeatTime);
+                leadGain.gain.exponentialRampToValueAtTime(0.1, offbeatTime + 0.02);
+                leadGain.gain.exponentialRampToValueAtTime(0.001, offbeatTime + 0.18);
+            }
+
+            bass.start();
+            lead.start();
+            bass.stop(startTime + durationSeconds);
+            lead.stop(startTime + durationSeconds);
+        }
+
+        function stopDanceBgm() {
+            if (danceAudioNodes.length > 0) {
+                danceAudioNodes.forEach((node) => {
+                    if (node.stop) {
+                        try {
+                            node.stop();
+                        } catch (error) {
+                            console.warn('Audio node stop failed', error);
+                        }
+                    }
+                });
+                danceAudioNodes = [];
+            }
+            if (danceAudioContext) {
+                danceAudioContext.close();
+                danceAudioContext = null;
+            }
         }
 
         // Emotion system functions
@@ -1322,6 +1527,7 @@
 
         document.getElementById('btn-pause').addEventListener('click', pauseSpeech);
         document.getElementById('btn-stop').addEventListener('click', stopSpeech);
+        document.getElementById('btn-dance').addEventListener('click', startDance);
 
         document.getElementById('speed-slider').addEventListener('input', (e) => {
             const value = parseFloat(e.target.value).toFixed(1);
