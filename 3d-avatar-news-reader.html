@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -455,6 +454,12 @@
         let blinkTimer = 0;
         let mouthOpenValue = 0;
 
+        // Startup animation state
+        let startupAnimationActive = false;
+        let startupAnimationTime = 0;
+        let startupAnimationDuration = 1.5; // 1.5 seconds for the animation
+        let initialY = 0; // Initial Y position of the model
+
         // Three.js setup
         const container = document.getElementById('avatar-container');
         const scene = new THREE.Scene();
@@ -503,15 +508,22 @@
                 const vrm = gltf.userData.vrm;
                 currentVrm = vrm;
 
-                // Rotate model to face camera
-                vrm.scene.rotation.y = Math.PI;
+                // Start with avatar facing away from camera (back view)
+                vrm.scene.rotation.y = 0;
+
+                // Store initial Y position for jump animation
+                initialY = vrm.scene.position.y;
 
                 scene.add(vrm.scene);
 
                 // Hide loading overlay
                 document.getElementById('loading-overlay').style.display = 'none';
 
-                console.log('VRM loaded successfully');
+                // Start the startup animation
+                startupAnimationActive = true;
+                startupAnimationTime = 0;
+
+                console.log('VRM loaded successfully - starting intro animation');
             },
             (progress) => {
                 const percent = Math.round((progress.loaded / progress.total) * 100);
@@ -533,11 +545,18 @@
                 // Update VRM
                 currentVrm.update(deltaTime);
 
-                // Blink animation
-                blinkTimer += deltaTime;
-                if (blinkTimer > 3 + Math.random() * 2) {
-                    blink();
-                    blinkTimer = 0;
+                // Startup animation: jump and half-rotate to face front, then smile
+                if (startupAnimationActive) {
+                    updateStartupAnimation(deltaTime);
+                }
+
+                // Blink animation (skip during startup animation)
+                if (!startupAnimationActive) {
+                    blinkTimer += deltaTime;
+                    if (blinkTimer > 3 + Math.random() * 2) {
+                        blink();
+                        blinkTimer = 0;
+                    }
                 }
 
                 // Lip sync when speaking
@@ -593,6 +612,85 @@
             // Try different expression names for mouth
             currentVrm.expressionManager.setValue('aa', value);
             currentVrm.expressionManager.setValue('oh', value * 0.3);
+        }
+
+        // Startup animation: jump + half rotation + smile
+        function updateStartupAnimation(deltaTime) {
+            startupAnimationTime += deltaTime;
+            const progress = Math.min(startupAnimationTime / startupAnimationDuration, 1);
+
+            // Easing function for smooth animation
+            const easeOutBack = (t) => {
+                const c1 = 1.70158;
+                const c3 = c1 + 1;
+                return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+            };
+
+            const easeOutBounce = (t) => {
+                const n1 = 7.5625;
+                const d1 = 2.75;
+                if (t < 1 / d1) {
+                    return n1 * t * t;
+                } else if (t < 2 / d1) {
+                    return n1 * (t -= 1.5 / d1) * t + 0.75;
+                } else if (t < 2.5 / d1) {
+                    return n1 * (t -= 2.25 / d1) * t + 0.9375;
+                } else {
+                    return n1 * (t -= 2.625 / d1) * t + 0.984375;
+                }
+            };
+
+            // Jump animation (parabolic curve)
+            const jumpHeight = 0.4;
+            const jumpProgress = Math.sin(progress * Math.PI); // Parabolic jump
+            currentVrm.scene.position.y = initialY + jumpProgress * jumpHeight;
+
+            // Half rotation (0 to PI) - facing back to facing front
+            const rotationProgress = easeOutBack(progress);
+            currentVrm.scene.rotation.y = Math.PI * rotationProgress;
+
+            // Gradually build smile near the end of animation
+            if (progress > 0.6 && currentVrm.expressionManager) {
+                const smileProgress = (progress - 0.6) / 0.4; // 0 to 1 in last 40%
+                const smileValue = easeOutBounce(smileProgress) * 0.8;
+                currentVrm.expressionManager.setValue('happy', smileValue);
+            }
+
+            // Animation complete
+            if (progress >= 1) {
+                startupAnimationActive = false;
+                currentVrm.scene.position.y = initialY;
+                currentVrm.scene.rotation.y = Math.PI;
+
+                // Set final smile
+                if (currentVrm.expressionManager) {
+                    currentVrm.expressionManager.setValue('happy', 0.8);
+                }
+
+                console.log('Startup animation complete');
+
+                // Gradually fade out smile after 2 seconds
+                setTimeout(() => {
+                    fadeOutSmile();
+                }, 2000);
+            }
+        }
+
+        // Fade out smile gradually
+        function fadeOutSmile() {
+            if (!currentVrm || !currentVrm.expressionManager) return;
+
+            let smileValue = 0.8;
+            const fadeInterval = setInterval(() => {
+                smileValue -= 0.05;
+                if (smileValue <= 0) {
+                    smileValue = 0;
+                    clearInterval(fadeInterval);
+                }
+                if (currentVrm && currentVrm.expressionManager) {
+                    currentVrm.expressionManager.setValue('happy', smileValue);
+                }
+            }, 50);
         }
 
         animate();
