@@ -295,6 +295,45 @@
             box-shadow: none;
         }
 
+        .voice-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .voice-control label {
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .voice-control select {
+            background: rgba(0, 0, 0, 0.3);
+            color: #e4e4e4;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            min-width: 150px;
+            max-width: 200px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voice-control select:hover {
+            border-color: rgba(0, 212, 255, 0.6);
+        }
+
+        .voice-control select:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .voice-control select option {
+            background: #1a1a2e;
+            color: #e4e4e4;
+        }
+
         .speed-control {
             display: flex;
             align-items: center;
@@ -367,6 +406,16 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .voice-control {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .voice-control select {
+                max-width: none;
+                flex: 1;
+            }
         }
     </style>
 </head>
@@ -408,6 +457,12 @@
             <div class="emotion-indicator" id="emotion-indicator" style="display: none;">
                 <span class="emotion-icon" id="emotion-icon">😊</span>
                 <span id="emotion-text">ポジティブ</span>
+            </div>
+            <div class="voice-control">
+                <label>音声:</label>
+                <select id="voice-selector">
+                    <option value="">読み込み中...</option>
+                </select>
             </div>
             <div class="speed-control">
                 <label>速度:</label>
@@ -1053,11 +1108,9 @@
             currentUtterance.lang = 'ja-JP';
             currentUtterance.rate = parseFloat(document.getElementById('speed-slider').value);
 
-            // Try to find Japanese voice
-            const voices = speechSynthesis.getVoices();
-            const japaneseVoice = voices.find(voice => voice.lang.includes('ja'));
-            if (japaneseVoice) {
-                currentUtterance.voice = japaneseVoice;
+            // Use selected voice from dropdown
+            if (selectedVoice) {
+                currentUtterance.voice = selectedVoice;
             }
 
             currentUtterance.onstart = () => {
@@ -1203,10 +1256,67 @@
             }
         });
 
+        // Voice selector state
+        let selectedVoice = null;
+        let availableVoices = [];
+
+        // Populate voice selector with Japanese voices
+        function populateVoiceSelector() {
+            const voiceSelector = document.getElementById('voice-selector');
+            const voices = speechSynthesis.getVoices();
+
+            // Filter Japanese voices
+            availableVoices = voices.filter(voice => voice.lang.includes('ja'));
+
+            // Clear existing options
+            voiceSelector.innerHTML = '';
+
+            if (availableVoices.length === 0) {
+                // No Japanese voices found, show all voices
+                availableVoices = voices;
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '日本語音声が見つかりません';
+                voiceSelector.appendChild(defaultOption);
+            }
+
+            // Add Japanese voices to selector
+            availableVoices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                // Display voice name and type (local/remote)
+                const voiceType = voice.localService ? 'ローカル' : 'オンライン';
+                option.textContent = `${voice.name} (${voiceType})`;
+                voiceSelector.appendChild(option);
+            });
+
+            // Select first voice by default
+            if (availableVoices.length > 0) {
+                selectedVoice = availableVoices[0];
+                voiceSelector.value = '0';
+            }
+
+            console.log('Japanese voices loaded:', availableVoices.length);
+        }
+
+        // Voice selector change handler
+        document.getElementById('voice-selector').addEventListener('change', (e) => {
+            const index = parseInt(e.target.value);
+            if (!isNaN(index) && availableVoices[index]) {
+                selectedVoice = availableVoices[index];
+                console.log('Voice selected:', selectedVoice.name);
+            }
+        });
+
         // Load voices when available
         speechSynthesis.onvoiceschanged = () => {
-            console.log('Voices loaded:', speechSynthesis.getVoices().length);
+            populateVoiceSelector();
         };
+
+        // Try to load voices immediately (some browsers have them ready)
+        if (speechSynthesis.getVoices().length > 0) {
+            populateVoiceSelector();
+        }
 
         // Initialize
         renderNewsList();
