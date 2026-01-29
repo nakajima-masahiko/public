@@ -16,6 +16,26 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             color: #e4e4e4;
+            transition: background 0.6s ease;
+        }
+
+        body.emotion-positive {
+            background: radial-gradient(circle at top, rgba(0, 212, 255, 0.25), transparent 55%),
+                linear-gradient(135deg, #1a2a3a 0%, #12324d 50%, #0b4b6b 100%);
+        }
+
+        body.emotion-negative {
+            background: radial-gradient(circle at top, rgba(40, 80, 120, 0.3), transparent 55%),
+                linear-gradient(135deg, #151728 0%, #111b2b 50%, #0a243a 100%);
+        }
+
+        body.emotion-surprised {
+            background: radial-gradient(circle at top, rgba(255, 215, 0, 0.25), transparent 55%),
+                linear-gradient(135deg, #1a1a2e 0%, #2a1f3e 45%, #142a4f 100%);
+        }
+
+        body.emotion-neutral {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
         }
 
         header {
@@ -54,6 +74,22 @@
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             position: relative;
+            transition: box-shadow 0.6s ease, border 0.6s ease;
+        }
+
+        body.emotion-positive #avatar-container {
+            box-shadow: 0 12px 40px rgba(0, 212, 255, 0.4);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        body.emotion-negative #avatar-container {
+            box-shadow: 0 12px 40px rgba(20, 40, 60, 0.6);
+            border: 1px solid rgba(90, 120, 160, 0.2);
+        }
+
+        body.emotion-surprised #avatar-container {
+            box-shadow: 0 12px 40px rgba(255, 215, 0, 0.35);
+            border: 1px solid rgba(255, 215, 0, 0.3);
         }
 
         #avatar-container canvas {
@@ -566,6 +602,8 @@
         let isPaused = false;
         let speechSynthesis = window.speechSynthesis;
         let currentUtterance = null;
+        let introUtterance = null;
+        let outroUtterance = null;
         let clock = new THREE.Clock();
         let mixer = null;
         let blinkTimer = 0;
@@ -581,6 +619,7 @@
         let currentEmotion = 'neutral';
         let targetEmotionValues = { happy: 0, sad: 0, angry: 0, surprised: 0 };
         let currentEmotionValues = { happy: 0, sad: 0, angry: 0, surprised: 0 };
+        let pausedEmotionBackup = null;
 
         // Startup animation state
         let startupAnimationActive = false;
@@ -772,6 +811,12 @@
 
             // Update emotion indicator UI
             updateEmotionIndicator(emotion);
+            applyEmotionTheme(emotion);
+        }
+
+        function applyEmotionTheme(emotion) {
+            document.body.classList.remove('emotion-positive', 'emotion-negative', 'emotion-surprised', 'emotion-neutral');
+            document.body.classList.add(`emotion-${emotion}`);
         }
 
         function updateEmotionIndicator(emotion) {
@@ -1104,14 +1149,34 @@
             currentSentenceIndex = 0;
             charIndex = 0;
 
+            const rate = parseFloat(document.getElementById('speed-slider').value);
+
+            introUtterance = new SpeechSynthesisUtterance('本日の注目ニュースをお伝えします。');
+            introUtterance.lang = 'ja-JP';
+            introUtterance.rate = rate;
+
             currentUtterance = new SpeechSynthesisUtterance(text);
             currentUtterance.lang = 'ja-JP';
-            currentUtterance.rate = parseFloat(document.getElementById('speed-slider').value);
+            currentUtterance.rate = rate;
+
+            outroUtterance = new SpeechSynthesisUtterance('以上、最新ニュースでした。');
+            outroUtterance.lang = 'ja-JP';
+            outroUtterance.rate = rate;
 
             // Use selected voice from dropdown
             if (selectedVoice) {
+                introUtterance.voice = selectedVoice;
                 currentUtterance.voice = selectedVoice;
+                outroUtterance.voice = selectedVoice;
             }
+
+            introUtterance.onstart = () => {
+                isSpeaking = true;
+                isPaused = false;
+                updateControlState();
+                document.getElementById('status').textContent = 'イントロ';
+                document.getElementById('status').classList.add('speaking');
+            };
 
             currentUtterance.onstart = () => {
                 isSpeaking = true;
@@ -1147,24 +1212,27 @@
             };
 
             currentUtterance.onend = () => {
-                isSpeaking = false;
-                isPaused = false;
-                updateControlState();
-                document.getElementById('status').textContent = '完了';
-                document.getElementById('status').classList.remove('speaking');
-
                 // Stop highlight timer
                 stopHighlightTimer();
 
                 // Mark all sentences as read
                 updateHighlight(sentences.length);
 
+                document.getElementById('status').textContent = 'まとめ';
                 // Reset emotion to neutral after a short delay
                 setTimeout(() => {
                     if (!isSpeaking) {
                         setEmotion('neutral');
                     }
                 }, 1500);
+            };
+
+            outroUtterance.onend = () => {
+                isSpeaking = false;
+                isPaused = false;
+                updateControlState();
+                document.getElementById('status').textContent = '完了';
+                document.getElementById('status').classList.remove('speaking');
             };
 
             currentUtterance.onerror = (event) => {
@@ -1175,13 +1243,17 @@
                 resetHighlight();
             };
 
+            speechSynthesis.speak(introUtterance);
             speechSynthesis.speak(currentUtterance);
+            speechSynthesis.speak(outroUtterance);
         }
 
         function pauseSpeech() {
             if (speechSynthesis && isSpeaking) {
                 speechSynthesis.pause();
                 isPaused = true;
+                pausedEmotionBackup = currentEmotion;
+                setEmotion('neutral', 0.4);
                 document.getElementById('status').textContent = '一時停止';
                 document.getElementById('status').classList.remove('speaking');
                 updateControlState();
@@ -1192,6 +1264,10 @@
             if (speechSynthesis && isPaused) {
                 speechSynthesis.resume();
                 isPaused = false;
+                if (pausedEmotionBackup) {
+                    setEmotion(pausedEmotionBackup);
+                    pausedEmotionBackup = null;
+                }
                 document.getElementById('status').textContent = '読み上げ中';
                 document.getElementById('status').classList.add('speaking');
                 updateControlState();
@@ -1203,6 +1279,7 @@
                 speechSynthesis.cancel();
                 isSpeaking = false;
                 isPaused = false;
+                pausedEmotionBackup = null;
                 document.getElementById('status').textContent = '待機中';
                 document.getElementById('status').classList.remove('speaking');
                 updateControlState();
@@ -1251,8 +1328,14 @@
             document.getElementById('speed-value').textContent = value + 'x';
 
             // Update current utterance rate if speaking
+            if (introUtterance) {
+                introUtterance.rate = parseFloat(value);
+            }
             if (currentUtterance) {
                 currentUtterance.rate = parseFloat(value);
+            }
+            if (outroUtterance) {
+                outroUtterance.rate = parseFloat(value);
             }
         });
 
