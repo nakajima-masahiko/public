@@ -209,6 +209,53 @@
             border-radius: 3px;
         }
 
+        /* Text highlight sync styles */
+        #news-text .sentence {
+            transition: all 0.3s ease;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        #news-text .sentence.current {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.4), rgba(0, 150, 255, 0.3));
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        #news-text .sentence.read {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Emotion indicator styles */
+        .emotion-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .emotion-indicator .emotion-icon {
+            font-size: 1.2rem;
+        }
+
+        .emotion-indicator.positive {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .emotion-indicator.negative {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .emotion-indicator.neutral {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
         .controls {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
@@ -358,6 +405,10 @@
             <button class="control-btn" id="btn-pause" title="一時停止" disabled>⏸</button>
             <button class="control-btn" id="btn-stop" title="停止" disabled>⏹</button>
             <span class="status" id="status">待機中</span>
+            <div class="emotion-indicator" id="emotion-indicator" style="display: none;">
+                <span class="emotion-icon" id="emotion-icon">😊</span>
+                <span id="emotion-text">ポジティブ</span>
+            </div>
             <div class="speed-control">
                 <label>速度:</label>
                 <input type="range" id="speed-slider" min="0.5" max="2" step="0.1" value="1">
@@ -439,6 +490,17 @@
                 change: "黒字転換",
                 changeType: "positive",
                 content: "財務省が発表した12月の貿易統計によると、輸出額から輸入額を差し引いた貿易収支は1,250億円の黒字となりました。自動車や半導体製造装置の輸出が好調で、輸出額は前年同月比8.5パーセント増加しました。輸入額はエネルギー価格の下落により減少傾向にあります。年間では依然として赤字ですが、改善傾向が続いています。"
+            },
+            {
+                id: 6,
+                indicator: "株式市場",
+                title: "日経平均、世界的な景気懸念で大幅下落",
+                date: "2025年1月23日",
+                value: "34,500円",
+                previousValue: "36,200円",
+                change: "-4.7%",
+                changeType: "negative",
+                content: "東京株式市場で日経平均株価が大幅に下落しました。米国の金融政策への懸念と中国経済の減速が重なり、投資家のリスク回避姿勢が強まっています。特に半導体関連銘柄の下落が顕著で、市場全体に不安が広がっています。アナリストは当面の調整局面が続く可能性を指摘しており、今後の経済指標に注目が集まっています。"
             }
         ];
 
@@ -453,6 +515,17 @@
         let mixer = null;
         let blinkTimer = 0;
         let mouthOpenValue = 0;
+
+        // Text highlight sync state
+        let sentences = [];
+        let currentSentenceIndex = 0;
+        let charIndex = 0;
+        let highlightTimer = null;
+
+        // Emotion system state
+        let currentEmotion = 'neutral';
+        let targetEmotionValues = { happy: 0, sad: 0, angry: 0, surprised: 0 };
+        let currentEmotionValues = { happy: 0, sad: 0, angry: 0, surprised: 0 };
 
         // Startup animation state
         let startupAnimationActive = false;
@@ -568,6 +641,9 @@
                     setMouthOpen(mouthOpenValue);
                 }
 
+                // Update emotion smoothly
+                updateEmotionSmooth(deltaTime);
+
                 // Idle animation - subtle head movement
                 const time = clock.elapsedTime;
                 if (currentVrm.humanoid) {
@@ -612,6 +688,198 @@
             // Try different expression names for mouth
             currentVrm.expressionManager.setValue('aa', value);
             currentVrm.expressionManager.setValue('oh', value * 0.3);
+        }
+
+        // Emotion system functions
+        function setEmotion(emotion, intensity = 0.7) {
+            currentEmotion = emotion;
+
+            // Reset all targets
+            targetEmotionValues = { happy: 0, sad: 0, angry: 0, surprised: 0 };
+
+            // Set target based on emotion
+            switch (emotion) {
+                case 'positive':
+                    targetEmotionValues.happy = intensity;
+                    break;
+                case 'negative':
+                    targetEmotionValues.sad = intensity * 0.6;
+                    targetEmotionValues.angry = intensity * 0.3;
+                    break;
+                case 'surprised':
+                    targetEmotionValues.surprised = intensity;
+                    break;
+                case 'neutral':
+                default:
+                    // All zero - neutral expression
+                    break;
+            }
+
+            // Update emotion indicator UI
+            updateEmotionIndicator(emotion);
+        }
+
+        function updateEmotionIndicator(emotion) {
+            const indicator = document.getElementById('emotion-indicator');
+            const icon = document.getElementById('emotion-icon');
+            const text = document.getElementById('emotion-text');
+
+            indicator.style.display = 'flex';
+            indicator.className = 'emotion-indicator ' + emotion;
+
+            switch (emotion) {
+                case 'positive':
+                    icon.textContent = '😊';
+                    text.textContent = 'ポジティブ';
+                    break;
+                case 'negative':
+                    icon.textContent = '😟';
+                    text.textContent = 'ネガティブ';
+                    break;
+                case 'surprised':
+                    icon.textContent = '😮';
+                    text.textContent = '驚き';
+                    break;
+                case 'neutral':
+                default:
+                    icon.textContent = '😐';
+                    text.textContent = 'ニュートラル';
+                    indicator.className = 'emotion-indicator neutral';
+                    break;
+            }
+        }
+
+        function updateEmotionSmooth(deltaTime) {
+            if (!currentVrm || !currentVrm.expressionManager) return;
+            if (startupAnimationActive) return; // Skip during startup
+
+            const lerpSpeed = 3; // Smooth transition speed
+
+            // Smoothly interpolate emotion values
+            for (const emotion in currentEmotionValues) {
+                const target = targetEmotionValues[emotion];
+                const current = currentEmotionValues[emotion];
+                currentEmotionValues[emotion] = current + (target - current) * deltaTime * lerpSpeed;
+
+                // Apply to VRM
+                currentVrm.expressionManager.setValue(emotion, currentEmotionValues[emotion]);
+            }
+        }
+
+        // Analyze text for emotion keywords and adjust expression
+        function analyzeTextEmotion(text) {
+            const positiveKeywords = ['上昇', '成長', '改善', '好調', '増加', '黒字', '回復', '上回', 'プラス'];
+            const negativeKeywords = ['下落', '減少', '悪化', '低下', '赤字', '懸念', 'マイナス', '不安', '課題'];
+            const surpriseKeywords = ['予想外', '急', '大幅', '過去最高', '過去最低', '初めて'];
+
+            let positiveCount = 0;
+            let negativeCount = 0;
+            let surpriseCount = 0;
+
+            positiveKeywords.forEach(kw => {
+                if (text.includes(kw)) positiveCount++;
+            });
+            negativeKeywords.forEach(kw => {
+                if (text.includes(kw)) negativeCount++;
+            });
+            surpriseKeywords.forEach(kw => {
+                if (text.includes(kw)) surpriseCount++;
+            });
+
+            if (surpriseCount > 0) {
+                return 'surprised';
+            } else if (positiveCount > negativeCount) {
+                return 'positive';
+            } else if (negativeCount > positiveCount) {
+                return 'negative';
+            }
+            return 'neutral';
+        }
+
+        // Text highlight sync functions
+        function splitIntoSentences(text) {
+            // Split Japanese text by sentence-ending punctuation
+            const sentencePattern = /[^。！？]+[。！？]?/g;
+            const matches = text.match(sentencePattern) || [text];
+            return matches.filter(s => s.trim().length > 0);
+        }
+
+        function renderHighlightedText(sentences, currentIndex = -1) {
+            const container = document.getElementById('news-text');
+            container.innerHTML = sentences.map((sentence, index) => {
+                let className = 'sentence';
+                if (index < currentIndex) {
+                    className += ' read';
+                } else if (index === currentIndex) {
+                    className += ' current';
+                }
+                return `<span class="${className}" data-index="${index}">${sentence}</span>`;
+            }).join('');
+        }
+
+        function updateHighlight(index) {
+            currentSentenceIndex = index;
+            const sentenceElements = document.querySelectorAll('#news-text .sentence');
+            sentenceElements.forEach((el, i) => {
+                el.classList.remove('current', 'read');
+                if (i < index) {
+                    el.classList.add('read');
+                } else if (i === index) {
+                    el.classList.add('current');
+                    // Scroll into view if needed
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                    // Analyze emotion for current sentence and update expression
+                    const sentenceText = el.textContent;
+                    const emotion = analyzeTextEmotion(sentenceText);
+                    setEmotion(emotion);
+                }
+            });
+        }
+
+        function resetHighlight() {
+            currentSentenceIndex = 0;
+            charIndex = 0;
+            const sentenceElements = document.querySelectorAll('#news-text .sentence');
+            sentenceElements.forEach(el => {
+                el.classList.remove('current', 'read');
+            });
+            stopHighlightTimer();
+        }
+
+        // Timer-based highlight sync (fallback for browsers with poor onboundary support)
+        function startHighlightTimer() {
+            stopHighlightTimer();
+
+            if (sentences.length === 0) return;
+
+            // Calculate average time per sentence based on speech rate
+            const rate = parseFloat(document.getElementById('speed-slider').value);
+            const totalChars = sentences.reduce((sum, s) => sum + s.length, 0);
+            // Estimate ~7 characters per second at rate 1.0 for Japanese
+            const charsPerSecond = 7 * rate;
+            const totalDuration = totalChars / charsPerSecond;
+            const avgTimePerSentence = (totalDuration / sentences.length) * 1000;
+
+            let timerIndex = 0;
+            highlightTimer = setInterval(() => {
+                timerIndex++;
+                if (timerIndex < sentences.length && isSpeaking && !isPaused) {
+                    // Only update if we haven't already moved past this via onboundary
+                    if (timerIndex > currentSentenceIndex) {
+                        updateHighlight(timerIndex);
+                    }
+                } else {
+                    stopHighlightTimer();
+                }
+            }, avgTimePerSentence);
+        }
+
+        function stopHighlightTimer() {
+            if (highlightTimer) {
+                clearInterval(highlightTimer);
+                highlightTimer = null;
+            }
         }
 
         // Startup animation: jump + half rotation + smile
@@ -755,7 +1023,14 @@
                 </div>
             `;
 
-            document.getElementById('news-text').textContent = news.content;
+            // Split content into sentences and render with highlight support
+            sentences = splitIntoSentences(news.content);
+            renderHighlightedText(sentences);
+
+            // Set initial emotion based on news changeType
+            const initialEmotion = news.changeType === 'positive' ? 'positive' :
+                                   news.changeType === 'negative' ? 'negative' : 'neutral';
+            setEmotion(initialEmotion);
 
             // Enable play button
             document.getElementById('btn-play').disabled = false;
@@ -769,6 +1044,10 @@
             }
 
             stopSpeech();
+
+            // Reset highlight state
+            currentSentenceIndex = 0;
+            charIndex = 0;
 
             currentUtterance = new SpeechSynthesisUtterance(text);
             currentUtterance.lang = 'ja-JP';
@@ -787,6 +1066,31 @@
                 updateControlState();
                 document.getElementById('status').textContent = '読み上げ中';
                 document.getElementById('status').classList.add('speaking');
+
+                // Start highlighting first sentence
+                updateHighlight(0);
+
+                // Start timer-based fallback for highlight sync
+                // (in case onboundary is not well supported)
+                startHighlightTimer();
+            };
+
+            // Track progress for highlight sync using boundary events
+            currentUtterance.onboundary = (event) => {
+                if (event.name === 'sentence' || event.name === 'word') {
+                    // Calculate which sentence we're in based on character index
+                    const currentCharIndex = event.charIndex;
+                    let cumulativeLength = 0;
+                    for (let i = 0; i < sentences.length; i++) {
+                        cumulativeLength += sentences[i].length;
+                        if (currentCharIndex < cumulativeLength) {
+                            if (i !== currentSentenceIndex) {
+                                updateHighlight(i);
+                            }
+                            break;
+                        }
+                    }
+                }
             };
 
             currentUtterance.onend = () => {
@@ -795,6 +1099,19 @@
                 updateControlState();
                 document.getElementById('status').textContent = '完了';
                 document.getElementById('status').classList.remove('speaking');
+
+                // Stop highlight timer
+                stopHighlightTimer();
+
+                // Mark all sentences as read
+                updateHighlight(sentences.length);
+
+                // Reset emotion to neutral after a short delay
+                setTimeout(() => {
+                    if (!isSpeaking) {
+                        setEmotion('neutral');
+                    }
+                }, 1500);
             };
 
             currentUtterance.onerror = (event) => {
@@ -802,6 +1119,7 @@
                 isSpeaking = false;
                 isPaused = false;
                 updateControlState();
+                resetHighlight();
             };
 
             speechSynthesis.speak(currentUtterance);
@@ -835,6 +1153,18 @@
                 document.getElementById('status').textContent = '待機中';
                 document.getElementById('status').classList.remove('speaking');
                 updateControlState();
+
+                // Reset highlight
+                resetHighlight();
+
+                // Reset emotion to match selected news or neutral
+                if (selectedNews) {
+                    const emotion = selectedNews.changeType === 'positive' ? 'positive' :
+                                    selectedNews.changeType === 'negative' ? 'negative' : 'neutral';
+                    setEmotion(emotion);
+                } else {
+                    setEmotion('neutral');
+                }
             }
         }
 
