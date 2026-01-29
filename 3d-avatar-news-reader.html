@@ -508,8 +508,8 @@
                 const vrm = gltf.userData.vrm;
                 currentVrm = vrm;
 
-                // Start with avatar facing away from camera (back view)
-                vrm.scene.rotation.y = 0;
+                // Start with avatar facing camera (front view)
+                vrm.scene.rotation.y = Math.PI;
 
                 // Store initial Y position for jump animation
                 initialY = vrm.scene.position.y;
@@ -645,9 +645,9 @@
             const jumpProgress = Math.sin(progress * Math.PI); // Parabolic jump
             currentVrm.scene.position.y = initialY + jumpProgress * jumpHeight;
 
-            // Half rotation (0 to PI) - facing back to facing front
+            // Half rotation (PI to 2*PI) - facing front to facing back
             const rotationProgress = easeOutBack(progress);
-            currentVrm.scene.rotation.y = Math.PI * rotationProgress;
+            currentVrm.scene.rotation.y = Math.PI * (1 + rotationProgress);
 
             // Gradually build smile near the end of animation
             if (progress > 0.6 && currentVrm.expressionManager) {
@@ -660,7 +660,7 @@
             if (progress >= 1) {
                 startupAnimationActive = false;
                 currentVrm.scene.position.y = initialY;
-                currentVrm.scene.rotation.y = Math.PI;
+                currentVrm.scene.rotation.y = 0; // Facing back (away from camera)
 
                 // Set final smile
                 if (currentVrm.expressionManager) {
