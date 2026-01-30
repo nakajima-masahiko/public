@@ -763,6 +763,9 @@
 
         // Initialize news data
         async function initializeNews() {
+            // Start thinking pose while loading
+            startThinking();
+
             try {
                 const rssItems = await fetchNewsFromRSS();
                 newsData = convertRSSToNewsData(rssItems);
@@ -771,6 +774,9 @@
                 console.warn('Using fallback news data:', error.message);
                 newsData = fallbackNewsData;
             }
+
+            // Stop thinking pose when done
+            stopThinking();
 
             // Render news list
             renderNewsList();
@@ -810,6 +816,26 @@
         let runBaseRotations = null;
         let originalCameraPosition = null;
         let originalControlsTarget = null;
+
+        // Waving animation state (greeting after startup)
+        let isWaving = false;
+        let waveStartTime = 0;
+        let waveBaseRotations = null;
+
+        // Thinking pose state (during data loading)
+        let isThinking = false;
+        let thinkingStartTime = 0;
+        let thinkingBaseRotations = null;
+
+        // Bow animation state (after news ends)
+        let isBowing = false;
+        let bowStartTime = 0;
+        let bowBaseRotations = null;
+
+        // Surprised reaction state (on avatar click)
+        let isSurprised = false;
+        let surprisedStartTime = 0;
+        let surprisedBasePosition = null;
 
         // Text highlight sync state
         let sentences = [];
@@ -946,7 +972,17 @@
                     updateDanceAnimation();
                 } else if (isRunning) {
                     updateRunAnimation();
+                } else if (isWaving) {
+                    updateWaveAnimation();
+                } else if (isBowing) {
+                    updateBowAnimation();
+                } else if (isSurprised) {
+                    updateSurprisedAnimation();
                 } else {
+                    // Update thinking pose if active
+                    if (isThinking) {
+                        updateThinkingPose();
+                    }
                     // Idle animation - subtle head movement
                     const time = clock.elapsedTime;
                     if (currentVrm.humanoid) {
@@ -1414,6 +1450,382 @@
             }
         }
 
+        // Waving animation functions (greeting)
+        function startWave() {
+            if (!currentVrm || isWaving || isDancing || isRunning || isBowing) return;
+
+            isWaving = true;
+            waveStartTime = clock.elapsedTime;
+            cacheWaveBasePose();
+
+            console.log('Waving started');
+
+            // Auto-stop after 2.5 seconds
+            setTimeout(() => {
+                stopWave();
+            }, 2500);
+        }
+
+        function stopWave() {
+            if (!isWaving) return;
+
+            isWaving = false;
+            resetWavePose();
+            console.log('Waving stopped');
+        }
+
+        function cacheWaveBasePose() {
+            if (!currentVrm || !currentVrm.humanoid) return;
+
+            const getRotation = (boneName) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (!bone) return null;
+                return { x: bone.rotation.x, y: bone.rotation.y, z: bone.rotation.z };
+            };
+
+            waveBaseRotations = {
+                rightUpperArm: getRotation('rightUpperArm'),
+                rightLowerArm: getRotation('rightLowerArm'),
+                rightHand: getRotation('rightHand'),
+                spine: getRotation('spine')
+            };
+        }
+
+        function resetWavePose() {
+            if (!currentVrm || !currentVrm.humanoid || !waveBaseRotations) return;
+
+            const restoreRotation = (boneName, rotation) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (bone && rotation) {
+                    bone.rotation.set(rotation.x, rotation.y, rotation.z);
+                }
+            };
+
+            restoreRotation('rightUpperArm', waveBaseRotations.rightUpperArm);
+            restoreRotation('rightLowerArm', waveBaseRotations.rightLowerArm);
+            restoreRotation('rightHand', waveBaseRotations.rightHand);
+            restoreRotation('spine', waveBaseRotations.spine);
+        }
+
+        function updateWaveAnimation() {
+            if (!currentVrm || !currentVrm.humanoid || !waveBaseRotations) return;
+
+            const waveTime = clock.elapsedTime - waveStartTime;
+            const waveDuration = 2.5;
+            const progress = waveTime / waveDuration;
+
+            // Ease in/out for arm raise
+            const armRaiseProgress = progress < 0.2 ? progress / 0.2 :
+                                     progress > 0.8 ? (1 - progress) / 0.2 : 1;
+            const smoothArmRaise = armRaiseProgress * armRaiseProgress * (3 - 2 * armRaiseProgress);
+
+            // Wave motion (side to side)
+            const waveMotion = Math.sin(waveTime * 8) * 0.4;
+
+            const rightUpperArm = currentVrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+            const rightLowerArm = currentVrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+            const rightHand = currentVrm.humanoid.getNormalizedBoneNode('rightHand');
+            const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
+
+            // Raise arm up and out
+            if (rightUpperArm && waveBaseRotations.rightUpperArm) {
+                rightUpperArm.rotation.z = waveBaseRotations.rightUpperArm.z - smoothArmRaise * 2.5;
+                rightUpperArm.rotation.x = waveBaseRotations.rightUpperArm.x - smoothArmRaise * 0.3;
+            }
+
+            // Bend elbow
+            if (rightLowerArm && waveBaseRotations.rightLowerArm) {
+                rightLowerArm.rotation.x = waveBaseRotations.rightLowerArm.x - smoothArmRaise * 0.8;
+            }
+
+            // Wave hand side to side
+            if (rightHand && waveBaseRotations.rightHand) {
+                rightHand.rotation.z = waveBaseRotations.rightHand.z + waveMotion * smoothArmRaise;
+            }
+
+            // Slight body tilt
+            if (spine && waveBaseRotations.spine) {
+                spine.rotation.z = waveBaseRotations.spine.z + smoothArmRaise * 0.05;
+            }
+        }
+
+        // Thinking pose functions
+        function startThinking() {
+            if (!currentVrm || isThinking || isDancing || isRunning || isWaving || isBowing) return;
+
+            isThinking = true;
+            thinkingStartTime = clock.elapsedTime;
+            cacheThinkingBasePose();
+
+            // Set thoughtful expression
+            if (currentVrm.expressionManager) {
+                currentVrm.expressionManager.setValue('neutral', 0.3);
+            }
+
+            console.log('Thinking pose started');
+        }
+
+        function stopThinking() {
+            if (!isThinking) return;
+
+            isThinking = false;
+            resetThinkingPose();
+
+            // Reset expression
+            if (currentVrm && currentVrm.expressionManager) {
+                currentVrm.expressionManager.setValue('neutral', 0);
+            }
+
+            console.log('Thinking pose stopped');
+        }
+
+        function cacheThinkingBasePose() {
+            if (!currentVrm || !currentVrm.humanoid) return;
+
+            const getRotation = (boneName) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (!bone) return null;
+                return { x: bone.rotation.x, y: bone.rotation.y, z: bone.rotation.z };
+            };
+
+            thinkingBaseRotations = {
+                rightUpperArm: getRotation('rightUpperArm'),
+                rightLowerArm: getRotation('rightLowerArm'),
+                head: getRotation('head'),
+                spine: getRotation('spine')
+            };
+        }
+
+        function resetThinkingPose() {
+            if (!currentVrm || !currentVrm.humanoid || !thinkingBaseRotations) return;
+
+            const restoreRotation = (boneName, rotation) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (bone && rotation) {
+                    bone.rotation.set(rotation.x, rotation.y, rotation.z);
+                }
+            };
+
+            restoreRotation('rightUpperArm', thinkingBaseRotations.rightUpperArm);
+            restoreRotation('rightLowerArm', thinkingBaseRotations.rightLowerArm);
+            restoreRotation('head', thinkingBaseRotations.head);
+            restoreRotation('spine', thinkingBaseRotations.spine);
+        }
+
+        function updateThinkingPose() {
+            if (!currentVrm || !currentVrm.humanoid || !thinkingBaseRotations) return;
+
+            const thinkTime = clock.elapsedTime - thinkingStartTime;
+
+            // Smooth transition to thinking pose
+            const transitionDuration = 0.5;
+            const poseProgress = Math.min(thinkTime / transitionDuration, 1);
+            const smoothProgress = poseProgress * poseProgress * (3 - 2 * poseProgress);
+
+            const rightUpperArm = currentVrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+            const rightLowerArm = currentVrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+            const head = currentVrm.humanoid.getNormalizedBoneNode('head');
+            const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
+
+            // Raise arm to chin
+            if (rightUpperArm && thinkingBaseRotations.rightUpperArm) {
+                rightUpperArm.rotation.x = thinkingBaseRotations.rightUpperArm.x + smoothProgress * 0.8;
+                rightUpperArm.rotation.z = thinkingBaseRotations.rightUpperArm.z - smoothProgress * 0.5;
+            }
+
+            // Bend elbow to bring hand to chin
+            if (rightLowerArm && thinkingBaseRotations.rightLowerArm) {
+                rightLowerArm.rotation.x = thinkingBaseRotations.rightLowerArm.x - smoothProgress * 1.8;
+            }
+
+            // Tilt head slightly
+            if (head && thinkingBaseRotations.head) {
+                head.rotation.z = thinkingBaseRotations.head.z + smoothProgress * 0.1;
+                head.rotation.x = thinkingBaseRotations.head.x + smoothProgress * 0.1 + Math.sin(thinkTime * 0.5) * 0.02;
+            }
+
+            // Slight forward lean
+            if (spine && thinkingBaseRotations.spine) {
+                spine.rotation.x = thinkingBaseRotations.spine.x + smoothProgress * 0.05;
+            }
+        }
+
+        // Bow animation functions
+        function startBow() {
+            if (!currentVrm || isBowing || isDancing || isRunning || isWaving) return;
+
+            isBowing = true;
+            bowStartTime = clock.elapsedTime;
+            cacheBowBasePose();
+
+            console.log('Bow started');
+
+            // Auto-stop after 2 seconds
+            setTimeout(() => {
+                stopBow();
+            }, 2000);
+        }
+
+        function stopBow() {
+            if (!isBowing) return;
+
+            isBowing = false;
+            resetBowPose();
+            console.log('Bow stopped');
+        }
+
+        function cacheBowBasePose() {
+            if (!currentVrm || !currentVrm.humanoid) return;
+
+            const getRotation = (boneName) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (!bone) return null;
+                return { x: bone.rotation.x, y: bone.rotation.y, z: bone.rotation.z };
+            };
+
+            bowBaseRotations = {
+                spine: getRotation('spine'),
+                chest: getRotation('chest'),
+                head: getRotation('head'),
+                leftUpperArm: getRotation('leftUpperArm'),
+                rightUpperArm: getRotation('rightUpperArm')
+            };
+        }
+
+        function resetBowPose() {
+            if (!currentVrm || !currentVrm.humanoid || !bowBaseRotations) return;
+
+            const restoreRotation = (boneName, rotation) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (bone && rotation) {
+                    bone.rotation.set(rotation.x, rotation.y, rotation.z);
+                }
+            };
+
+            restoreRotation('spine', bowBaseRotations.spine);
+            restoreRotation('chest', bowBaseRotations.chest);
+            restoreRotation('head', bowBaseRotations.head);
+            restoreRotation('leftUpperArm', bowBaseRotations.leftUpperArm);
+            restoreRotation('rightUpperArm', bowBaseRotations.rightUpperArm);
+        }
+
+        function updateBowAnimation() {
+            if (!currentVrm || !currentVrm.humanoid || !bowBaseRotations) return;
+
+            const bowTime = clock.elapsedTime - bowStartTime;
+            const bowDuration = 2.0;
+
+            // Bow down then up: 0-0.4 down, 0.4-0.6 hold, 0.6-1.0 up
+            let bowProgress;
+            if (bowTime < bowDuration * 0.4) {
+                bowProgress = bowTime / (bowDuration * 0.4);
+            } else if (bowTime < bowDuration * 0.6) {
+                bowProgress = 1;
+            } else {
+                bowProgress = 1 - (bowTime - bowDuration * 0.6) / (bowDuration * 0.4);
+            }
+            bowProgress = Math.max(0, Math.min(1, bowProgress));
+
+            // Smooth easing
+            const smoothBow = bowProgress * bowProgress * (3 - 2 * bowProgress);
+
+            const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
+            const chest = currentVrm.humanoid.getNormalizedBoneNode('chest');
+            const head = currentVrm.humanoid.getNormalizedBoneNode('head');
+            const leftUpperArm = currentVrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+            const rightUpperArm = currentVrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+
+            // Bend forward
+            if (spine && bowBaseRotations.spine) {
+                spine.rotation.x = bowBaseRotations.spine.x + smoothBow * 0.4;
+            }
+
+            if (chest && bowBaseRotations.chest) {
+                chest.rotation.x = bowBaseRotations.chest.x + smoothBow * 0.3;
+            }
+
+            if (head && bowBaseRotations.head) {
+                head.rotation.x = bowBaseRotations.head.x + smoothBow * 0.2;
+            }
+
+            // Arms move slightly forward
+            if (leftUpperArm && bowBaseRotations.leftUpperArm) {
+                leftUpperArm.rotation.x = bowBaseRotations.leftUpperArm.x + smoothBow * 0.2;
+            }
+
+            if (rightUpperArm && bowBaseRotations.rightUpperArm) {
+                rightUpperArm.rotation.x = bowBaseRotations.rightUpperArm.x + smoothBow * 0.2;
+            }
+        }
+
+        // Surprised reaction functions (on click)
+        function startSurprised() {
+            if (!currentVrm || isSurprised || isDancing || isRunning || isWaving || isBowing) return;
+
+            isSurprised = true;
+            surprisedStartTime = clock.elapsedTime;
+            surprisedBasePosition = currentVrm.scene.position.y;
+
+            // Set surprised expression
+            if (currentVrm.expressionManager) {
+                currentVrm.expressionManager.setValue('surprised', 0.9);
+                currentVrm.expressionManager.setValue('blink', 0);
+            }
+
+            console.log('Surprised reaction started');
+
+            // Auto-stop after 1 second
+            setTimeout(() => {
+                stopSurprised();
+            }, 1000);
+        }
+
+        function stopSurprised() {
+            if (!isSurprised) return;
+
+            isSurprised = false;
+
+            // Reset position
+            if (currentVrm) {
+                currentVrm.scene.position.y = surprisedBasePosition || 0;
+            }
+
+            // Fade out surprised expression
+            if (currentVrm && currentVrm.expressionManager) {
+                let surpriseValue = 0.9;
+                const fadeInterval = setInterval(() => {
+                    surpriseValue -= 0.1;
+                    if (surpriseValue <= 0) {
+                        surpriseValue = 0;
+                        clearInterval(fadeInterval);
+                    }
+                    if (currentVrm && currentVrm.expressionManager) {
+                        currentVrm.expressionManager.setValue('surprised', surpriseValue);
+                    }
+                }, 50);
+            }
+
+            console.log('Surprised reaction stopped');
+        }
+
+        function updateSurprisedAnimation() {
+            if (!currentVrm || surprisedBasePosition === null) return;
+
+            const surprisedTime = clock.elapsedTime - surprisedStartTime;
+
+            // Quick jump back then return
+            const jumpDuration = 0.3;
+            let jumpProgress;
+            if (surprisedTime < jumpDuration) {
+                jumpProgress = Math.sin((surprisedTime / jumpDuration) * Math.PI);
+            } else {
+                jumpProgress = 0;
+            }
+
+            // Small jump up
+            currentVrm.scene.position.y = surprisedBasePosition + jumpProgress * 0.1;
+        }
+
         // Emotion system functions
         function setEmotion(emotion, intensity = 0.7) {
             currentEmotion = emotion;
@@ -1667,10 +2079,15 @@
 
                 console.log('Startup animation complete');
 
-                // Gradually fade out smile after 2 seconds
+                // Start waving animation after a short delay
+                setTimeout(() => {
+                    startWave();
+                }, 300);
+
+                // Gradually fade out smile after waving completes (2.5s wave + 0.3s delay + 0.5s buffer)
                 setTimeout(() => {
                     fadeOutSmile();
-                }, 2000);
+                }, 3300);
             }
         }
 
@@ -1699,6 +2116,33 @@
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
         });
+
+        // Avatar click detection using Raycaster
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onAvatarClick(event) {
+            // Get mouse position relative to container
+            const rect = container.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+            // Update raycaster
+            raycaster.setFromCamera(mouse, camera);
+
+            // Check for intersection with VRM model
+            if (currentVrm && currentVrm.scene) {
+                const intersects = raycaster.intersectObject(currentVrm.scene, true);
+
+                if (intersects.length > 0) {
+                    // Avatar was clicked - trigger surprised reaction
+                    startSurprised();
+                }
+            }
+        }
+
+        // Add click event listener to the container
+        container.addEventListener('click', onAvatarClick);
 
         // Render news list
         function renderNewsList() {
@@ -1863,6 +2307,9 @@
                 updateControlState();
                 document.getElementById('status').textContent = '完了';
                 document.getElementById('status').classList.remove('speaking');
+
+                // Perform bow animation at the end
+                startBow();
             };
 
             currentUtterance.onerror = (event) => {
