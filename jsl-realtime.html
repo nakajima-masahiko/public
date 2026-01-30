@@ -17,10 +17,40 @@
       font-family: "Noto Sans JP", system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
+      padding: 20px;
+    }
+    .tab-shell {
+      display: grid;
+      gap: 16px;
+    }
+    .tabs {
+      display: inline-flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tab-button {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: #334155;
+      color: inherit;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab-button.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.2);
+    }
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+    .app {
       display: grid;
       grid-template-columns: minmax(300px, 1fr) 320px;
       gap: 20px;
-      padding: 20px;
     }
     header {
       grid-column: 1 / -1;
@@ -130,54 +160,120 @@
       font-weight: 600;
       cursor: pointer;
     }
+    .info-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    .info-panel ol {
+      margin: 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 8px;
+    }
+    .info-panel ul {
+      margin: 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 6px;
+    }
+    .info-panel a {
+      color: var(--accent);
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>日本手話 (JSL) リアルタイム認識 デモ</h1>
-    <p>MediaPipe Hands と TensorFlow.js (KNN) を使った完全クライアントサイドのベース実装です。</p>
-  </header>
-
-  <div class="video-wrap">
-    <video id="video" autoplay playsinline></video>
-    <canvas id="overlay"></canvas>
-  </div>
-
-  <aside class="panel">
-    <div class="control">
-      <label for="threshold">認識信頼度しきい値: <span id="thresholdValue">0.75</span></label>
-      <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.75" />
+  <div class="tab-shell">
+    <div class="tabs" role="tablist" aria-label="デモ切り替え">
+      <button class="tab-button active" role="tab" aria-selected="true" aria-controls="tab-run" id="tabButtonRun" type="button">実行</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-manual" id="tabButtonManual" type="button">マニュアル</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-spec" id="tabButtonSpec" type="button">仕様</button>
     </div>
 
-    <div class="control">
-      <label>モデル種類</label>
-      <div class="toggle">
-        <button id="modelLite" class="active" type="button">高速 (Lite)</button>
-        <button id="modelFull" type="button">高精度 (Full)</button>
+    <section id="tab-run" class="tab-panel active" role="tabpanel" aria-labelledby="tabButtonRun">
+      <div class="app">
+        <header>
+          <h1>日本手話 (JSL) リアルタイム認識 デモ</h1>
+          <p>MediaPipe Hands と TensorFlow.js (KNN) を使った完全クライアントサイドのベース実装です。</p>
+        </header>
+
+        <div class="video-wrap">
+          <video id="video" autoplay playsinline></video>
+          <canvas id="overlay"></canvas>
+        </div>
+
+        <aside class="panel">
+          <div class="control">
+            <label for="threshold">認識信頼度しきい値: <span id="thresholdValue">0.75</span></label>
+            <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.75" />
+          </div>
+
+          <div class="control">
+            <label>モデル種類</label>
+            <div class="toggle">
+              <button id="modelLite" class="active" type="button">高速 (Lite)</button>
+              <button id="modelFull" type="button">高精度 (Full)</button>
+            </div>
+            <div class="small">※ モデル切替後は再読み込みが必要です。</div>
+          </div>
+
+          <div class="control">
+            <label>認識結果</label>
+            <div id="result" class="result">--</div>
+            <div id="score" class="small">score: --</div>
+          </div>
+
+          <div class="control">
+            <label>履歴</label>
+            <div id="history" class="history"></div>
+          </div>
+
+          <div class="control train">
+            <label>サンプル登録（任意）</label>
+            <input id="labelInput" type="text" placeholder="例: あ / い / ありがとう" />
+            <button id="addSample" type="button">現在の手形を学習データに追加</button>
+            <div class="small">※ 本番用は事前に十分な学習データを用意してください。</div>
+          </div>
+
+          <div id="status" class="status">初期化中...</div>
+        </aside>
       </div>
-      <div class="small">※ モデル切替後は再読み込みが必要です。</div>
-    </div>
+    </section>
 
-    <div class="control">
-      <label>認識結果</label>
-      <div id="result" class="result">--</div>
-      <div id="score" class="small">score: --</div>
-    </div>
+    <section id="tab-manual" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonManual">
+      <div class="info-panel">
+        <h2>使い方</h2>
+        <ol>
+          <li>「実行」タブでカメラアクセスを許可します。</li>
+          <li>手をカメラに映し、ランドマークが表示されることを確認します。</li>
+          <li>認識結果のしきい値をスライダーで調整します。</li>
+          <li>必要に応じて「サンプル登録」でラベルを入力し、現在の手形を学習に追加します。</li>
+          <li>履歴やスコアを確認しながら動作をチェックします。</li>
+        </ol>
+        <div>
+          <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker?hl=ja" target="_blank" rel="noopener noreferrer">手のランドマーク検出ガイド</a>
+        </div>
+      </div>
+    </section>
 
-    <div class="control">
-      <label>履歴</label>
-      <div id="history" class="history"></div>
-    </div>
-
-    <div class="control train">
-      <label>サンプル登録（任意）</label>
-      <input id="labelInput" type="text" placeholder="例: あ / い / ありがとう" />
-      <button id="addSample" type="button">現在の手形を学習データに追加</button>
-      <div class="small">※ 本番用は事前に十分な学習データを用意してください。</div>
-    </div>
-
-    <div id="status" class="status">初期化中...</div>
-  </aside>
+    <section id="tab-spec" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonSpec">
+      <div class="info-panel">
+        <h2>仕様・使用技術</h2>
+        <ul>
+          <li>MediaPipe Hands による手のランドマーク検出。</li>
+          <li>TensorFlow.js の WebGL バックエンドで推論を実行。</li>
+          <li>KNN 分類器でリアルタイムのラベル分類を実施。</li>
+          <li>完全クライアントサイドで映像処理・推論・表示を完結。</li>
+        </ul>
+        <div>
+          <a href="https://www.tensorflow.org/?hl=ja" target="_blank" rel="noopener noreferrer">TensorFlow</a>
+        </div>
+      </div>
+    </section>
+  </div>
 
   <!-- MediaPipe Hands と TensorFlow.js を読み込む -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
@@ -199,11 +295,30 @@
     const modelFullBtn = document.getElementById("modelFull");
     const labelInput = document.getElementById("labelInput");
     const addSampleBtn = document.getElementById("addSample");
+    const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
+    const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
     let detector;
     let latestFeature = null;
     const knn = knnClassifier.create();
     const history = [];
+
+    function setActiveTab(targetId) {
+      tabButtons.forEach((button) => {
+        const isActive = button.getAttribute("aria-controls") === targetId;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-selected", isActive);
+      });
+      tabPanels.forEach((panel) => {
+        panel.classList.toggle("active", panel.id === targetId);
+      });
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setActiveTab(button.getAttribute("aria-controls"));
+      });
+    });
 
     // しきい値スライダーの表示更新
     thresholdInput.addEventListener("input", () => {
