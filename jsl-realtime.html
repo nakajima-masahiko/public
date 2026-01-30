@@ -74,6 +74,7 @@
       width: 100%;
       height: 100%;
       display: block;
+      transform: scaleX(-1);
     }
     canvas {
       position: absolute;
@@ -201,7 +202,7 @@
         </header>
 
         <div class="video-wrap">
-          <video id="video" autoplay playsinline></video>
+          <video id="video" autoplay playsinline aria-label="カメラ映像"></video>
           <canvas id="overlay"></canvas>
         </div>
 
@@ -282,6 +283,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
 
   <script>
+    "use strict";
+
+    // 定数
+    const KNN_K_VALUE = 3;
+    const MAX_HISTORY_LENGTH = 12;
+
     const video = document.getElementById("video");
     const canvas = document.getElementById("overlay");
     const ctx = canvas.getContext("2d");
@@ -300,8 +307,14 @@
 
     let detector;
     let latestFeature = null;
+    let isPageVisible = true;
     const knn = knnClassifier.create();
     const history = [];
+
+    // ページ可視性の監視（非表示時にループを停止）
+    document.addEventListener("visibilitychange", () => {
+      isPageVisible = !document.hidden;
+    });
 
     function setActiveTab(targetId) {
       tabButtons.forEach((button) => {
@@ -343,12 +356,23 @@
 
     // カメラ映像のセットアップ
     async function setupCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
-        audio: false,
-      });
-      video.srcObject = stream;
-      await video.play();
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+          audio: false,
+        });
+        video.srcObject = stream;
+        await video.play();
+      } catch (error) {
+        if (error.name === "NotAllowedError") {
+          throw new Error("カメラへのアクセスが拒否されました。ブラウザの設定を確認してください。");
+        } else if (error.name === "NotFoundError") {
+          throw new Error("カメラが見つかりません。カメラが接続されているか確認してください。");
+        } else if (error.name === "NotReadableError") {
+          throw new Error("カメラが他のアプリケーションで使用中です。");
+        }
+        throw error;
+      }
     }
 
     // 手ランドマーク検出モデルの初期化
@@ -385,26 +409,37 @@
         return;
       }
 
-      const result = await knn.predictClass(tf.tensor(featureVector), 3);
-      const label = result.label;
-      const confidence = result.confidences[label] || 0;
-      scoreEl.textContent = `score: ${confidence.toFixed(2)}`;
+      const tensor = tf.tensor(featureVector);
+      try {
+        const result = await knn.predictClass(tensor, KNN_K_VALUE);
+        const label = result.label;
+        const confidence = result.confidences[label] || 0;
+        scoreEl.textContent = `score: ${confidence.toFixed(2)}`;
 
-      if (confidence >= parseFloat(thresholdInput.value)) {
-        resultEl.textContent = label;
-        pushHistory(label, confidence);
-      } else {
-        resultEl.textContent = "--";
+        if (confidence >= parseFloat(thresholdInput.value)) {
+          resultEl.textContent = label;
+          pushHistory(label, confidence);
+        } else {
+          resultEl.textContent = "--";
+        }
+      } finally {
+        tensor.dispose();
       }
     }
 
     function pushHistory(label, confidence) {
       const timestamp = new Date().toLocaleTimeString();
-      history.unshift(`${timestamp}：${label} (${confidence.toFixed(2)})`);
-      if (history.length > 12) history.pop();
-      historyEl.innerHTML = history
-        .map((item) => `<div class="history-item">${item}</div>`)
-        .join("");
+      history.unshift({ timestamp, label, confidence });
+      if (history.length > MAX_HISTORY_LENGTH) history.pop();
+
+      // XSS対策: innerHTML ではなく createElement/textContent を使用
+      historyEl.innerHTML = "";
+      history.forEach((item) => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = `${item.timestamp}：${item.label} (${item.confidence.toFixed(2)})`;
+        historyEl.appendChild(div);
+      });
     }
 
     // 手ランドマークを描画
@@ -424,14 +459,27 @@
       });
     }
 
+    // canvasサイズをvideoに合わせる（変更時のみ更新）
+    function syncCanvasSize() {
+      if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+    }
+
     // 毎フレーム推論
     async function renderLoop() {
+      // ページが非表示の場合はスキップ（パフォーマンス最適化）
+      if (!isPageVisible) {
+        requestAnimationFrame(renderLoop);
+        return;
+      }
+
       const predictions = await detector.estimateHands(video, {
-        flipHorizontal: true,
+        flipHorizontal: false,
       });
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      syncCanvasSize();
 
       if (predictions.length > 0) {
         drawLandmarks(predictions);
@@ -457,7 +505,9 @@
         statusEl.textContent = "ラベルを入力してください。";
         return;
       }
-      knn.addExample(tf.tensor(latestFeature), label);
+      const tensor = tf.tensor(latestFeature);
+      knn.addExample(tensor, label);
+      tensor.dispose();
       statusEl.textContent = `ラベル「${label}」を追加しました。`;
       labelInput.value = "";
     });
@@ -473,7 +523,7 @@
         renderLoop();
       } catch (error) {
         console.error(error);
-        statusEl.textContent = "初期化に失敗しました。ブラウザ権限を確認してください。";
+        statusEl.textContent = error.message || "初期化に失敗しました。ブラウザ権限を確認してください。";
       }
     }
 
