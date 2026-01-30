@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JSL リアルタイム認識デモ</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+    }
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) 320px;
+      gap: 20px;
+      padding: 20px;
+    }
+    header {
+      grid-column: 1 / -1;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+    }
+    p {
+      margin: 0;
+      opacity: 0.8;
+    }
+    .video-wrap {
+      position: relative;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      min-height: 320px;
+    }
+    video, canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .panel {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    .control {
+      display: grid;
+      gap: 8px;
+    }
+    label {
+      font-weight: 600;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .toggle {
+      display: inline-flex;
+      gap: 8px;
+    }
+    .toggle button {
+      flex: 1;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #334155;
+      color: inherit;
+      cursor: pointer;
+    }
+    .toggle button.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.2);
+    }
+    .result {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .history {
+      max-height: 220px;
+      overflow-y: auto;
+      display: grid;
+      gap: 6px;
+    }
+    .history-item {
+      padding: 6px 10px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .small {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+    .status {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    .train {
+      display: grid;
+      gap: 6px;
+    }
+    .train input {
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: transparent;
+      color: inherit;
+    }
+    .train button {
+      border-radius: 8px;
+      border: none;
+      padding: 8px;
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>日本手話 (JSL) リアルタイム認識 デモ</h1>
+    <p>MediaPipe Hands と TensorFlow.js (KNN) を使った完全クライアントサイドのベース実装です。</p>
+  </header>
+
+  <div class="video-wrap">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <aside class="panel">
+    <div class="control">
+      <label for="threshold">認識信頼度しきい値: <span id="thresholdValue">0.75</span></label>
+      <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.75" />
+    </div>
+
+    <div class="control">
+      <label>モデル種類</label>
+      <div class="toggle">
+        <button id="modelLite" class="active" type="button">高速 (Lite)</button>
+        <button id="modelFull" type="button">高精度 (Full)</button>
+      </div>
+      <div class="small">※ モデル切替後は再読み込みが必要です。</div>
+    </div>
+
+    <div class="control">
+      <label>認識結果</label>
+      <div id="result" class="result">--</div>
+      <div id="score" class="small">score: --</div>
+    </div>
+
+    <div class="control">
+      <label>履歴</label>
+      <div id="history" class="history"></div>
+    </div>
+
+    <div class="control train">
+      <label>サンプル登録（任意）</label>
+      <input id="labelInput" type="text" placeholder="例: あ / い / ありがとう" />
+      <button id="addSample" type="button">現在の手形を学習データに追加</button>
+      <div class="small">※ 本番用は事前に十分な学習データを用意してください。</div>
+    </div>
+
+    <div id="status" class="status">初期化中...</div>
+  </aside>
+
+  <!-- MediaPipe Hands と TensorFlow.js を読み込む -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("overlay");
+    const ctx = canvas.getContext("2d");
+    const thresholdInput = document.getElementById("threshold");
+    const thresholdValue = document.getElementById("thresholdValue");
+    const resultEl = document.getElementById("result");
+    const scoreEl = document.getElementById("score");
+    const historyEl = document.getElementById("history");
+    const statusEl = document.getElementById("status");
+    const modelLiteBtn = document.getElementById("modelLite");
+    const modelFullBtn = document.getElementById("modelFull");
+    const labelInput = document.getElementById("labelInput");
+    const addSampleBtn = document.getElementById("addSample");
+
+    let detector;
+    let latestFeature = null;
+    const knn = knnClassifier.create();
+    const history = [];
+
+    // しきい値スライダーの表示更新
+    thresholdInput.addEventListener("input", () => {
+      thresholdValue.textContent = thresholdInput.value;
+    });
+
+    // モデル切替（簡易版なので再読み込みを案内）
+    modelLiteBtn.addEventListener("click", () => toggleModel("lite"));
+    modelFullBtn.addEventListener("click", () => toggleModel("full"));
+
+    function toggleModel(type) {
+      localStorage.setItem("mp_model_type", type);
+      modelLiteBtn.classList.toggle("active", type === "lite");
+      modelFullBtn.classList.toggle("active", type === "full");
+      statusEl.textContent = "モデルタイプを保存しました。再読み込みで適用されます。";
+    }
+
+    // モデルタイプを初期化
+    const savedModelType = localStorage.getItem("mp_model_type") || "lite";
+    modelLiteBtn.classList.toggle("active", savedModelType === "lite");
+    modelFullBtn.classList.toggle("active", savedModelType === "full");
+
+    // カメラ映像のセットアップ
+    async function setupCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
+      video.srcObject = stream;
+      await video.play();
+    }
+
+    // 手ランドマーク検出モデルの初期化
+    async function setupDetector() {
+      await tf.setBackend("webgl");
+      await tf.ready();
+
+      const model = handPoseDetection.SupportedModels.MediaPipeHands;
+      detector = await handPoseDetection.createDetector(model, {
+        runtime: "mediapipe",
+        modelType: savedModelType,
+        maxHands: 2,
+        solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands",
+      });
+    }
+
+    // ランドマークから特徴量を生成（正規化してフラット化）
+    function landmarksToFeatures(landmarks) {
+      const wrist = landmarks[0];
+      const middleTip = landmarks[12];
+      const scale = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y) || 1;
+      return landmarks.flatMap((pt) => [
+        (pt.x - wrist.x) / scale,
+        (pt.y - wrist.y) / scale,
+        (pt.z - wrist.z) / scale,
+      ]);
+    }
+
+    // ジェスチャーを分類して結果を表示
+    async function classifyGesture(featureVector) {
+      if (knn.getNumClasses() === 0) {
+        resultEl.textContent = "未学習";
+        scoreEl.textContent = "score: --";
+        return;
+      }
+
+      const result = await knn.predictClass(tf.tensor(featureVector), 3);
+      const label = result.label;
+      const confidence = result.confidences[label] || 0;
+      scoreEl.textContent = `score: ${confidence.toFixed(2)}`;
+
+      if (confidence >= parseFloat(thresholdInput.value)) {
+        resultEl.textContent = label;
+        pushHistory(label, confidence);
+      } else {
+        resultEl.textContent = "--";
+      }
+    }
+
+    function pushHistory(label, confidence) {
+      const timestamp = new Date().toLocaleTimeString();
+      history.unshift(`${timestamp}：${label} (${confidence.toFixed(2)})`);
+      if (history.length > 12) history.pop();
+      historyEl.innerHTML = history
+        .map((item) => `<div class="history-item">${item}</div>`)
+        .join("");
+    }
+
+    // 手ランドマークを描画
+    function drawLandmarks(predictions) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 2;
+      ctx.fillStyle = "rgba(56, 189, 248, 0.7)";
+
+      predictions.forEach((prediction) => {
+        const { keypoints } = prediction;
+        keypoints.forEach((pt) => {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+    }
+
+    // 毎フレーム推論
+    async function renderLoop() {
+      const predictions = await detector.estimateHands(video, {
+        flipHorizontal: true,
+      });
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      if (predictions.length > 0) {
+        drawLandmarks(predictions);
+        // ここでは最初の手だけを使用
+        latestFeature = landmarksToFeatures(predictions[0].keypoints);
+        await classifyGesture(latestFeature);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        resultEl.textContent = "--";
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // 学習データの追加（サンプル登録）
+    addSampleBtn.addEventListener("click", () => {
+      if (!latestFeature) {
+        statusEl.textContent = "手が検出されていません。";
+        return;
+      }
+      const label = labelInput.value.trim();
+      if (!label) {
+        statusEl.textContent = "ラベルを入力してください。";
+        return;
+      }
+      knn.addExample(tf.tensor(latestFeature), label);
+      statusEl.textContent = `ラベル「${label}」を追加しました。`;
+      labelInput.value = "";
+    });
+
+    // 初期化処理
+    async function init() {
+      try {
+        statusEl.textContent = "カメラ初期化中...";
+        await setupCamera();
+        statusEl.textContent = "モデル読み込み中...";
+        await setupDetector();
+        statusEl.textContent = "準備完了。手をカメラにかざしてください。";
+        renderLoop();
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "初期化に失敗しました。ブラウザ権限を確認してください。";
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
