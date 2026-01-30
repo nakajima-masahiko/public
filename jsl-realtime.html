@@ -449,6 +449,7 @@
           <div class="control">
             <label for="threshold">認識信頼度しきい値: <span id="thresholdValue">0.75</span></label>
             <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.75" />
+            <div class="small">※ 低くすると誤認識が増える可能性があります</div>
           </div>
 
           <div class="control">
@@ -512,7 +513,7 @@
 
           <div class="control">
             <label>記録状態</label>
-            <div id="recordStatus" class="record-status idle">待機中 - 「開始」を押してください</div>
+          <div id="recordStatus" class="record-status idle">待機中 - 「開始」を押してください</div>
           </div>
 
           <div class="control">
@@ -537,7 +538,7 @@
             <button id="btnResetRecord" class="btn btn-secondary" type="button">リセット</button>
           </div>
 
-          <div id="statusRecord" class="status">準備完了</div>
+          <div id="statusRecord" class="status">準備完了。開始してください。</div>
         </aside>
       </div>
     </section>
@@ -900,6 +901,7 @@
       if (knn.getNumClasses() === 0) {
         resultEl.textContent = "未学習";
         scoreEl.textContent = "score: --";
+        statusRecognizeEl.textContent = "未学習のため認識できません。記録タブで単語を登録してください。";
         return;
       }
 
@@ -910,11 +912,14 @@
         const confidence = result.confidences[label] || 0;
         scoreEl.textContent = `score: ${confidence.toFixed(2)}`;
 
-        if (confidence >= parseFloat(thresholdInput.value)) {
+        const threshold = parseFloat(thresholdInput.value);
+        if (confidence >= threshold) {
           resultEl.textContent = label;
           pushHistory(label, confidence);
+          statusRecognizeEl.textContent = "認識結果を確定しました。";
         } else {
           resultEl.textContent = "--";
+          statusRecognizeEl.textContent = `信頼度が低いため未確定です（しきい値: ${threshold.toFixed(2)}）`;
         }
       } finally {
         tensor.dispose();
@@ -994,12 +999,15 @@
       syncCanvasSize(video, canvas);
 
       if (predictions.length > 0) {
+        statusRecognizeEl.textContent = "認識中...";
         drawLandmarks(predictions, ctx, canvas);
         latestFeature = landmarksToFeatures(predictions[0].keypoints);
         await classifyGesture(latestFeature);
       } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         resultEl.textContent = "--";
+        scoreEl.textContent = "score: --";
+        statusRecognizeEl.textContent = "手が検出されていません。手を画面中央に映してください。";
       }
 
       requestAnimationFrame(renderLoopRecognize);
@@ -1057,6 +1065,7 @@
           recordStatusEl.className = 'record-status recording';
           btnStartRecord.disabled = true;
           btnStopRecord.disabled = false;
+          statusRecordEl.textContent = '手話を実演してください...';
           break;
         case RecordingState.WAITING_2:
           step1El.classList.add('completed');
@@ -1073,6 +1082,7 @@
           recordStatusEl.className = 'record-status recording';
           btnStartRecord.disabled = true;
           btnStopRecord.disabled = false;
+          statusRecordEl.textContent = '手話を実演してください...';
           break;
         case RecordingState.LABELING:
           step1El.classList.add('completed');
@@ -1083,6 +1093,7 @@
           btnStartRecord.disabled = true;
           btnStopRecord.disabled = true;
           voiceInputArea.classList.remove('hidden');
+          statusRecordEl.textContent = '音声入力または手入力で単語名を登録してください。';
           break;
       }
     }
@@ -1119,11 +1130,9 @@
       if (recordingState === RecordingState.IDLE) {
         recordData1 = [];
         updateRecordingState(RecordingState.RECORDING_1);
-        statusRecordEl.textContent = '手話を実演してください...';
       } else if (recordingState === RecordingState.WAITING_2) {
         recordData2 = [];
         updateRecordingState(RecordingState.RECORDING_2);
-        statusRecordEl.textContent = '手話を実演してください...';
       }
     });
 
@@ -1151,7 +1160,7 @@
     btnVoiceInput.addEventListener('click', () => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        statusRecordEl.textContent = '音声認識はこのブラウザでサポートされていません。手動で入力してください。';
+        statusRecordEl.textContent = '音声入力はこのブラウザで使えません。手入力してください。';
         return;
       }
 
@@ -1281,6 +1290,9 @@
 
       if (filteredLabels.length === 0) {
         emptyStateEl.classList.remove('hidden');
+        emptyStateEl.textContent = labels.length === 0
+          ? '登録されている単語はありません'
+          : '検索条件に一致する単語はありません';
         document.querySelector('.word-table').style.display = 'none';
       } else {
         emptyStateEl.classList.add('hidden');
@@ -1592,7 +1604,7 @@
         checkSpeechRecognition();
 
         statusRecognizeEl.textContent = "準備完了。手をカメラにかざしてください。";
-        statusRecordEl.textContent = "準備完了";
+        statusRecordEl.textContent = "準備完了。開始してください。";
 
         renderLoopRecognize();
         renderLoopRecord();
