@@ -1338,12 +1338,22 @@
 
     // 単語削除
     function deleteWord(label) {
-      // KNNから削除
       const dataset = knn.getClassifierDataset();
-      if (dataset[label]) {
-        dataset[label].dispose();
-        delete dataset[label];
-        knn.setClassifierDataset(dataset);
+
+      // 削除対象以外のデータをクローン
+      const newDataset = {};
+      for (const key of Object.keys(dataset)) {
+        if (key !== label) {
+          newDataset[key] = dataset[key].clone();
+        }
+      }
+
+      // 全クラスをクリア（古いテンソルを dispose）
+      knn.clearAllClasses();
+
+      // 新しいデータセットを設定
+      if (Object.keys(newDataset).length > 0) {
+        knn.setClassifierDataset(newDataset);
       }
 
       // メタデータから削除
@@ -1395,19 +1405,32 @@
       if (selectedLabels.size === 0) return;
       if (!confirm(`選択した ${selectedLabels.size} 件の単語を削除しますか？`)) return;
 
-      selectedLabels.forEach(label => {
-        const dataset = knn.getClassifierDataset();
-        if (dataset[label]) {
-          dataset[label].dispose();
-          delete dataset[label];
+      const dataset = knn.getClassifierDataset();
+
+      // 削除対象以外のデータをクローン
+      const newDataset = {};
+      for (const key of Object.keys(dataset)) {
+        if (!selectedLabels.has(key)) {
+          newDataset[key] = dataset[key].clone();
         }
+      }
+
+      // 全クラスをクリア（古いテンソルを dispose）
+      knn.clearAllClasses();
+
+      // 新しいデータセットを設定
+      if (Object.keys(newDataset).length > 0) {
+        knn.setClassifierDataset(newDataset);
+      }
+
+      // メタデータから削除
+      selectedLabels.forEach(label => {
         delete wordMetadata[label];
       });
-
-      knn.setClassifierDataset(knn.getClassifierDataset());
       saveMetadata();
 
-      statusListEl.textContent = `${selectedLabels.size}件の単語を削除しました。`;
+      const deletedCount = selectedLabels.size;
+      statusListEl.textContent = `${deletedCount}件の単語を削除しました。`;
       selectedLabels.clear();
       updateWordList();
     });
