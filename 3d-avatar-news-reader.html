@@ -476,7 +476,14 @@
                     <h2 style="margin: 0; border: none; padding: 0;">経済ニュース</h2>
                     <button id="btn-refresh" style="background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.3); color: #00d4ff; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem;" title="ニュースを更新">🔄 更新</button>
                 </div>
-                <div id="news-source" style="font-size: 0.75rem; color: #666; margin-bottom: 8px;">Yahoo!ニュース経済</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <label for="feed-selector" style="font-size: 0.75rem; color: #888;">ソース:</label>
+                    <select id="feed-selector" style="background: rgba(0, 0, 0, 0.3); color: #e4e4e4; border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 5px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer;">
+                        <option value="google_business">Google ニュース経済（日本）</option>
+                        <option value="yahoo_business">Yahoo!ニュース経済</option>
+                    </select>
+                    <span id="news-source" style="font-size: 0.7rem; color: #666; display: none;"></span>
+                </div>
                 <div id="news-items"></div>
             </div>
         </div>
@@ -605,17 +612,30 @@
 
         // RSS Feed URLs for Japanese economic news
         const RSS_FEEDS = {
-            yahoo_business: 'https://news.yahoo.co.jp/rss/categories/business.xml',
-            yahoo_economy: 'https://news.yahoo.co.jp/rss/categories/world.xml'
+            google_business: {
+                name: 'Google ニュース経済（日本）',
+                url: 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ja&gl=JP&ceid=JP:ja'
+            },
+            yahoo_business: {
+                name: 'Yahoo!ニュース経済',
+                url: 'https://news.yahoo.co.jp/rss/categories/business.xml'
+            }
         };
+
+        // Current selected feed
+        let currentFeed = 'google_business';
 
         // CORS proxy service
         const CORS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
         // Fetch news from RSS feed
         async function fetchNewsFromRSS() {
-            const rssUrl = RSS_FEEDS.yahoo_business;
+            const feed = RSS_FEEDS[currentFeed];
+            const rssUrl = feed.url;
             const proxyUrl = `${CORS_PROXY}${encodeURIComponent(rssUrl)}`;
+
+            // Update source display
+            document.getElementById('news-source').textContent = feed.name;
 
             console.log('Fetching news from RSS...');
             updateNewsLoadingStatus('ニュースを取得中...');
@@ -1773,6 +1793,19 @@
 
         // Refresh button event listener
         document.getElementById('btn-refresh').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-refresh');
+            btn.disabled = true;
+            btn.textContent = '取得中...';
+
+            await initializeNews();
+
+            btn.disabled = false;
+            btn.textContent = '🔄 更新';
+        });
+
+        // Feed selector event listener
+        document.getElementById('feed-selector').addEventListener('change', async (e) => {
+            currentFeed = e.target.value;
             const btn = document.getElementById('btn-refresh');
             btn.disabled = true;
             btn.textContent = '取得中...';
