@@ -184,6 +184,44 @@
     .info-panel a {
       color: var(--accent);
     }
+    .data-controls {
+      display: grid;
+      gap: 8px;
+    }
+    .data-controls .btn-row {
+      display: flex;
+      gap: 8px;
+    }
+    .data-controls button {
+      flex: 1;
+      border-radius: 8px;
+      border: none;
+      padding: 8px;
+      background: #475569;
+      color: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .data-controls button:hover {
+      background: #64748b;
+    }
+    .data-controls button.primary {
+      background: var(--accent);
+      color: #0f172a;
+    }
+    .data-controls button.danger {
+      background: #ef4444;
+      color: white;
+    }
+    .data-controls input[type="file"] {
+      display: none;
+    }
+    .sample-count {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      padding: 4px 0;
+    }
   </style>
 </head>
 <body>
@@ -239,6 +277,23 @@
             <div class="small">※ 本番用は事前に十分な学習データを用意してください。</div>
           </div>
 
+          <div class="control data-controls">
+            <label>学習データ管理</label>
+            <div id="sampleCount" class="sample-count">登録サンプル数: 0</div>
+            <div class="btn-row">
+              <button id="saveToStorage" type="button" class="primary">保存 (Storage)</button>
+              <button id="loadFromStorage" type="button">復元 (Storage)</button>
+            </div>
+            <div class="btn-row">
+              <button id="exportFile" type="button">エクスポート</button>
+              <button id="importFileBtn" type="button">インポート</button>
+              <input id="importFile" type="file" accept=".json" />
+            </div>
+            <div class="btn-row">
+              <button id="clearData" type="button" class="danger">全データ削除</button>
+            </div>
+          </div>
+
           <div id="status" class="status">初期化中...</div>
         </aside>
       </div>
@@ -249,11 +304,19 @@
         <h2>使い方</h2>
         <ol>
           <li>「実行」タブでカメラアクセスを許可します。</li>
-          <li>手をカメラに映し、ランドマークが表示されることを確認します。</li>
+          <li>手をカメラに映し、ランドマーク（点と接続線）が表示されることを確認します。</li>
           <li>認識結果のしきい値をスライダーで調整します。</li>
           <li>必要に応じて「サンプル登録」でラベルを入力し、現在の手形を学習に追加します。</li>
           <li>履歴やスコアを確認しながら動作をチェックします。</li>
         </ol>
+        <h3>学習データ管理</h3>
+        <ul>
+          <li><strong>保存 (Storage)</strong>: 学習データをブラウザのlocalStorageに保存します。</li>
+          <li><strong>復元 (Storage)</strong>: localStorageから学習データを読み込みます。</li>
+          <li><strong>エクスポート</strong>: 学習データをJSONファイルとしてダウンロードします。</li>
+          <li><strong>インポート</strong>: JSONファイルから学習データを読み込みます。</li>
+          <li><strong>全データ削除</strong>: すべての学習データを消去します。</li>
+        </ul>
         <div>
           <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker?hl=ja" target="_blank" rel="noopener noreferrer">手のランドマーク検出ガイド</a>
         </div>
@@ -264,10 +327,12 @@
       <div class="info-panel">
         <h2>仕様・使用技術</h2>
         <ul>
-          <li>MediaPipe Hands による手のランドマーク検出。</li>
+          <li>MediaPipe Hands による手のランドマーク検出（21点）。</li>
           <li>TensorFlow.js の WebGL バックエンドで推論を実行。</li>
           <li>KNN 分類器でリアルタイムのラベル分類を実施。</li>
           <li>完全クライアントサイドで映像処理・推論・表示を完結。</li>
+          <li>手の骨格構造を接続線で可視化（指先は黄色で強調表示）。</li>
+          <li>学習データの永続化（localStorage / JSONファイル）に対応。</li>
         </ul>
         <div>
           <a href="https://www.tensorflow.org/?hl=ja" target="_blank" rel="noopener noreferrer">TensorFlow</a>
@@ -304,6 +369,34 @@
     const addSampleBtn = document.getElementById("addSample");
     const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
     const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+    const sampleCountEl = document.getElementById("sampleCount");
+    const saveToStorageBtn = document.getElementById("saveToStorage");
+    const loadFromStorageBtn = document.getElementById("loadFromStorage");
+    const exportFileBtn = document.getElementById("exportFile");
+    const importFileBtn = document.getElementById("importFileBtn");
+    const importFileInput = document.getElementById("importFile");
+    const clearDataBtn = document.getElementById("clearData");
+
+    // localStorageキー
+    const STORAGE_KEY = "jsl_knn_data";
+
+    // 手の骨格構造（接続線のためのランドマークペア）
+    const HAND_CONNECTIONS = [
+      // 手首から各指の付け根へ
+      [0, 1], [0, 5], [0, 9], [0, 13], [0, 17],
+      // 親指
+      [1, 2], [2, 3], [3, 4],
+      // 人差し指
+      [5, 6], [6, 7], [7, 8],
+      // 中指
+      [9, 10], [10, 11], [11, 12],
+      // 薬指
+      [13, 14], [14, 15], [15, 16],
+      // 小指
+      [17, 18], [18, 19], [19, 20],
+      // 手のひらの横の接続
+      [5, 9], [9, 13], [13, 17]
+    ];
 
     let detector;
     let latestFeature = null;
@@ -442,19 +535,46 @@
       });
     }
 
-    // 手ランドマークを描画
+    // 手ランドマークを描画（接続線付き）
     function drawLandmarks(predictions) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = "#38bdf8";
-      ctx.lineWidth = 2;
-      ctx.fillStyle = "rgba(56, 189, 248, 0.7)";
 
       predictions.forEach((prediction) => {
         const { keypoints } = prediction;
-        keypoints.forEach((pt) => {
+
+        // 接続線を描画
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+        ctx.lineWidth = 2;
+        HAND_CONNECTIONS.forEach(([startIdx, endIdx]) => {
+          const start = keypoints[startIdx];
+          const end = keypoints[endIdx];
+          if (start && end) {
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+          }
+        });
+
+        // ランドマーク点を描画
+        ctx.fillStyle = "rgba(56, 189, 248, 0.9)";
+        keypoints.forEach((pt, idx) => {
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+          // 手首と指先を大きく表示
+          const radius = (idx === 0 || idx % 4 === 0) ? 6 : 4;
+          ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
           ctx.fill();
+        });
+
+        // 指先に強調表示
+        ctx.fillStyle = "#fbbf24";
+        [4, 8, 12, 16, 20].forEach((tipIdx) => {
+          const tip = keypoints[tipIdx];
+          if (tip) {
+            ctx.beginPath();
+            ctx.arc(tip.x, tip.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
         });
       });
     }
@@ -494,6 +614,19 @@
       requestAnimationFrame(renderLoop);
     }
 
+    // サンプル数を更新
+    function updateSampleCount() {
+      const counts = knn.getClassExampleCount();
+      const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+      const labels = Object.keys(counts);
+      if (labels.length === 0) {
+        sampleCountEl.textContent = "登録サンプル数: 0";
+      } else {
+        const details = labels.map(l => `${l}:${counts[l]}`).join(", ");
+        sampleCountEl.textContent = `登録サンプル数: ${total} (${details})`;
+      }
+    }
+
     // 学習データの追加（サンプル登録）
     addSampleBtn.addEventListener("click", () => {
       if (!latestFeature) {
@@ -510,6 +643,123 @@
       tensor.dispose();
       statusEl.textContent = `ラベル「${label}」を追加しました。`;
       labelInput.value = "";
+      updateSampleCount();
+    });
+
+    // KNNデータをシリアライズ
+    async function serializeKnnData() {
+      const dataset = knn.getClassifierDataset();
+      const dataObj = {};
+      for (const label of Object.keys(dataset)) {
+        dataObj[label] = Array.from(await dataset[label].data());
+        dataObj[label + "_shape"] = dataset[label].shape;
+      }
+      return dataObj;
+    }
+
+    // シリアライズしたデータからKNNを復元
+    function deserializeKnnData(dataObj) {
+      const dataset = {};
+      const labels = Object.keys(dataObj).filter(k => !k.endsWith("_shape"));
+      for (const label of labels) {
+        const shape = dataObj[label + "_shape"];
+        dataset[label] = tf.tensor2d(dataObj[label], shape);
+      }
+      knn.setClassifierDataset(dataset);
+    }
+
+    // localStorageに保存
+    saveToStorageBtn.addEventListener("click", async () => {
+      if (knn.getNumClasses() === 0) {
+        statusEl.textContent = "保存するデータがありません。";
+        return;
+      }
+      try {
+        const data = await serializeKnnData();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        statusEl.textContent = "localStorageに保存しました。";
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "保存に失敗しました。";
+      }
+    });
+
+    // localStorageから復元
+    loadFromStorageBtn.addEventListener("click", () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+          statusEl.textContent = "保存されたデータがありません。";
+          return;
+        }
+        const data = JSON.parse(stored);
+        deserializeKnnData(data);
+        updateSampleCount();
+        statusEl.textContent = "localStorageから復元しました。";
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "復元に失敗しました。";
+      }
+    });
+
+    // ファイルにエクスポート
+    exportFileBtn.addEventListener("click", async () => {
+      if (knn.getNumClasses() === 0) {
+        statusEl.textContent = "エクスポートするデータがありません。";
+        return;
+      }
+      try {
+        const data = await serializeKnnData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `jsl-training-data-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        statusEl.textContent = "ファイルをエクスポートしました。";
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "エクスポートに失敗しました。";
+      }
+    });
+
+    // インポートボタンクリックでファイル選択を開く
+    importFileBtn.addEventListener("click", () => {
+      importFileInput.click();
+    });
+
+    // ファイルからインポート
+    importFileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          deserializeKnnData(data);
+          updateSampleCount();
+          statusEl.textContent = `${file.name} をインポートしました。`;
+        } catch (error) {
+          console.error(error);
+          statusEl.textContent = "ファイルの読み込みに失敗しました。";
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    });
+
+    // データを全削除
+    clearDataBtn.addEventListener("click", () => {
+      if (!confirm("すべての学習データを削除してもよろしいですか？")) {
+        return;
+      }
+      knn.clearAllClasses();
+      updateSampleCount();
+      statusEl.textContent = "すべてのデータを削除しました。";
     });
 
     // 初期化処理
