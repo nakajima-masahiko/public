@@ -501,6 +501,7 @@
             <button class="control-btn" id="btn-pause" title="一時停止" disabled>⏸</button>
             <button class="control-btn" id="btn-stop" title="停止" disabled>⏹</button>
             <button class="control-btn" id="btn-dance" title="ダンス" disabled>💃</button>
+            <button class="control-btn" id="btn-run" title="かけっこ" disabled>🏃</button>
             <span class="status" id="status">待機中</span>
             <div class="emotion-indicator" id="emotion-indicator" style="display: none;">
                 <span class="emotion-icon" id="emotion-icon">😊</span>
@@ -801,6 +802,15 @@
         let danceAudioContext = null;
         let danceAudioNodes = [];
 
+        // Running animation state
+        let isRunning = false;
+        let runStartTime = 0;
+        let runStopTimer = null;
+        let runBasePositionX = 0;
+        let runBaseRotations = null;
+        let originalCameraPosition = null;
+        let originalControlsTarget = null;
+
         // Text highlight sync state
         let sentences = [];
         let currentSentenceIndex = 0;
@@ -884,6 +894,7 @@
 
                 console.log('VRM loaded successfully - starting intro animation');
                 document.getElementById('btn-dance').disabled = false;
+                document.getElementById('btn-run').disabled = false;
             },
             (progress) => {
                 const percent = Math.round((progress.loaded / progress.total) * 100);
@@ -933,6 +944,8 @@
 
                 if (isDancing) {
                     updateDanceAnimation();
+                } else if (isRunning) {
+                    updateRunAnimation();
                 } else {
                     // Idle animation - subtle head movement
                     const time = clock.elapsedTime;
@@ -983,6 +996,10 @@
 
         function startDance() {
             if (!currentVrm || isDancing || startupAnimationActive) return;
+
+            // Show happy smile with eyes open before dancing
+            showDanceSmile();
+
             isDancing = true;
             danceStartTime = clock.elapsedTime;
             cacheDanceBasePose();
@@ -1000,6 +1017,15 @@
             }, 5000);
         }
 
+        // Show happy smile with eyes open for dance
+        function showDanceSmile() {
+            if (!currentVrm || !currentVrm.expressionManager) return;
+
+            // Set happy expression and keep eyes open
+            currentVrm.expressionManager.setValue('happy', 0.9);
+            currentVrm.expressionManager.setValue('blink', 0);
+        }
+
         function stopDance() {
             if (!isDancing) return;
             isDancing = false;
@@ -1013,6 +1039,31 @@
                 clearTimeout(danceStopTimer);
                 danceStopTimer = null;
             }
+
+            // Show happy smile with eyes open after dancing
+            showDanceSmile();
+
+            // Fade out smile after 2 seconds
+            setTimeout(() => {
+                fadeDanceSmile();
+            }, 2000);
+        }
+
+        // Fade out dance smile gradually
+        function fadeDanceSmile() {
+            if (!currentVrm || !currentVrm.expressionManager) return;
+
+            let smileValue = 0.9;
+            const fadeInterval = setInterval(() => {
+                smileValue -= 0.06;
+                if (smileValue <= 0) {
+                    smileValue = 0;
+                    clearInterval(fadeInterval);
+                }
+                if (currentVrm && currentVrm.expressionManager) {
+                    currentVrm.expressionManager.setValue('happy', smileValue);
+                }
+            }, 50);
         }
 
         function cacheDanceBasePose() {
@@ -1170,6 +1221,196 @@
             if (danceAudioContext) {
                 danceAudioContext.close();
                 danceAudioContext = null;
+            }
+        }
+
+        // Running animation functions
+        function startRun() {
+            if (!currentVrm || isRunning || isDancing || startupAnimationActive) return;
+
+            isRunning = true;
+            runStartTime = clock.elapsedTime;
+
+            // Cache original positions
+            runBasePositionX = currentVrm.scene.position.x;
+            originalCameraPosition = camera.position.clone();
+            originalControlsTarget = controls.target.clone();
+
+            // Cache base rotations for legs and arms
+            cacheRunBasePose();
+
+            // Rotate avatar to face right (90 degrees from back)
+            currentVrm.scene.rotation.y = -Math.PI / 2;
+
+            // Move camera back 5m
+            camera.position.z = originalCameraPosition.z + 5;
+            controls.update();
+
+            // Disable buttons during run
+            const runButton = document.getElementById('btn-run');
+            const danceButton = document.getElementById('btn-dance');
+            if (runButton) runButton.disabled = true;
+            if (danceButton) danceButton.disabled = true;
+
+            console.log('Running started');
+
+            // Stop after 5 seconds
+            if (runStopTimer) {
+                clearTimeout(runStopTimer);
+            }
+            runStopTimer = setTimeout(() => {
+                stopRun();
+            }, 5000);
+        }
+
+        function stopRun() {
+            if (!isRunning) return;
+
+            isRunning = false;
+
+            // Reset pose
+            resetRunPose();
+
+            // Reset avatar position and rotation (face back - away from camera)
+            currentVrm.scene.position.x = runBasePositionX;
+            currentVrm.scene.rotation.y = 0;
+
+            // Reset camera position
+            if (originalCameraPosition) {
+                camera.position.copy(originalCameraPosition);
+            }
+            if (originalControlsTarget) {
+                controls.target.copy(originalControlsTarget);
+            }
+            controls.update();
+
+            // Re-enable buttons
+            const runButton = document.getElementById('btn-run');
+            const danceButton = document.getElementById('btn-dance');
+            if (runButton) runButton.disabled = false;
+            if (danceButton) danceButton.disabled = false;
+
+            if (runStopTimer) {
+                clearTimeout(runStopTimer);
+                runStopTimer = null;
+            }
+
+            console.log('Running stopped');
+        }
+
+        function cacheRunBasePose() {
+            if (!currentVrm || !currentVrm.humanoid) return;
+
+            const getRotation = (boneName) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (!bone) return null;
+                return { x: bone.rotation.x, y: bone.rotation.y, z: bone.rotation.z };
+            };
+
+            runBaseRotations = {
+                hips: getRotation('hips'),
+                spine: getRotation('spine'),
+                leftUpperLeg: getRotation('leftUpperLeg'),
+                rightUpperLeg: getRotation('rightUpperLeg'),
+                leftLowerLeg: getRotation('leftLowerLeg'),
+                rightLowerLeg: getRotation('rightLowerLeg'),
+                leftUpperArm: getRotation('leftUpperArm'),
+                rightUpperArm: getRotation('rightUpperArm'),
+                leftLowerArm: getRotation('leftLowerArm'),
+                rightLowerArm: getRotation('rightLowerArm')
+            };
+        }
+
+        function resetRunPose() {
+            if (!currentVrm || !currentVrm.humanoid || !runBaseRotations) return;
+
+            const restoreRotation = (boneName, rotation) => {
+                const bone = currentVrm.humanoid.getNormalizedBoneNode(boneName);
+                if (bone && rotation) {
+                    bone.rotation.set(rotation.x, rotation.y, rotation.z);
+                }
+            };
+
+            restoreRotation('hips', runBaseRotations.hips);
+            restoreRotation('spine', runBaseRotations.spine);
+            restoreRotation('leftUpperLeg', runBaseRotations.leftUpperLeg);
+            restoreRotation('rightUpperLeg', runBaseRotations.rightUpperLeg);
+            restoreRotation('leftLowerLeg', runBaseRotations.leftLowerLeg);
+            restoreRotation('rightLowerLeg', runBaseRotations.rightLowerLeg);
+            restoreRotation('leftUpperArm', runBaseRotations.leftUpperArm);
+            restoreRotation('rightUpperArm', runBaseRotations.rightUpperArm);
+            restoreRotation('leftLowerArm', runBaseRotations.leftLowerArm);
+            restoreRotation('rightLowerArm', runBaseRotations.rightLowerArm);
+        }
+
+        function updateRunAnimation() {
+            if (!currentVrm || !currentVrm.humanoid || !runBaseRotations) return;
+
+            const runTime = clock.elapsedTime - runStartTime;
+            const runSpeed = 10; // Animation speed
+            const moveSpeed = 0.8; // Movement speed (units per second)
+
+            // Move avatar to the right
+            currentVrm.scene.position.x = runBasePositionX + runTime * moveSpeed;
+
+            // Update camera target to follow avatar
+            controls.target.x = currentVrm.scene.position.x;
+            controls.update();
+
+            // Running leg animation
+            const legSwing = Math.sin(runTime * runSpeed) * 0.8;
+            const kneeSwing = Math.abs(Math.sin(runTime * runSpeed)) * 1.2;
+
+            // Running arm animation (opposite to legs)
+            const armSwing = Math.sin(runTime * runSpeed) * 0.6;
+            const elbowBend = 0.8 + Math.abs(Math.sin(runTime * runSpeed)) * 0.4;
+
+            // Body bounce
+            const bounce = Math.abs(Math.sin(runTime * runSpeed * 2)) * 0.03;
+            currentVrm.scene.position.y = bounce;
+
+            // Get bone nodes
+            const leftUpperLeg = currentVrm.humanoid.getNormalizedBoneNode('leftUpperLeg');
+            const rightUpperLeg = currentVrm.humanoid.getNormalizedBoneNode('rightUpperLeg');
+            const leftLowerLeg = currentVrm.humanoid.getNormalizedBoneNode('leftLowerLeg');
+            const rightLowerLeg = currentVrm.humanoid.getNormalizedBoneNode('rightLowerLeg');
+            const leftUpperArm = currentVrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+            const rightUpperArm = currentVrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+            const leftLowerArm = currentVrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+            const rightLowerArm = currentVrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+            const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
+
+            // Apply leg rotations
+            if (leftUpperLeg && runBaseRotations.leftUpperLeg) {
+                leftUpperLeg.rotation.x = runBaseRotations.leftUpperLeg.x + legSwing;
+            }
+            if (rightUpperLeg && runBaseRotations.rightUpperLeg) {
+                rightUpperLeg.rotation.x = runBaseRotations.rightUpperLeg.x - legSwing;
+            }
+            if (leftLowerLeg && runBaseRotations.leftLowerLeg) {
+                leftLowerLeg.rotation.x = runBaseRotations.leftLowerLeg.x + (legSwing > 0 ? kneeSwing : 0);
+            }
+            if (rightLowerLeg && runBaseRotations.rightLowerLeg) {
+                rightLowerLeg.rotation.x = runBaseRotations.rightLowerLeg.x + (legSwing < 0 ? kneeSwing : 0);
+            }
+
+            // Apply arm rotations (opposite to legs)
+            if (leftUpperArm && runBaseRotations.leftUpperArm) {
+                leftUpperArm.rotation.x = runBaseRotations.leftUpperArm.x - armSwing;
+            }
+            if (rightUpperArm && runBaseRotations.rightUpperArm) {
+                rightUpperArm.rotation.x = runBaseRotations.rightUpperArm.x + armSwing;
+            }
+            if (leftLowerArm && runBaseRotations.leftLowerArm) {
+                leftLowerArm.rotation.x = runBaseRotations.leftLowerArm.x - elbowBend;
+            }
+            if (rightLowerArm && runBaseRotations.rightLowerArm) {
+                rightLowerArm.rotation.x = runBaseRotations.rightLowerArm.x - elbowBend;
+            }
+
+            // Slight body lean forward
+            if (spine && runBaseRotations.spine) {
+                spine.rotation.x = runBaseRotations.spine.x + 0.1;
             }
         }
 
@@ -1712,6 +1953,7 @@
         document.getElementById('btn-pause').addEventListener('click', pauseSpeech);
         document.getElementById('btn-stop').addEventListener('click', stopSpeech);
         document.getElementById('btn-dance').addEventListener('click', startDance);
+        document.getElementById('btn-run').addEventListener('click', startRun);
 
         document.getElementById('speed-slider').addEventListener('input', (e) => {
             const value = parseFloat(e.target.value).toFixed(1);
