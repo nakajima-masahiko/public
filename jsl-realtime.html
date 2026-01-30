@@ -11,6 +11,9 @@
       --panel: #1e293b;
       --text: #f8fafc;
       --accent: #38bdf8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
     }
     body {
       margin: 0;
@@ -52,12 +55,25 @@
       grid-template-columns: minmax(300px, 1fr) 320px;
       gap: 20px;
     }
+    @media (max-width: 768px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+    }
     header {
       grid-column: 1 / -1;
     }
     h1 {
       margin: 0 0 8px;
       font-size: 1.6rem;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1.3rem;
+    }
+    h3 {
+      margin: 16px 0 8px;
+      font-size: 1.1rem;
     }
     p {
       margin: 0;
@@ -98,6 +114,27 @@
     }
     input[type="range"] {
       width: 100%;
+    }
+    input[type="text"], input[type="search"] {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: rgba(15, 23, 42, 0.4);
+      color: inherit;
+      font-size: 1rem;
+    }
+    input[type="text"]:focus, input[type="search"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #334155;
+      color: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
     }
     .toggle {
       display: inline-flex;
@@ -141,25 +178,64 @@
       font-size: 0.9rem;
       opacity: 0.7;
     }
-    .train {
-      display: grid;
-      gap: 6px;
-    }
-    .train input {
-      padding: 6px;
-      border-radius: 8px;
-      border: 1px solid #475569;
-      background: transparent;
-      color: inherit;
-    }
-    .train button {
+    .btn {
       border-radius: 8px;
       border: none;
-      padding: 8px;
-      background: var(--accent);
-      color: #0f172a;
+      padding: 10px 16px;
       font-weight: 600;
       cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+    }
+    .btn-primary:hover {
+      background: #7dd3fc;
+    }
+    .btn-primary:disabled {
+      background: #475569;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #475569;
+      color: inherit;
+    }
+    .btn-secondary:hover {
+      background: #64748b;
+    }
+    .btn-secondary:disabled {
+      background: #334155;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+    .btn-success {
+      background: var(--success);
+      color: #0f172a;
+    }
+    .btn-success:hover {
+      background: #4ade80;
+    }
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #f87171;
+    }
+    .btn-danger:disabled {
+      background: #7f1d1d;
+      color: #fca5a5;
+      cursor: not-allowed;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-row .btn {
+      flex: 1;
     }
     .info-panel {
       background: var(--panel);
@@ -184,55 +260,180 @@
     .info-panel a {
       color: var(--accent);
     }
-    .data-controls {
+
+    /* 記録タブ用スタイル */
+    .record-app {
       display: grid;
-      gap: 8px;
+      grid-template-columns: minmax(300px, 1fr) 360px;
+      gap: 20px;
     }
-    .data-controls .btn-row {
+    @media (max-width: 768px) {
+      .record-app {
+        grid-template-columns: 1fr;
+      }
+    }
+    .progress-steps {
       display: flex;
+      align-items: center;
       gap: 8px;
-    }
-    .data-controls button {
-      flex: 1;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.4);
       border-radius: 8px;
-      border: none;
-      padding: 8px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
+    .step-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
       background: #475569;
-      color: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.85rem;
     }
-    .data-controls button:hover {
-      background: #64748b;
-    }
-    .data-controls button.primary {
+    .step.active .step-indicator {
       background: var(--accent);
       color: #0f172a;
     }
-    .data-controls button.danger {
-      background: #ef4444;
-      color: white;
+    .step.completed .step-indicator {
+      background: var(--success);
+      color: #0f172a;
     }
-    .data-controls input[type="file"] {
+    .step-arrow {
+      color: #64748b;
+    }
+    .record-status {
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+    }
+    .record-status.idle {
+      background: rgba(71, 85, 105, 0.4);
+    }
+    .record-status.recording {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      animation: pulse 1.5s infinite;
+    }
+    .record-status.waiting {
+      background: rgba(245, 158, 11, 0.3);
+      color: #fcd34d;
+    }
+    .record-status.labeling {
+      background: rgba(34, 197, 94, 0.3);
+      color: #86efac;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .voice-input-area {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+    }
+    .voice-input-area.hidden {
       display: none;
     }
-    .sample-count {
-      font-size: 0.85rem;
-      opacity: 0.8;
-      padding: 4px 0;
+
+    /* 一覧タブ用スタイル */
+    .list-app {
+      max-width: 900px;
+    }
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .list-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .word-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .word-table th, .word-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    .word-table th {
+      background: #334155;
+      font-weight: 600;
+    }
+    .word-table tr:last-child td {
+      border-bottom: none;
+    }
+    .word-table tr:hover td {
+      background: rgba(56, 189, 248, 0.1);
+    }
+    .word-table input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .bulk-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    .data-management {
+      margin-top: 24px;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 12px;
+    }
+    .data-management h3 {
+      margin-top: 0;
+    }
+    .data-section {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94a3b8;
+    }
+    input[type="file"] {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="tab-shell">
     <div class="tabs" role="tablist" aria-label="デモ切り替え">
-      <button class="tab-button active" role="tab" aria-selected="true" aria-controls="tab-run" id="tabButtonRun" type="button">実行</button>
+      <button class="tab-button active" role="tab" aria-selected="true" aria-controls="tab-recognize" id="tabButtonRecognize" type="button">認識</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-record" id="tabButtonRecord" type="button">記録</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-list" id="tabButtonList" type="button">一覧</button>
       <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-manual" id="tabButtonManual" type="button">マニュアル</button>
       <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-spec" id="tabButtonSpec" type="button">仕様</button>
     </div>
 
-    <section id="tab-run" class="tab-panel active" role="tabpanel" aria-labelledby="tabButtonRun">
+    <!-- 認識タブ -->
+    <section id="tab-recognize" class="tab-panel active" role="tabpanel" aria-labelledby="tabButtonRecognize">
       <div class="app">
         <header>
           <h1>日本手話 (JSL) リアルタイム認識 デモ</h1>
@@ -270,59 +471,209 @@
             <div id="history" class="history"></div>
           </div>
 
-          <div class="control train">
-            <label>サンプル登録（任意）</label>
-            <input id="labelInput" type="text" placeholder="例: あ / い / ありがとう" />
-            <button id="addSample" type="button">現在の手形を学習データに追加</button>
-            <div class="small">※ 本番用は事前に十分な学習データを用意してください。</div>
-          </div>
-
-          <div class="control data-controls">
-            <label>学習データ管理</label>
-            <div id="sampleCount" class="sample-count">登録サンプル数: 0</div>
-            <div class="btn-row">
-              <button id="saveToStorage" type="button" class="primary">保存 (Storage)</button>
-              <button id="loadFromStorage" type="button">復元 (Storage)</button>
-            </div>
-            <div class="btn-row">
-              <button id="exportFile" type="button">エクスポート</button>
-              <button id="importFileBtn" type="button">インポート</button>
-              <input id="importFile" type="file" accept=".json" />
-            </div>
-            <div class="btn-row">
-              <button id="clearData" type="button" class="danger">全データ削除</button>
-            </div>
-          </div>
-
-          <div id="status" class="status">初期化中...</div>
+          <div id="statusRecognize" class="status">初期化中...</div>
         </aside>
       </div>
     </section>
 
+    <!-- 記録タブ -->
+    <section id="tab-record" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonRecord">
+      <div class="record-app">
+        <header>
+          <h1>手話単語の記録</h1>
+          <p>手話を2回実演し、音声で単語名を登録します。</p>
+        </header>
+
+        <div class="video-wrap">
+          <video id="videoRecord" autoplay playsinline aria-label="カメラ映像"></video>
+          <canvas id="overlayRecord"></canvas>
+        </div>
+
+        <aside class="panel">
+          <div class="control">
+            <label>進捗</label>
+            <div class="progress-steps">
+              <div class="step active" id="step1">
+                <span class="step-indicator">1</span>
+                <span>1回目</span>
+              </div>
+              <span class="step-arrow">→</span>
+              <div class="step" id="step2">
+                <span class="step-indicator">2</span>
+                <span>2回目</span>
+              </div>
+              <span class="step-arrow">→</span>
+              <div class="step" id="step3">
+                <span class="step-indicator">3</span>
+                <span>登録</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="control">
+            <label>記録状態</label>
+            <div id="recordStatus" class="record-status idle">待機中 - 「開始」を押してください</div>
+          </div>
+
+          <div class="control">
+            <label>記録コントロール</label>
+            <div class="btn-row">
+              <button id="btnStartRecord" class="btn btn-success" type="button">開始</button>
+              <button id="btnStopRecord" class="btn btn-danger" type="button" disabled>終了</button>
+            </div>
+          </div>
+
+          <div id="voiceInputArea" class="voice-input-area hidden">
+            <label>単語名を入力</label>
+            <input id="labelInputRecord" type="text" placeholder="音声入力または手動で入力" />
+            <div class="btn-row">
+              <button id="btnVoiceInput" class="btn btn-secondary" type="button">🎤 音声入力</button>
+              <button id="btnRegister" class="btn btn-primary" type="button">登録する</button>
+            </div>
+            <div class="small">※ 音声入力後、テキストは編集できます</div>
+          </div>
+
+          <div class="control">
+            <button id="btnResetRecord" class="btn btn-secondary" type="button">リセット</button>
+          </div>
+
+          <div id="statusRecord" class="status">準備完了</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 一覧タブ -->
+    <section id="tab-list" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonList">
+      <div class="list-app">
+        <header>
+          <h1>登録済み単語一覧</h1>
+        </header>
+
+        <div class="panel">
+          <div class="list-header">
+            <div>
+              <span id="wordCount">登録数: 0件</span>
+            </div>
+            <div class="list-controls">
+              <select id="sortSelect">
+                <option value="name-asc">名前順 (A→Z)</option>
+                <option value="name-desc">名前順 (Z→A)</option>
+                <option value="count-desc">サンプル数 (多い順)</option>
+                <option value="count-asc">サンプル数 (少ない順)</option>
+                <option value="date-desc">登録日時 (新しい順)</option>
+                <option value="date-asc">登録日時 (古い順)</option>
+              </select>
+              <input id="searchInput" type="search" placeholder="検索..." />
+            </div>
+          </div>
+
+          <div id="wordListContainer">
+            <table class="word-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;"><input type="checkbox" id="selectAll" /></th>
+                  <th>単語名</th>
+                  <th style="width: 100px;">サンプル数</th>
+                  <th style="width: 160px;">登録日時</th>
+                  <th style="width: 80px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="wordTableBody">
+              </tbody>
+            </table>
+            <div id="emptyState" class="empty-state hidden">
+              登録されている単語はありません
+            </div>
+          </div>
+
+          <div class="bulk-actions">
+            <label>
+              <input type="checkbox" id="selectAllBulk" /> 全選択
+            </label>
+            <button id="btnDeleteSelected" class="btn btn-danger" type="button" disabled>選択項目を削除</button>
+          </div>
+
+          <div class="data-management">
+            <h3>データ管理</h3>
+            <div class="data-section">
+              <label>ブラウザ保存</label>
+              <div class="btn-row">
+                <button id="saveToStorage" class="btn btn-primary" type="button">保存 (Storage)</button>
+                <button id="loadFromStorage" class="btn btn-secondary" type="button">復元 (Storage)</button>
+              </div>
+            </div>
+            <div class="data-section">
+              <label>ファイル入出力</label>
+              <div class="btn-row">
+                <button id="exportFile" class="btn btn-secondary" type="button">エクスポート</button>
+                <button id="importFileBtn" class="btn btn-secondary" type="button">インポート</button>
+                <input id="importFile" type="file" accept=".json" />
+              </div>
+            </div>
+            <div class="data-section">
+              <button id="clearData" class="btn btn-danger" type="button">全データ削除</button>
+            </div>
+            <div id="statusList" class="status" style="margin-top: 12px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- マニュアルタブ -->
     <section id="tab-manual" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonManual">
       <div class="info-panel">
         <h2>使い方</h2>
+
+        <h3>認識タブ</h3>
         <ol>
-          <li>「実行」タブでカメラアクセスを許可します。</li>
+          <li>「認識」タブでカメラアクセスを許可します。</li>
           <li>手をカメラに映し、ランドマーク（点と接続線）が表示されることを確認します。</li>
           <li>認識結果のしきい値をスライダーで調整します。</li>
-          <li>必要に応じて「サンプル登録」でラベルを入力し、現在の手形を学習に追加します。</li>
           <li>履歴やスコアを確認しながら動作をチェックします。</li>
         </ol>
-        <h3>学習データ管理</h3>
+
+        <h3>記録タブ</h3>
+        <ol>
+          <li>「記録」タブに移動します。</li>
+          <li>「開始」ボタンを押して、記録したい手話を実演します。</li>
+          <li>「終了」ボタンを押して1回目の記録を完了します。</li>
+          <li>もう一度「開始」→ 手話実演 →「終了」で2回目を記録します。</li>
+          <li>音声入力ボタンを押して、その手話の意味を発話します。</li>
+          <li>テキストが正しくない場合は手動で修正します。</li>
+          <li>「登録する」ボタンで手話単語を保存します。</li>
+        </ol>
+
+        <h3>一覧タブ</h3>
+        <h4>単語の確認・管理</h4>
+        <ol>
+          <li>「一覧」タブに移動します。</li>
+          <li>登録済みの手話単語が一覧表示されます。</li>
+          <li>ソートドロップダウンで並び替えができます。</li>
+          <li>検索ボックスで単語を絞り込めます。</li>
+        </ol>
+
+        <h4>単語の削除</h4>
+        <ol>
+          <li>削除したい単語の行の「削除」ボタンをクリックします。</li>
+          <li>確認ダイアログで「OK」を選択します。</li>
+          <li>複数削除する場合は、チェックボックスで選択後「選択項目を削除」をクリックします。</li>
+        </ol>
+
+        <h4>データの保存と読込</h4>
         <ul>
-          <li><strong>保存 (Storage)</strong>: 学習データをブラウザのlocalStorageに保存します。</li>
-          <li><strong>復元 (Storage)</strong>: localStorageから学習データを読み込みます。</li>
-          <li><strong>エクスポート</strong>: 学習データをJSONファイルとしてダウンロードします。</li>
-          <li><strong>インポート</strong>: JSONファイルから学習データを読み込みます。</li>
-          <li><strong>全データ削除</strong>: すべての学習データを消去します。</li>
+          <li><strong>保存 (Storage)</strong>: 学習データをブラウザに保存します（ブラウザを閉じても保持）。</li>
+          <li><strong>復元 (Storage)</strong>: 保存したデータを読み込みます。</li>
+          <li><strong>エクスポート</strong>: JSONファイルとしてダウンロードします。</li>
+          <li><strong>インポート</strong>: 他の環境からデータを読み込みます。</li>
         </ul>
+
         <div>
           <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker?hl=ja" target="_blank" rel="noopener noreferrer">手のランドマーク検出ガイド</a>
         </div>
       </div>
     </section>
 
+    <!-- 仕様タブ -->
     <section id="tab-spec" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonSpec">
       <div class="info-panel">
         <h2>仕様・使用技術</h2>
@@ -333,6 +684,8 @@
           <li>完全クライアントサイドで映像処理・推論・表示を完結。</li>
           <li>手の骨格構造を接続線で可視化（指先は黄色で強調表示）。</li>
           <li>学習データの永続化（localStorage / JSONファイル）に対応。</li>
+          <li>Web Speech API による音声入力でラベル登録。</li>
+          <li>2回記録の平均化によるデータ品質向上。</li>
         </ul>
         <div>
           <a href="https://www.tensorflow.org/?hl=ja" target="_blank" rel="noopener noreferrer">TensorFlow</a>
@@ -353,7 +706,30 @@
     // 定数
     const KNN_K_VALUE = 3;
     const MAX_HISTORY_LENGTH = 12;
+    const STORAGE_KEY = "jsl_knn_data";
+    const METADATA_KEY = "jsl_word_metadata";
 
+    // 手の骨格構造（接続線のためのランドマークペア）
+    const HAND_CONNECTIONS = [
+      [0, 1], [0, 5], [0, 9], [0, 13], [0, 17],
+      [1, 2], [2, 3], [3, 4],
+      [5, 6], [6, 7], [7, 8],
+      [9, 10], [10, 11], [11, 12],
+      [13, 14], [14, 15], [15, 16],
+      [17, 18], [18, 19], [19, 20],
+      [5, 9], [9, 13], [13, 17]
+    ];
+
+    // 記録状態の定義
+    const RecordingState = {
+      IDLE: 'idle',
+      RECORDING_1: 'rec1',
+      WAITING_2: 'wait2',
+      RECORDING_2: 'rec2',
+      LABELING: 'labeling'
+    };
+
+    // DOM要素 - 認識タブ
     const video = document.getElementById("video");
     const canvas = document.getElementById("overlay");
     const ctx = canvas.getContext("2d");
@@ -362,53 +738,75 @@
     const resultEl = document.getElementById("result");
     const scoreEl = document.getElementById("score");
     const historyEl = document.getElementById("history");
-    const statusEl = document.getElementById("status");
+    const statusRecognizeEl = document.getElementById("statusRecognize");
     const modelLiteBtn = document.getElementById("modelLite");
     const modelFullBtn = document.getElementById("modelFull");
-    const labelInput = document.getElementById("labelInput");
-    const addSampleBtn = document.getElementById("addSample");
-    const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
-    const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
-    const sampleCountEl = document.getElementById("sampleCount");
+
+    // DOM要素 - 記録タブ
+    const videoRecord = document.getElementById("videoRecord");
+    const canvasRecord = document.getElementById("overlayRecord");
+    const ctxRecord = canvasRecord.getContext("2d");
+    const recordStatusEl = document.getElementById("recordStatus");
+    const btnStartRecord = document.getElementById("btnStartRecord");
+    const btnStopRecord = document.getElementById("btnStopRecord");
+    const btnVoiceInput = document.getElementById("btnVoiceInput");
+    const btnRegister = document.getElementById("btnRegister");
+    const btnResetRecord = document.getElementById("btnResetRecord");
+    const labelInputRecord = document.getElementById("labelInputRecord");
+    const voiceInputArea = document.getElementById("voiceInputArea");
+    const statusRecordEl = document.getElementById("statusRecord");
+    const step1El = document.getElementById("step1");
+    const step2El = document.getElementById("step2");
+    const step3El = document.getElementById("step3");
+
+    // DOM要素 - 一覧タブ
+    const wordCountEl = document.getElementById("wordCount");
+    const sortSelect = document.getElementById("sortSelect");
+    const searchInput = document.getElementById("searchInput");
+    const wordTableBody = document.getElementById("wordTableBody");
+    const emptyStateEl = document.getElementById("emptyState");
+    const selectAllCheckbox = document.getElementById("selectAll");
+    const selectAllBulkCheckbox = document.getElementById("selectAllBulk");
+    const btnDeleteSelected = document.getElementById("btnDeleteSelected");
     const saveToStorageBtn = document.getElementById("saveToStorage");
     const loadFromStorageBtn = document.getElementById("loadFromStorage");
     const exportFileBtn = document.getElementById("exportFile");
     const importFileBtn = document.getElementById("importFileBtn");
     const importFileInput = document.getElementById("importFile");
     const clearDataBtn = document.getElementById("clearData");
+    const statusListEl = document.getElementById("statusList");
 
-    // localStorageキー
-    const STORAGE_KEY = "jsl_knn_data";
+    // タブ
+    const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
+    const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
-    // 手の骨格構造（接続線のためのランドマークペア）
-    const HAND_CONNECTIONS = [
-      // 手首から各指の付け根へ
-      [0, 1], [0, 5], [0, 9], [0, 13], [0, 17],
-      // 親指
-      [1, 2], [2, 3], [3, 4],
-      // 人差し指
-      [5, 6], [6, 7], [7, 8],
-      // 中指
-      [9, 10], [10, 11], [11, 12],
-      // 薬指
-      [13, 14], [14, 15], [15, 16],
-      // 小指
-      [17, 18], [18, 19], [19, 20],
-      // 手のひらの横の接続
-      [5, 9], [9, 13], [13, 17]
-    ];
-
+    // グローバル状態
     let detector;
     let latestFeature = null;
+    let latestFeatureRecord = null;
     let isPageVisible = true;
+    let currentTab = 'tab-recognize';
     const knn = knnClassifier.create();
     const history = [];
 
-    // ページ可視性の監視（非表示時にループを停止）
+    // 記録タブの状態
+    let recordingState = RecordingState.IDLE;
+    let recordData1 = [];
+    let recordData2 = [];
+    let averagedFeature = null;
+
+    // 単語メタデータ
+    let wordMetadata = {};
+
+    // 選択状態
+    let selectedLabels = new Set();
+
+    // ページ可視性の監視
     document.addEventListener("visibilitychange", () => {
       isPageVisible = !document.hidden;
     });
 
+    // タブ切り替え
     function setActiveTab(targetId) {
       tabButtons.forEach((button) => {
         const isActive = button.getAttribute("aria-controls") === targetId;
@@ -418,6 +816,11 @@
       tabPanels.forEach((panel) => {
         panel.classList.toggle("active", panel.id === targetId);
       });
+      currentTab = targetId;
+
+      if (targetId === 'tab-list') {
+        updateWordList();
+      }
     }
 
     tabButtons.forEach((button) => {
@@ -431,7 +834,7 @@
       thresholdValue.textContent = thresholdInput.value;
     });
 
-    // モデル切替（簡易版なので再読み込みを案内）
+    // モデル切替
     modelLiteBtn.addEventListener("click", () => toggleModel("lite"));
     modelFullBtn.addEventListener("click", () => toggleModel("full"));
 
@@ -439,23 +842,22 @@
       localStorage.setItem("mp_model_type", type);
       modelLiteBtn.classList.toggle("active", type === "lite");
       modelFullBtn.classList.toggle("active", type === "full");
-      statusEl.textContent = "モデルタイプを保存しました。再読み込みで適用されます。";
+      statusRecognizeEl.textContent = "モデルタイプを保存しました。再読み込みで適用されます。";
     }
 
-    // モデルタイプを初期化
     const savedModelType = localStorage.getItem("mp_model_type") || "lite";
     modelLiteBtn.classList.toggle("active", savedModelType === "lite");
     modelFullBtn.classList.toggle("active", savedModelType === "full");
 
     // カメラ映像のセットアップ
-    async function setupCamera() {
+    async function setupCamera(videoElement) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "user" },
           audio: false,
         });
-        video.srcObject = stream;
-        await video.play();
+        videoElement.srcObject = stream;
+        await videoElement.play();
       } catch (error) {
         if (error.name === "NotAllowedError") {
           throw new Error("カメラへのアクセスが拒否されました。ブラウザの設定を確認してください。");
@@ -482,7 +884,7 @@
       });
     }
 
-    // ランドマークから特徴量を生成（正規化してフラット化）
+    // ランドマークから特徴量を生成
     function landmarksToFeatures(landmarks) {
       const wrist = landmarks[0];
       const middleTip = landmarks[12];
@@ -494,7 +896,7 @@
       ]);
     }
 
-    // ジェスチャーを分類して結果を表示
+    // ジェスチャーを分類
     async function classifyGesture(featureVector) {
       if (knn.getNumClasses() === 0) {
         resultEl.textContent = "未学習";
@@ -525,7 +927,6 @@
       history.unshift({ timestamp, label, confidence });
       if (history.length > MAX_HISTORY_LENGTH) history.pop();
 
-      // XSS対策: innerHTML ではなく createElement/textContent を使用
       historyEl.innerHTML = "";
       history.forEach((item) => {
         const div = document.createElement("div");
@@ -535,75 +936,66 @@
       });
     }
 
-    // 手ランドマークを描画（接続線付き）
-    function drawLandmarks(predictions) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 手ランドマークを描画
+    function drawLandmarks(predictions, context, canvasEl) {
+      context.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
       predictions.forEach((prediction) => {
         const { keypoints } = prediction;
 
-        // 接続線を描画
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
-        ctx.lineWidth = 2;
+        context.strokeStyle = "rgba(56, 189, 248, 0.6)";
+        context.lineWidth = 2;
         HAND_CONNECTIONS.forEach(([startIdx, endIdx]) => {
           const start = keypoints[startIdx];
           const end = keypoints[endIdx];
           if (start && end) {
-            ctx.beginPath();
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(end.x, end.y);
-            ctx.stroke();
+            context.beginPath();
+            context.moveTo(start.x, start.y);
+            context.lineTo(end.x, end.y);
+            context.stroke();
           }
         });
 
-        // ランドマーク点を描画
-        ctx.fillStyle = "rgba(56, 189, 248, 0.9)";
+        context.fillStyle = "rgba(56, 189, 248, 0.9)";
         keypoints.forEach((pt, idx) => {
-          ctx.beginPath();
-          // 手首と指先を大きく表示
+          context.beginPath();
           const radius = (idx === 0 || idx % 4 === 0) ? 6 : 4;
-          ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
-          ctx.fill();
+          context.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+          context.fill();
         });
 
-        // 指先に強調表示
-        ctx.fillStyle = "#fbbf24";
+        context.fillStyle = "#fbbf24";
         [4, 8, 12, 16, 20].forEach((tipIdx) => {
           const tip = keypoints[tipIdx];
           if (tip) {
-            ctx.beginPath();
-            ctx.arc(tip.x, tip.y, 5, 0, Math.PI * 2);
-            ctx.fill();
+            context.beginPath();
+            context.arc(tip.x, tip.y, 5, 0, Math.PI * 2);
+            context.fill();
           }
         });
       });
     }
 
-    // canvasサイズをvideoに合わせる（変更時のみ更新）
-    function syncCanvasSize() {
-      if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+    // canvasサイズをvideoに合わせる
+    function syncCanvasSize(videoEl, canvasEl) {
+      if (canvasEl.width !== videoEl.videoWidth || canvasEl.height !== videoEl.videoHeight) {
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
       }
     }
 
-    // 毎フレーム推論
-    async function renderLoop() {
-      // ページが非表示の場合はスキップ（パフォーマンス最適化）
-      if (!isPageVisible) {
-        requestAnimationFrame(renderLoop);
+    // 認識タブのレンダーループ
+    async function renderLoopRecognize() {
+      if (!isPageVisible || currentTab !== 'tab-recognize') {
+        requestAnimationFrame(renderLoopRecognize);
         return;
       }
 
-      const predictions = await detector.estimateHands(video, {
-        flipHorizontal: false,
-      });
-
-      syncCanvasSize();
+      const predictions = await detector.estimateHands(video, { flipHorizontal: false });
+      syncCanvasSize(video, canvas);
 
       if (predictions.length > 0) {
-        drawLandmarks(predictions);
-        // ここでは最初の手だけを使用
+        drawLandmarks(predictions, ctx, canvas);
         latestFeature = landmarksToFeatures(predictions[0].keypoints);
         await classifyGesture(latestFeature);
       } else {
@@ -611,40 +1003,417 @@
         resultEl.textContent = "--";
       }
 
-      requestAnimationFrame(renderLoop);
+      requestAnimationFrame(renderLoopRecognize);
     }
 
-    // サンプル数を更新
-    function updateSampleCount() {
-      const counts = knn.getClassExampleCount();
-      const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-      const labels = Object.keys(counts);
-      if (labels.length === 0) {
-        sampleCountEl.textContent = "登録サンプル数: 0";
+    // 記録タブのレンダーループ
+    async function renderLoopRecord() {
+      if (!isPageVisible || currentTab !== 'tab-record') {
+        requestAnimationFrame(renderLoopRecord);
+        return;
+      }
+
+      const predictions = await detector.estimateHands(videoRecord, { flipHorizontal: false });
+      syncCanvasSize(videoRecord, canvasRecord);
+
+      if (predictions.length > 0) {
+        drawLandmarks(predictions, ctxRecord, canvasRecord);
+        latestFeatureRecord = landmarksToFeatures(predictions[0].keypoints);
+
+        // 記録中ならデータを収集
+        if (recordingState === RecordingState.RECORDING_1) {
+          recordData1.push([...latestFeatureRecord]);
+        } else if (recordingState === RecordingState.RECORDING_2) {
+          recordData2.push([...latestFeatureRecord]);
+        }
       } else {
-        const details = labels.map(l => `${l}:${counts[l]}`).join(", ");
-        sampleCountEl.textContent = `登録サンプル数: ${total} (${details})`;
+        ctxRecord.clearRect(0, 0, canvasRecord.width, canvasRecord.height);
+        latestFeatureRecord = null;
+      }
+
+      requestAnimationFrame(renderLoopRecord);
+    }
+
+    // 記録状態の更新
+    function updateRecordingState(newState) {
+      recordingState = newState;
+
+      // ステップ表示の更新
+      step1El.classList.remove('active', 'completed');
+      step2El.classList.remove('active', 'completed');
+      step3El.classList.remove('active', 'completed');
+
+      switch (newState) {
+        case RecordingState.IDLE:
+          step1El.classList.add('active');
+          recordStatusEl.textContent = '待機中 - 「開始」を押してください';
+          recordStatusEl.className = 'record-status idle';
+          btnStartRecord.disabled = false;
+          btnStopRecord.disabled = true;
+          voiceInputArea.classList.add('hidden');
+          break;
+        case RecordingState.RECORDING_1:
+          step1El.classList.add('active');
+          recordStatusEl.textContent = '記録中（1回目）...';
+          recordStatusEl.className = 'record-status recording';
+          btnStartRecord.disabled = true;
+          btnStopRecord.disabled = false;
+          break;
+        case RecordingState.WAITING_2:
+          step1El.classList.add('completed');
+          step2El.classList.add('active');
+          recordStatusEl.textContent = '1回目完了 - 2回目の「開始」を押してください';
+          recordStatusEl.className = 'record-status waiting';
+          btnStartRecord.disabled = false;
+          btnStopRecord.disabled = true;
+          break;
+        case RecordingState.RECORDING_2:
+          step1El.classList.add('completed');
+          step2El.classList.add('active');
+          recordStatusEl.textContent = '記録中（2回目）...';
+          recordStatusEl.className = 'record-status recording';
+          btnStartRecord.disabled = true;
+          btnStopRecord.disabled = false;
+          break;
+        case RecordingState.LABELING:
+          step1El.classList.add('completed');
+          step2El.classList.add('completed');
+          step3El.classList.add('active');
+          recordStatusEl.textContent = '単語名を入力してください';
+          recordStatusEl.className = 'record-status labeling';
+          btnStartRecord.disabled = true;
+          btnStopRecord.disabled = true;
+          voiceInputArea.classList.remove('hidden');
+          break;
       }
     }
 
-    // 学習データの追加（サンプル登録）
-    addSampleBtn.addEventListener("click", () => {
-      if (!latestFeature) {
-        statusEl.textContent = "手が検出されていません。";
+    // 2回の記録データを平均化
+    function averageRecordData(data1, data2) {
+      if (data1.length === 0 || data2.length === 0) {
+        return null;
+      }
+
+      // 各記録の全フレームを平均化して代表フレームを取得
+      const avg1 = new Array(63).fill(0);
+      data1.forEach(frame => {
+        frame.forEach((val, i) => avg1[i] += val);
+      });
+      avg1.forEach((_, i) => avg1[i] /= data1.length);
+
+      const avg2 = new Array(63).fill(0);
+      data2.forEach(frame => {
+        frame.forEach((val, i) => avg2[i] += val);
+      });
+      avg2.forEach((_, i) => avg2[i] /= data2.length);
+
+      // 2回の代表フレームを平均化
+      const result = new Array(63);
+      for (let i = 0; i < 63; i++) {
+        result[i] = (avg1[i] + avg2[i]) / 2;
+      }
+      return result;
+    }
+
+    // 記録開始
+    btnStartRecord.addEventListener('click', () => {
+      if (recordingState === RecordingState.IDLE) {
+        recordData1 = [];
+        updateRecordingState(RecordingState.RECORDING_1);
+        statusRecordEl.textContent = '手話を実演してください...';
+      } else if (recordingState === RecordingState.WAITING_2) {
+        recordData2 = [];
+        updateRecordingState(RecordingState.RECORDING_2);
+        statusRecordEl.textContent = '手話を実演してください...';
+      }
+    });
+
+    // 記録終了
+    btnStopRecord.addEventListener('click', () => {
+      if (recordingState === RecordingState.RECORDING_1) {
+        if (recordData1.length < 10) {
+          statusRecordEl.textContent = 'データが少なすぎます。もう少し長く記録してください。';
+          return;
+        }
+        statusRecordEl.textContent = `1回目: ${recordData1.length}フレーム記録`;
+        updateRecordingState(RecordingState.WAITING_2);
+      } else if (recordingState === RecordingState.RECORDING_2) {
+        if (recordData2.length < 10) {
+          statusRecordEl.textContent = 'データが少なすぎます。もう少し長く記録してください。';
+          return;
+        }
+        statusRecordEl.textContent = `2回目: ${recordData2.length}フレーム記録 - 平均化処理完了`;
+        averagedFeature = averageRecordData(recordData1, recordData2);
+        updateRecordingState(RecordingState.LABELING);
+      }
+    });
+
+    // 音声入力
+    btnVoiceInput.addEventListener('click', () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        statusRecordEl.textContent = '音声認識はこのブラウザでサポートされていません。手動で入力してください。';
         return;
       }
-      const label = labelInput.value.trim();
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ja-JP';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      btnVoiceInput.disabled = true;
+      btnVoiceInput.textContent = '🎤 認識中...';
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        labelInputRecord.value = transcript;
+        statusRecordEl.textContent = `音声認識: "${transcript}"`;
+      };
+
+      recognition.onerror = (event) => {
+        statusRecordEl.textContent = `音声認識エラー: ${event.error}`;
+      };
+
+      recognition.onend = () => {
+        btnVoiceInput.disabled = false;
+        btnVoiceInput.textContent = '🎤 音声入力';
+      };
+
+      recognition.start();
+    });
+
+    // 登録
+    btnRegister.addEventListener('click', () => {
+      const label = labelInputRecord.value.trim();
       if (!label) {
-        statusEl.textContent = "ラベルを入力してください。";
+        statusRecordEl.textContent = '単語名を入力してください。';
         return;
       }
-      const tensor = tf.tensor(latestFeature);
+      if (!averagedFeature) {
+        statusRecordEl.textContent = 'データがありません。記録をやり直してください。';
+        return;
+      }
+
+      const tensor = tf.tensor(averagedFeature);
       knn.addExample(tensor, label);
       tensor.dispose();
-      statusEl.textContent = `ラベル「${label}」を追加しました。`;
-      labelInput.value = "";
-      updateSampleCount();
+
+      // メタデータの更新
+      const now = new Date().toISOString();
+      if (!wordMetadata[label]) {
+        wordMetadata[label] = { createdAt: now, updatedAt: now };
+      } else {
+        wordMetadata[label].updatedAt = now;
+      }
+      saveMetadata();
+
+      statusRecordEl.textContent = `「${label}」を登録しました！`;
+      labelInputRecord.value = '';
+      resetRecording();
     });
+
+    // リセット
+    btnResetRecord.addEventListener('click', resetRecording);
+
+    function resetRecording() {
+      recordData1 = [];
+      recordData2 = [];
+      averagedFeature = null;
+      labelInputRecord.value = '';
+      updateRecordingState(RecordingState.IDLE);
+    }
+
+    // 音声認識の対応確認
+    function checkSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        btnVoiceInput.style.display = 'none';
+      }
+    }
+
+    // ===== 一覧タブの機能 =====
+
+    // メタデータの保存
+    function saveMetadata() {
+      localStorage.setItem(METADATA_KEY, JSON.stringify(wordMetadata));
+    }
+
+    // メタデータの読み込み
+    function loadMetadata() {
+      const stored = localStorage.getItem(METADATA_KEY);
+      if (stored) {
+        wordMetadata = JSON.parse(stored);
+      }
+    }
+
+    // 単語一覧の更新
+    function updateWordList() {
+      const counts = knn.getClassExampleCount();
+      const labels = Object.keys(counts);
+      const searchQuery = searchInput.value.toLowerCase();
+      const sortValue = sortSelect.value;
+
+      // フィルタリング
+      let filteredLabels = labels.filter(label =>
+        label.toLowerCase().includes(searchQuery)
+      );
+
+      // ソート
+      const [sortKey, sortOrder] = sortValue.split('-');
+      filteredLabels.sort((a, b) => {
+        let comparison = 0;
+        if (sortKey === 'name') {
+          comparison = a.localeCompare(b, 'ja');
+        } else if (sortKey === 'count') {
+          comparison = counts[a] - counts[b];
+        } else if (sortKey === 'date') {
+          const dateA = wordMetadata[a]?.createdAt || '1970-01-01';
+          const dateB = wordMetadata[b]?.createdAt || '1970-01-01';
+          comparison = dateA.localeCompare(dateB);
+        }
+        return sortOrder === 'desc' ? -comparison : comparison;
+      });
+
+      // 件数更新
+      wordCountEl.textContent = `登録数: ${labels.length}件`;
+
+      // テーブル更新
+      wordTableBody.innerHTML = '';
+
+      if (filteredLabels.length === 0) {
+        emptyStateEl.classList.remove('hidden');
+        document.querySelector('.word-table').style.display = 'none';
+      } else {
+        emptyStateEl.classList.add('hidden');
+        document.querySelector('.word-table').style.display = '';
+
+        filteredLabels.forEach(label => {
+          const tr = document.createElement('tr');
+          const metadata = wordMetadata[label] || {};
+          const dateStr = metadata.createdAt
+            ? new Date(metadata.createdAt).toLocaleString('ja-JP')
+            : '-';
+
+          tr.innerHTML = `
+            <td><input type="checkbox" class="word-checkbox" data-label="${escapeHtml(label)}" ${selectedLabels.has(label) ? 'checked' : ''} /></td>
+            <td>${escapeHtml(label)}</td>
+            <td>${counts[label]}</td>
+            <td>${dateStr}</td>
+            <td><button class="btn btn-danger btn-delete" data-label="${escapeHtml(label)}" style="padding: 4px 8px; font-size: 0.8rem;">削除</button></td>
+          `;
+          wordTableBody.appendChild(tr);
+        });
+
+        // 削除ボタンのイベント
+        wordTableBody.querySelectorAll('.btn-delete').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const label = btn.dataset.label;
+            if (confirm(`「${label}」を削除しますか？`)) {
+              deleteWord(label);
+            }
+          });
+        });
+
+        // チェックボックスのイベント
+        wordTableBody.querySelectorAll('.word-checkbox').forEach(cb => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) {
+              selectedLabels.add(cb.dataset.label);
+            } else {
+              selectedLabels.delete(cb.dataset.label);
+            }
+            updateBulkDeleteButton();
+          });
+        });
+      }
+
+      updateBulkDeleteButton();
+    }
+
+    // HTMLエスケープ
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // 単語削除
+    function deleteWord(label) {
+      // KNNから削除
+      const dataset = knn.getClassifierDataset();
+      if (dataset[label]) {
+        dataset[label].dispose();
+        delete dataset[label];
+        knn.setClassifierDataset(dataset);
+      }
+
+      // メタデータから削除
+      delete wordMetadata[label];
+      saveMetadata();
+
+      // 選択から削除
+      selectedLabels.delete(label);
+
+      statusListEl.textContent = `「${label}」を削除しました。`;
+      updateWordList();
+    }
+
+    // 一括削除ボタンの更新
+    function updateBulkDeleteButton() {
+      btnDeleteSelected.disabled = selectedLabels.size === 0;
+    }
+
+    // 検索
+    searchInput.addEventListener('input', () => {
+      selectedLabels.clear();
+      updateWordList();
+    });
+
+    // ソート
+    sortSelect.addEventListener('change', updateWordList);
+
+    // 全選択
+    selectAllCheckbox.addEventListener('change', () => {
+      const checkboxes = wordTableBody.querySelectorAll('.word-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+        if (selectAllCheckbox.checked) {
+          selectedLabels.add(cb.dataset.label);
+        } else {
+          selectedLabels.delete(cb.dataset.label);
+        }
+      });
+      updateBulkDeleteButton();
+    });
+
+    selectAllBulkCheckbox.addEventListener('change', () => {
+      selectAllCheckbox.checked = selectAllBulkCheckbox.checked;
+      selectAllCheckbox.dispatchEvent(new Event('change'));
+    });
+
+    // 選択項目削除
+    btnDeleteSelected.addEventListener('click', () => {
+      if (selectedLabels.size === 0) return;
+      if (!confirm(`選択した ${selectedLabels.size} 件の単語を削除しますか？`)) return;
+
+      selectedLabels.forEach(label => {
+        const dataset = knn.getClassifierDataset();
+        if (dataset[label]) {
+          dataset[label].dispose();
+          delete dataset[label];
+        }
+        delete wordMetadata[label];
+      });
+
+      knn.setClassifierDataset(knn.getClassifierDataset());
+      saveMetadata();
+
+      statusListEl.textContent = `${selectedLabels.size}件の単語を削除しました。`;
+      selectedLabels.clear();
+      updateWordList();
+    });
+
+    // ===== データ管理 =====
 
     // KNNデータをシリアライズ
     async function serializeKnnData() {
@@ -671,16 +1440,17 @@
     // localStorageに保存
     saveToStorageBtn.addEventListener("click", async () => {
       if (knn.getNumClasses() === 0) {
-        statusEl.textContent = "保存するデータがありません。";
+        statusListEl.textContent = "保存するデータがありません。";
         return;
       }
       try {
         const data = await serializeKnnData();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        statusEl.textContent = "localStorageに保存しました。";
+        saveMetadata();
+        statusListEl.textContent = "localStorageに保存しました。";
       } catch (error) {
         console.error(error);
-        statusEl.textContent = "保存に失敗しました。";
+        statusListEl.textContent = "保存に失敗しました。";
       }
     });
 
@@ -689,28 +1459,34 @@
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (!stored) {
-          statusEl.textContent = "保存されたデータがありません。";
+          statusListEl.textContent = "保存されたデータがありません。";
           return;
         }
         const data = JSON.parse(stored);
         deserializeKnnData(data);
-        updateSampleCount();
-        statusEl.textContent = "localStorageから復元しました。";
+        loadMetadata();
+        updateWordList();
+        statusListEl.textContent = "localStorageから復元しました。";
       } catch (error) {
         console.error(error);
-        statusEl.textContent = "復元に失敗しました。";
+        statusListEl.textContent = "復元に失敗しました。";
       }
     });
 
     // ファイルにエクスポート
     exportFileBtn.addEventListener("click", async () => {
       if (knn.getNumClasses() === 0) {
-        statusEl.textContent = "エクスポートするデータがありません。";
+        statusListEl.textContent = "エクスポートするデータがありません。";
         return;
       }
       try {
-        const data = await serializeKnnData();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const knnData = await serializeKnnData();
+        const exportData = {
+          version: 2,
+          metadata: wordMetadata,
+          knnData: knnData
+        };
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -719,14 +1495,14 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        statusEl.textContent = "ファイルをエクスポートしました。";
+        statusListEl.textContent = "ファイルをエクスポートしました。";
       } catch (error) {
         console.error(error);
-        statusEl.textContent = "エクスポートに失敗しました。";
+        statusListEl.textContent = "エクスポートに失敗しました。";
       }
     });
 
-    // インポートボタンクリックでファイル選択を開く
+    // インポートボタン
     importFileBtn.addEventListener("click", () => {
       importFileInput.click();
     });
@@ -740,12 +1516,22 @@
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target.result);
-          deserializeKnnData(data);
-          updateSampleCount();
-          statusEl.textContent = `${file.name} をインポートしました。`;
+
+          // バージョン2形式の場合
+          if (data.version === 2) {
+            deserializeKnnData(data.knnData);
+            wordMetadata = data.metadata || {};
+          } else {
+            // 旧形式との互換性
+            deserializeKnnData(data);
+          }
+
+          saveMetadata();
+          updateWordList();
+          statusListEl.textContent = `${file.name} をインポートしました。`;
         } catch (error) {
           console.error(error);
-          statusEl.textContent = "ファイルの読み込みに失敗しました。";
+          statusListEl.textContent = "ファイルの読み込みに失敗しました。";
         }
       };
       reader.readAsText(file);
@@ -758,22 +1544,41 @@
         return;
       }
       knn.clearAllClasses();
-      updateSampleCount();
-      statusEl.textContent = "すべてのデータを削除しました。";
+      wordMetadata = {};
+      saveMetadata();
+      selectedLabels.clear();
+      updateWordList();
+      statusListEl.textContent = "すべてのデータを削除しました。";
     });
 
-    // 初期化処理
+    // ===== 初期化 =====
+
     async function init() {
       try {
-        statusEl.textContent = "カメラ初期化中...";
-        await setupCamera();
-        statusEl.textContent = "モデル読み込み中...";
+        statusRecognizeEl.textContent = "カメラ初期化中...";
+        statusRecordEl.textContent = "カメラ初期化中...";
+
+        await setupCamera(video);
+        await setupCamera(videoRecord);
+
+        statusRecognizeEl.textContent = "モデル読み込み中...";
+        statusRecordEl.textContent = "モデル読み込み中...";
+
         await setupDetector();
-        statusEl.textContent = "準備完了。手をカメラにかざしてください。";
-        renderLoop();
+
+        loadMetadata();
+        checkSpeechRecognition();
+
+        statusRecognizeEl.textContent = "準備完了。手をカメラにかざしてください。";
+        statusRecordEl.textContent = "準備完了";
+
+        renderLoopRecognize();
+        renderLoopRecord();
       } catch (error) {
         console.error(error);
-        statusEl.textContent = error.message || "初期化に失敗しました。ブラウザ権限を確認してください。";
+        const errorMsg = error.message || "初期化に失敗しました。ブラウザ権限を確認してください。";
+        statusRecognizeEl.textContent = errorMsg;
+        statusRecordEl.textContent = errorMsg;
       }
     }
 
