@@ -2059,11 +2059,11 @@
             const rotationProgress = easeOutBack(progress);
             currentVrm.scene.rotation.y = Math.PI * (1 + rotationProgress);
 
-            // Gradually build smile near the end of animation
+            // Gradually build calm expression near the end of animation
             if (progress > 0.6 && currentVrm.expressionManager) {
-                const smileProgress = (progress - 0.6) / 0.4; // 0 to 1 in last 40%
-                const smileValue = easeOutBounce(smileProgress) * 0.8;
-                currentVrm.expressionManager.setValue('happy', smileValue);
+                const expressionProgress = (progress - 0.6) / 0.4; // 0 to 1 in last 40%
+                const calmValue = easeOutBounce(expressionProgress) * 0.3;
+                currentVrm.expressionManager.setValue('happy', calmValue);
             }
 
             // Animation complete
@@ -2072,38 +2072,33 @@
                 currentVrm.scene.position.y = initialY;
                 currentVrm.scene.rotation.y = 0; // Facing back (away from camera)
 
-                // Set final smile
+                // Set calm expression
                 if (currentVrm.expressionManager) {
-                    currentVrm.expressionManager.setValue('happy', 0.8);
+                    currentVrm.expressionManager.setValue('happy', 0.3);
                 }
 
                 console.log('Startup animation complete');
 
-                // Start waving animation after a short delay
-                setTimeout(() => {
-                    startWave();
-                }, 300);
-
-                // Gradually fade out smile after waving completes (2.5s wave + 0.3s delay + 0.5s buffer)
+                // Gradually fade out calm expression after a short delay
                 setTimeout(() => {
                     fadeOutSmile();
-                }, 3300);
+                }, 2000);
             }
         }
 
-        // Fade out smile gradually
+        // Fade out expression gradually
         function fadeOutSmile() {
             if (!currentVrm || !currentVrm.expressionManager) return;
 
-            let smileValue = 0.8;
+            let expressionValue = 0.3;
             const fadeInterval = setInterval(() => {
-                smileValue -= 0.05;
-                if (smileValue <= 0) {
-                    smileValue = 0;
+                expressionValue -= 0.03;
+                if (expressionValue <= 0) {
+                    expressionValue = 0;
                     clearInterval(fadeInterval);
                 }
                 if (currentVrm && currentVrm.expressionManager) {
-                    currentVrm.expressionManager.setValue('happy', smileValue);
+                    currentVrm.expressionManager.setValue('happy', expressionValue);
                 }
             }, 50);
         }
