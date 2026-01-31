@@ -767,19 +767,26 @@
                 <button id="loadFromStorage" class="btn btn-secondary" type="button">復元 (Storage)</button>
               </div>
             </div>
-            <div class="data-section">
-              <label>ファイル入出力</label>
-              <div class="btn-row">
-                <button id="exportFile" class="btn btn-secondary" type="button">エクスポート</button>
-                <button id="importFileBtn" class="btn btn-secondary" type="button">インポート</button>
-                <input id="importFile" type="file" accept=".json" />
-              </div>
+          <div class="data-section">
+            <label>ファイル入出力</label>
+            <div class="btn-row">
+              <button id="exportFile" class="btn btn-secondary" type="button">エクスポート</button>
+              <button id="importFileBtn" class="btn btn-secondary" type="button">インポート</button>
+              <input id="importFile" type="file" accept=".json" />
             </div>
-            <div class="data-section">
-              <button id="clearData" class="btn btn-danger" type="button">全データ削除</button>
-            </div>
-            <div id="statusList" class="status" style="margin-top: 12px;"></div>
           </div>
+          <div class="data-section">
+            <label>指文字テンプレート</label>
+            <div class="btn-row">
+              <button id="addFingerSpellingLabels" class="btn btn-secondary" type="button">指文字を一括追加</button>
+            </div>
+            <div class="small">※ ラベルだけを先に作成します。認識するには記録タブでサンプル登録が必要です。</div>
+          </div>
+          <div class="data-section">
+            <button id="clearData" class="btn btn-danger" type="button">全データ削除</button>
+          </div>
+          <div id="statusList" class="status" style="margin-top: 12px;"></div>
+        </div>
         </div>
       </div>
     </section>
@@ -879,6 +886,8 @@
           <li>登録済みの手話単語が一覧表示されます。</li>
           <li>ソートドロップダウンで並び替えができます。</li>
           <li>検索ボックスで単語を絞り込めます。</li>
+          <li>指文字テンプレートを追加すると、50音のラベルを一括で用意できます。</li>
+          <li>初期状態で指文字（あ・い・う）のサンプルが自動生成済みです。</li>
         </ol>
 
         <h4>単語の削除</h4>
@@ -1130,6 +1139,12 @@
       LABELING: 'labeling'
     };
 
+    const PRESET_FINGER_SPELLING_CONFIGS = [
+      { label: "あ", config: { thumb: false, index: false, middle: false, ring: false, pinky: false } },
+      { label: "い", config: { thumb: false, index: true, middle: false, ring: false, pinky: false } },
+      { label: "う", config: { thumb: false, index: true, middle: true, ring: false, pinky: false } },
+    ];
+
     // DOM要素 - 認識タブ
     const video = document.getElementById("video");
     const canvas = document.getElementById("overlay");
@@ -1175,6 +1190,7 @@
     const importFileBtn = document.getElementById("importFileBtn");
     const importFileInput = document.getElementById("importFile");
     const clearDataBtn = document.getElementById("clearData");
+    const addFingerSpellingLabelsBtn = document.getElementById("addFingerSpellingLabels");
     const statusListEl = document.getElementById("statusList");
 
     // タブ
@@ -1198,6 +1214,19 @@
 
     // 単語メタデータ
     let wordMetadata = {};
+
+    const FINGER_SPELLING_LABELS = [
+      "あ", "い", "う", "え", "お",
+      "か", "き", "く", "け", "こ",
+      "さ", "し", "す", "せ", "そ",
+      "た", "ち", "つ", "て", "と",
+      "な", "に", "ぬ", "ね", "の",
+      "は", "ひ", "ふ", "へ", "ほ",
+      "ま", "み", "む", "め", "も",
+      "や", "ゆ", "よ",
+      "ら", "り", "る", "れ", "ろ",
+      "わ", "を", "ん"
+    ];
 
     // 選択状態
     let selectedLabels = new Set();
@@ -1295,6 +1324,43 @@
         (pt.y - wrist.y) / scale,
         (pt.z - wrist.z) / scale,
       ]);
+    }
+
+    function createFingerLandmarks(startX, extended) {
+      const curl = extended ? -0.35 : -0.08;
+      const step = extended ? -0.18 : 0.03;
+      return [
+        { x: startX, y: curl, z: 0 },
+        { x: startX, y: curl + step, z: 0 },
+        { x: startX, y: curl + step * 2, z: 0 },
+        { x: startX, y: curl + step * 3, z: 0 },
+      ];
+    }
+
+    function createHandTemplate(config) {
+      const wrist = { x: 0, y: 0, z: 0 };
+      const thumb = createFingerLandmarks(-0.25, config.thumb).map((pt, idx) => ({
+        x: pt.x - idx * 0.02,
+        y: pt.y - idx * 0.02,
+        z: 0,
+      }));
+      const index = createFingerLandmarks(0.1, config.index);
+      const middle = createFingerLandmarks(0.2, config.middle);
+      const ring = createFingerLandmarks(0.3, config.ring);
+      const pinky = createFingerLandmarks(0.4, config.pinky);
+      return [
+        wrist,
+        ...thumb,
+        ...index,
+        ...middle,
+        ...ring,
+        ...pinky,
+      ];
+    }
+
+    function generatePresetFeatures(config) {
+      const template = createHandTemplate(config);
+      return landmarksToFeatures(template);
     }
 
     // ジェスチャーを分類
@@ -1640,6 +1706,22 @@
       }
     }
 
+    function addPresetFingerSpellingExamples() {
+      const counts = knn.getClassExampleCount();
+      const now = new Date().toISOString();
+      PRESET_FINGER_SPELLING_CONFIGS.forEach(({ label, config }) => {
+        if (!counts[label]) {
+          const tensor = tf.tensor(generatePresetFeatures(config));
+          knn.addExample(tensor, label);
+          tensor.dispose();
+        }
+        if (!wordMetadata[label]) {
+          wordMetadata[label] = { createdAt: now, updatedAt: now };
+        }
+      });
+      saveMetadata();
+    }
+
     // ===== 一覧タブの機能 =====
 
     // メタデータの保存
@@ -1658,7 +1740,10 @@
     // 単語一覧の更新
     function updateWordList() {
       const counts = knn.getClassExampleCount();
-      const labels = Object.keys(counts);
+      const labels = Array.from(new Set([
+        ...Object.keys(counts),
+        ...Object.keys(wordMetadata),
+      ]));
       const searchQuery = searchInput.value.toLowerCase();
       const sortValue = sortSelect.value;
 
@@ -1674,7 +1759,7 @@
         if (sortKey === 'name') {
           comparison = a.localeCompare(b, 'ja');
         } else if (sortKey === 'count') {
-          comparison = counts[a] - counts[b];
+          comparison = (counts[a] || 0) - (counts[b] || 0);
         } else if (sortKey === 'date') {
           const dateA = wordMetadata[a]?.createdAt || '1970-01-01';
           const dateB = wordMetadata[b]?.createdAt || '1970-01-01';
@@ -1709,7 +1794,7 @@
           tr.innerHTML = `
             <td><input type="checkbox" class="word-checkbox" data-label="${escapeHtml(label)}" ${selectedLabels.has(label) ? 'checked' : ''} /></td>
             <td>${escapeHtml(label)}</td>
-            <td>${counts[label]}</td>
+            <td>${counts[label] || 0}</td>
             <td>${dateStr}</td>
             <td><button class="btn btn-danger btn-delete" data-label="${escapeHtml(label)}" style="padding: 4px 8px; font-size: 0.8rem;">削除</button></td>
           `;
@@ -1986,6 +2071,25 @@
       statusListEl.textContent = "すべてのデータを削除しました。";
     });
 
+    // 指文字テンプレートの追加
+    addFingerSpellingLabelsBtn.addEventListener("click", () => {
+      const now = new Date().toISOString();
+      let addedCount = 0;
+      FINGER_SPELLING_LABELS.forEach((label) => {
+        if (!wordMetadata[label]) {
+          wordMetadata[label] = { createdAt: now, updatedAt: now };
+          addedCount += 1;
+        }
+      });
+      if (addedCount === 0) {
+        statusListEl.textContent = "指文字ラベルはすでに登録済みです。";
+        return;
+      }
+      saveMetadata();
+      updateWordList();
+      statusListEl.textContent = `指文字ラベルを${addedCount}件追加しました。記録タブでサンプルを登録してください。`;
+    });
+
     // ===== 初期化 =====
 
     async function init() {
@@ -2002,6 +2106,7 @@
         await setupDetector();
 
         loadMetadata();
+        addPresetFingerSpellingExamples();
         checkSpeechRecognition();
 
         statusRecognizeEl.textContent = "準備完了。手をカメラにかざしてください。";
