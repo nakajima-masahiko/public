@@ -551,38 +551,68 @@
     }
     /* SVGアニメーション */
     @keyframes wave-hand {
-      0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(20deg); }
-      75% { transform: rotate(-20deg); }
+      0%, 100% { transform: rotate(-15deg); }
+      50% { transform: rotate(15deg); }
+    }
+    @keyframes wave-fingers {
+      0%, 100% { transform: rotate(-5deg); }
+      50% { transform: rotate(5deg); }
     }
     @keyframes nod-head {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(10px); }
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(8px) rotate(15deg); }
     }
     @keyframes bow {
       0%, 100% { transform: rotate(0deg); }
-      50% { transform: rotate(30deg); }
+      50% { transform: rotate(25deg); }
+    }
+    @keyframes bow-hands {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(15px); }
     }
     @keyframes point-self {
       0%, 100% { transform: translateX(0); }
-      50% { transform: translateX(-10px); }
+      50% { transform: translateX(-8px); }
+    }
+    @keyframes point-finger {
+      0%, 100% { transform: scaleX(1); }
+      50% { transform: scaleX(1.1); }
     }
     @keyframes thumbs-up {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.1) rotate(-5deg); }
     }
     @keyframes heart-beat {
       0%, 100% { transform: scale(1); }
-      25% { transform: scale(1.15); }
+      25% { transform: scale(1.1); }
       50% { transform: scale(1); }
-      75% { transform: scale(1.15); }
+      75% { transform: scale(1.1); }
     }
-    .animate-wave { animation: wave-hand 1.5s ease-in-out infinite; transform-origin: bottom center; }
-    .animate-nod { animation: nod-head 1.5s ease-in-out infinite; }
-    .animate-bow { animation: bow 2s ease-in-out infinite; transform-origin: bottom center; }
-    .animate-point { animation: point-self 1.2s ease-in-out infinite; }
-    .animate-thumbs { animation: thumbs-up 1.5s ease-in-out infinite; }
-    .animate-heart { animation: heart-beat 1.2s ease-in-out infinite; }
+    @keyframes hand-tap {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-3px); }
+      60% { transform: translateX(3px); }
+    }
+    @keyframes gomen-bow {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(12px) rotate(20deg); }
+    }
+    @keyframes gomen-hand {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(20px) rotate(-10deg); }
+    }
+    .animate-wave { animation: wave-hand 1s ease-in-out infinite; transform-origin: 130px 95px; }
+    .animate-wave-fingers { animation: wave-fingers 0.5s ease-in-out infinite; transform-origin: center bottom; }
+    .animate-nod { animation: nod-head 1.8s ease-in-out infinite; transform-origin: 90px 80px; }
+    .animate-bow { animation: bow 2.5s ease-in-out infinite; transform-origin: 90px 130px; }
+    .animate-bow-hands { animation: bow-hands 2.5s ease-in-out infinite; }
+    .animate-point { animation: point-self 1.5s ease-in-out infinite; }
+    .animate-point-finger { animation: point-finger 1.5s ease-in-out infinite; transform-origin: right center; }
+    .animate-thumbs { animation: thumbs-up 1.2s ease-in-out infinite; transform-origin: 130px 100px; }
+    .animate-heart { animation: heart-beat 1.5s ease-in-out infinite; transform-origin: center center; }
+    .animate-hand-tap { animation: hand-tap 1.5s ease-in-out infinite; }
+    .animate-gomen-bow { animation: gomen-bow 2s ease-in-out infinite; transform-origin: 90px 80px; }
+    .animate-gomen-hand { animation: gomen-hand 2s ease-in-out infinite; transform-origin: 90px 30px; }
   </style>
 </head>
 <body>
@@ -943,13 +973,37 @@
                 <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
                 <!-- 体 -->
                 <rect x="70" y="80" width="40" height="50" rx="8" fill="#38bdf8"/>
-                <!-- 手（挙げて振る） -->
+                <!-- 左腕 -->
+                <path d="M70 90 Q55 100 50 115" stroke="#38bdf8" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <ellipse cx="48" cy="120" rx="8" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                <!-- 右腕と手（挙げて振る） -->
                 <g class="animate-wave">
-                  <ellipse cx="130" cy="60" rx="15" ry="18" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
-                  <line x1="115" y1="75" x2="105" y2="95" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+                  <!-- 腕 -->
+                  <path d="M110 90 Q120 75 130 65" stroke="#38bdf8" stroke-width="8" stroke-linecap="round" fill="none"/>
+                  <!-- 手のひら -->
+                  <ellipse cx="138" cy="50" rx="12" ry="14" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                  <!-- 指（5本） -->
+                  <g class="animate-wave-fingers">
+                    <!-- 親指 -->
+                    <path d="M126 52 Q120 48 118 42" stroke="#fcd34d" stroke-width="5" stroke-linecap="round" fill="none"/>
+                    <path d="M126 52 Q120 48 118 42" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                    <!-- 人差し指 -->
+                    <path d="M132 38 L130 24" stroke="#fcd34d" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M132 38 L130 24" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+                    <!-- 中指 -->
+                    <path d="M138 36 L138 20" stroke="#fcd34d" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M138 36 L138 20" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+                    <!-- 薬指 -->
+                    <path d="M144 37 L146 23" stroke="#fcd34d" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M144 37 L146 23" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+                    <!-- 小指 -->
+                    <path d="M149 40 L154 29" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M149 40 L154 29" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+                  </g>
                 </g>
-                <!-- 左手 -->
-                <ellipse cx="55" cy="110" rx="10" ry="12" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                <!-- 動きを示す線 -->
+                <path d="M155 35 Q165 45 155 55" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.6"/>
+                <path d="M160 40 Q170 50 160 60" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity="0.4"/>
               </svg>
             </div>
             <div class="sign-description">
@@ -971,9 +1025,44 @@
                   <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
                   <!-- 体 -->
                   <rect x="70" y="80" width="40" height="50" rx="8" fill="#22c55e"/>
-                  <!-- 手（合わせる） -->
-                  <ellipse cx="90" cy="100" rx="20" ry="12" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <!-- 両腕 -->
+                  <path d="M70 90 Q60 95 55 105" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none"/>
+                  <path d="M110 90 Q120 95 125 105" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none"/>
                 </g>
+                <!-- 合わせた手（お辞儀と連動して下に動く） -->
+                <g class="animate-bow-hands">
+                  <!-- 左手 -->
+                  <g transform="translate(90, 115)">
+                    <!-- 手のひら（右向き） -->
+                    <ellipse cx="-8" cy="0" rx="10" ry="12" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                    <!-- 左手の指 -->
+                    <path d="M-5 -10 L-3 -22" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M-5 -10 L-3 -22" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                    <path d="M-9 -11 L-10 -23" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M-9 -11 L-10 -23" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                    <path d="M-13 -10 L-16 -21" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M-13 -10 L-16 -21" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                    <path d="M-16 -7 L-22 -15" stroke="#fcd34d" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M-16 -7 L-22 -15" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  </g>
+                  <!-- 右手 -->
+                  <g transform="translate(90, 115)">
+                    <!-- 手のひら（左向き） -->
+                    <ellipse cx="8" cy="0" rx="10" ry="12" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                    <!-- 右手の指 -->
+                    <path d="M5 -10 L3 -22" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M5 -10 L3 -22" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                    <path d="M9 -11 L10 -23" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M9 -11 L10 -23" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                    <path d="M13 -10 L16 -21" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M13 -10 L16 -21" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                    <path d="M16 -7 L22 -15" stroke="#fcd34d" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M16 -7 L22 -15" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  </g>
+                </g>
+                <!-- 動きを示す矢印 -->
+                <path d="M90 145 L90 160" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                <path d="M85 155 L90 162 L95 155" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
               </svg>
             </div>
             <div class="sign-description">
@@ -987,17 +1076,44 @@
             <div class="sign-reading">Gomen nasai</div>
             <div class="sign-svg">
               <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
-                <g class="animate-nod">
+                <!-- 体（固定） -->
+                <rect x="70" y="80" width="40" height="50" rx="8" fill="#ef4444"/>
+                <!-- 左腕（固定） -->
+                <path d="M70 90 Q55 100 48 115" stroke="#ef4444" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <ellipse cx="45" cy="120" rx="8" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                <!-- 頭（お辞儀するアニメーション） -->
+                <g class="animate-gomen-bow">
                   <!-- 頭 -->
                   <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
                   <circle cx="80" cy="45" r="4" fill="#1e293b"/>
                   <circle cx="100" cy="45" r="4" fill="#1e293b"/>
-                  <path d="M82 60 Q90 55 98 60" stroke="#1e293b" stroke-width="2" fill="none"/>
-                  <!-- 体 -->
-                  <rect x="70" y="80" width="40" height="50" rx="8" fill="#ef4444"/>
-                  <!-- 手（頭の前） -->
-                  <ellipse cx="90" cy="35" rx="18" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <!-- 申し訳なさそうな表情 -->
+                  <path d="M78 42 L84 44" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M96 44 L102 42" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M84 60 Q90 56 96 60" stroke="#1e293b" stroke-width="2" fill="none"/>
                 </g>
+                <!-- 右手（額の前から下に動く） -->
+                <g class="animate-gomen-hand">
+                  <!-- 右腕 -->
+                  <path d="M110 90 Q115 70 105 50" stroke="#ef4444" stroke-width="8" stroke-linecap="round" fill="none"/>
+                  <!-- 手のひら（縦向き、手刀の形） -->
+                  <ellipse cx="100" cy="38" rx="8" ry="14" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                  <!-- 指（揃えた状態） -->
+                  <path d="M94 26 L92 12" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M94 26 L92 12" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <path d="M98 25 L97 10" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M98 25 L97 10" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <path d="M102 25 L103 10" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M102 25 L103 10" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <path d="M106 26 L108 12" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M106 26 L108 12" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <!-- 親指 -->
+                  <path d="M92 35 Q85 32 82 28" stroke="#fcd34d" stroke-width="4" stroke-linecap="round" fill="none"/>
+                  <path d="M92 35 Q85 32 82 28" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" fill="none"/>
+                </g>
+                <!-- 動きを示す矢印 -->
+                <path d="M115 25 Q125 40 115 55" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
+                <path d="M118 50 L115 57 L112 50" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
               </svg>
             </div>
             <div class="sign-description">
@@ -1018,11 +1134,35 @@
                 <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
                 <!-- 体 -->
                 <rect x="70" y="80" width="40" height="50" rx="8" fill="#a855f7"/>
-                <!-- 指さし -->
+                <!-- 左腕（固定） -->
+                <path d="M70 90 Q55 100 48 115" stroke="#a855f7" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <ellipse cx="45" cy="120" rx="8" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                <!-- 右手で自分を指す -->
                 <g class="animate-point">
-                  <line x1="90" y1="105" x2="75" y2="105" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
-                  <circle cx="72" cy="105" r="6" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <!-- 右腕 -->
+                  <path d="M110 90 Q100 95 85 100" stroke="#a855f7" stroke-width="8" stroke-linecap="round" fill="none"/>
+                  <!-- 握った手（横向き） -->
+                  <ellipse cx="75" cy="105" rx="12" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                  <!-- 折り曲げた指（中指、薬指、小指） -->
+                  <path d="M72 98 Q68 95 65 98" stroke="#fcd34d" stroke-width="4" stroke-linecap="round" fill="none"/>
+                  <path d="M72 98 Q68 95 65 98" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" fill="none"/>
+                  <path d="M70 102 Q65 100 63 103" stroke="#fcd34d" stroke-width="4" stroke-linecap="round" fill="none"/>
+                  <path d="M70 102 Q65 100 63 103" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" fill="none"/>
+                  <path d="M70 107 Q66 106 64 109" stroke="#fcd34d" stroke-width="3" stroke-linecap="round" fill="none"/>
+                  <path d="M70 107 Q66 106 64 109" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" fill="none"/>
+                  <!-- 親指（立てた状態） -->
+                  <path d="M78 96 Q82 88 80 82" stroke="#fcd34d" stroke-width="5" stroke-linecap="round" fill="none"/>
+                  <path d="M78 96 Q82 88 80 82" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  <!-- 人差し指（伸ばして胸を指す） -->
+                  <g class="animate-point-finger">
+                    <path d="M65 105 L48 105" stroke="#fcd34d" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M65 105 L48 105" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="46" cy="105" r="3" fill="#fcd34d" stroke="#f59e0b" stroke-width="1"/>
+                  </g>
                 </g>
+                <!-- 胸を示すターゲット -->
+                <circle cx="90" cy="105" r="8" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.5"/>
+                <circle cx="90" cy="105" r="3" fill="#94a3b8" opacity="0.5"/>
               </svg>
             </div>
             <div class="sign-description">
@@ -1043,11 +1183,34 @@
                 <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
                 <!-- 体 -->
                 <rect x="70" y="80" width="40" height="50" rx="8" fill="#22c55e"/>
-                <!-- サムズアップ -->
+                <!-- 左腕（固定） -->
+                <path d="M70 90 Q55 100 48 115" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <ellipse cx="45" cy="120" rx="8" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                <!-- 右腕 -->
+                <path d="M110 90 Q125 85 135 80" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <!-- サムズアップの手 -->
                 <g class="animate-thumbs">
-                  <ellipse cx="130" cy="85" rx="12" ry="15" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
-                  <rect x="125" y="85" width="10" height="25" rx="4" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
-                  <line x1="130" y1="75" x2="130" y2="55" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+                  <!-- 握った拳の部分 -->
+                  <ellipse cx="142" cy="85" rx="14" ry="18" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                  <!-- 折り曲げた4本の指（正面から見た形） -->
+                  <path d="M133 78 Q128 82 130 88" stroke="#fcd34d" stroke-width="6" stroke-linecap="round" fill="none"/>
+                  <path d="M133 78 Q128 82 130 88" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  <path d="M136 75 Q130 80 133 87" stroke="#fcd34d" stroke-width="6" stroke-linecap="round" fill="none"/>
+                  <path d="M136 75 Q130 80 133 87" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  <path d="M140 74 Q134 79 137 86" stroke="#fcd34d" stroke-width="6" stroke-linecap="round" fill="none"/>
+                  <path d="M140 74 Q134 79 137 86" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  <path d="M145 75 Q140 79 142 85" stroke="#fcd34d" stroke-width="5" stroke-linecap="round" fill="none"/>
+                  <path d="M145 75 Q140 79 142 85" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  <!-- 親指（上に立てる） -->
+                  <path d="M150 80 L155 55" stroke="#fcd34d" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M150 80 L155 55" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+                  <ellipse cx="156" cy="52" rx="5" ry="6" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                </g>
+                <!-- 輝きエフェクト -->
+                <g opacity="0.6">
+                  <line x1="165" y1="45" x2="172" y2="40" stroke="#facc15" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="168" y1="55" x2="176" y2="55" stroke="#facc15" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="165" y1="65" x2="172" y2="70" stroke="#facc15" stroke-width="2" stroke-linecap="round"/>
                 </g>
               </svg>
             </div>
@@ -1066,12 +1229,42 @@
                 <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
                 <circle cx="80" cy="45" r="4" fill="#1e293b"/>
                 <circle cx="100" cy="45" r="4" fill="#1e293b"/>
-                <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
+                <!-- 嬉しそうな表情 -->
+                <path d="M82 58 Q90 68 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
+                <!-- 頬紅 -->
+                <ellipse cx="72" cy="55" rx="6" ry="3" fill="#fca5a5" opacity="0.6"/>
+                <ellipse cx="108" cy="55" rx="6" ry="3" fill="#fca5a5" opacity="0.6"/>
                 <!-- 体 -->
                 <rect x="70" y="80" width="40" height="50" rx="8" fill="#ec4899"/>
-                <!-- ハートマーク -->
+                <!-- 左腕（固定） -->
+                <path d="M70 90 Q55 100 48 115" stroke="#ec4899" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <ellipse cx="45" cy="120" rx="8" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                <!-- 右腕（胸に手を当てる） -->
+                <path d="M110 90 Q105 95 95 100" stroke="#ec4899" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <!-- 胸に当てた手 -->
+                <g class="animate-hand-tap">
+                  <!-- 手のひら -->
+                  <ellipse cx="88" cy="108" rx="14" ry="12" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.5"/>
+                  <!-- 指（広げた状態で胸に当てる） -->
+                  <path d="M78 100 L70 92" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M78 100 L70 92" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <path d="M82 98 L76 88" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M82 98 L76 88" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <path d="M88 97 L88 86" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M88 97 L88 86" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <path d="M94 98 L100 88" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M94 98 L100 88" stroke="#f59e0b" stroke-width="1" stroke-linecap="round"/>
+                  <!-- 親指 -->
+                  <path d="M100 105 Q108 100 112 95" stroke="#fcd34d" stroke-width="4" stroke-linecap="round" fill="none"/>
+                  <path d="M100 105 Q108 100 112 95" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" fill="none"/>
+                </g>
+                <!-- ハートエフェクト -->
                 <g class="animate-heart">
-                  <path d="M90 115 C70 95 50 110 50 125 C50 145 90 165 90 165 C90 165 130 145 130 125 C130 110 110 95 90 115" fill="#ef4444" stroke="#dc2626" stroke-width="2"/>
+                  <path d="M140 70 C130 60 120 65 120 72 C120 82 140 95 140 95 C140 95 160 82 160 72 C160 65 150 60 140 70" fill="#ef4444" stroke="#dc2626" stroke-width="1.5" opacity="0.9"/>
+                </g>
+                <!-- 小さなハート -->
+                <g class="animate-heart" style="animation-delay: 0.3s;">
+                  <path d="M50 85 C45 80 40 82 40 86 C40 92 50 100 50 100 C50 100 60 92 60 86 C60 82 55 80 50 85" fill="#f472b6" stroke="none" opacity="0.7" transform="scale(0.6) translate(40, 80)"/>
                 </g>
               </svg>
             </div>
