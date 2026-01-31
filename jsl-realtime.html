@@ -429,6 +429,63 @@
     .voice-input-area.hidden {
       display: none;
     }
+    .record-preview-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .data-preview {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.35);
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .data-preview.hidden {
+      display: none;
+    }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .preview-card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+    .preview-card h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--accent);
+    }
+    .preview-meta {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+    .preview-card pre {
+      margin: 0;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 160px;
+      overflow: auto;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .review-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .review-actions.hidden {
+      display: none;
+    }
 
     /* 一覧タブ用スタイル */
     .list-app {
@@ -684,6 +741,34 @@
               <button id="btnStartRecord" class="btn btn-success" type="button">開始</button>
               <button id="btnStopRecord" class="btn btn-danger" type="button" disabled>終了</button>
             </div>
+            <div id="reviewActions" class="review-actions hidden">
+              <button id="btnRedoRecord" class="btn btn-secondary" type="button">やり直す</button>
+              <button id="btnConfirmRecord" class="btn btn-primary" type="button">OKで次へ</button>
+            </div>
+          </div>
+
+          <div class="control">
+            <label>データ表示</label>
+            <div class="record-preview-toggle">
+              <input id="toggleRecordPreview" type="checkbox" />
+              <span class="small">1回目・2回目の記録データを確認できます</span>
+            </div>
+          </div>
+
+          <div id="recordPreview" class="data-preview hidden" aria-live="polite">
+            <div class="preview-grid">
+              <div class="preview-card">
+                <h4>1回目のデータ</h4>
+                <div id="previewMeta1" class="preview-meta">フレーム数: 0</div>
+                <pre id="previewData1">--</pre>
+              </div>
+              <div class="preview-card">
+                <h4>2回目のデータ</h4>
+                <div id="previewMeta2" class="preview-meta">フレーム数: 0</div>
+                <pre id="previewData2">--</pre>
+              </div>
+            </div>
+            <div class="small">※ 先頭数フレームのみ表示します</div>
           </div>
 
           <div id="voiceInputArea" class="voice-input-area hidden">
@@ -1094,8 +1179,10 @@
     const RecordingState = {
       IDLE: 'idle',
       RECORDING_1: 'rec1',
+      REVIEW_1: 'review1',
       WAITING_2: 'wait2',
       RECORDING_2: 'rec2',
+      REVIEW_2: 'review2',
       LABELING: 'labeling'
     };
 
@@ -1119,6 +1206,8 @@
     const recordStatusEl = document.getElementById("recordStatus");
     const btnStartRecord = document.getElementById("btnStartRecord");
     const btnStopRecord = document.getElementById("btnStopRecord");
+    const btnRedoRecord = document.getElementById("btnRedoRecord");
+    const btnConfirmRecord = document.getElementById("btnConfirmRecord");
     const btnVoiceInput = document.getElementById("btnVoiceInput");
     const btnRegister = document.getElementById("btnRegister");
     const btnResetRecord = document.getElementById("btnResetRecord");
@@ -1128,6 +1217,13 @@
     const step1El = document.getElementById("step1");
     const step2El = document.getElementById("step2");
     const step3El = document.getElementById("step3");
+    const reviewActionsEl = document.getElementById("reviewActions");
+    const toggleRecordPreview = document.getElementById("toggleRecordPreview");
+    const recordPreviewEl = document.getElementById("recordPreview");
+    const previewMeta1El = document.getElementById("previewMeta1");
+    const previewMeta2El = document.getElementById("previewMeta2");
+    const previewData1El = document.getElementById("previewData1");
+    const previewData2El = document.getElementById("previewData2");
 
     // DOM要素 - 一覧タブ
     const wordCountEl = document.getElementById("wordCount");
@@ -1459,7 +1555,9 @@
           recordStatusEl.className = 'record-status idle';
           btnStartRecord.disabled = false;
           btnStopRecord.disabled = true;
+          reviewActionsEl.classList.add('hidden');
           voiceInputArea.classList.add('hidden');
+          updateRecordPreview();
           break;
         case RecordingState.RECORDING_1:
           step1El.classList.add('active');
@@ -1467,7 +1565,20 @@
           recordStatusEl.className = 'record-status recording';
           btnStartRecord.disabled = true;
           btnStopRecord.disabled = false;
+          reviewActionsEl.classList.add('hidden');
           statusRecordEl.textContent = '手話を実演してください...';
+          break;
+        case RecordingState.REVIEW_1:
+          step1El.classList.add('active');
+          recordStatusEl.textContent = '1回目のデータを確認してください';
+          recordStatusEl.className = 'record-status waiting';
+          btnStartRecord.disabled = true;
+          btnStopRecord.disabled = true;
+          btnRedoRecord.textContent = '1回目をやり直す';
+          btnConfirmRecord.textContent = 'OKで2回目へ';
+          reviewActionsEl.classList.remove('hidden');
+          statusRecordEl.textContent = '1回目のデータを確認し、必要であればやり直してください。';
+          updateRecordPreview();
           break;
         case RecordingState.WAITING_2:
           step1El.classList.add('completed');
@@ -1476,6 +1587,7 @@
           recordStatusEl.className = 'record-status waiting';
           btnStartRecord.disabled = false;
           btnStopRecord.disabled = true;
+          reviewActionsEl.classList.add('hidden');
           break;
         case RecordingState.RECORDING_2:
           step1El.classList.add('completed');
@@ -1484,7 +1596,21 @@
           recordStatusEl.className = 'record-status recording';
           btnStartRecord.disabled = true;
           btnStopRecord.disabled = false;
+          reviewActionsEl.classList.add('hidden');
           statusRecordEl.textContent = '手話を実演してください...';
+          break;
+        case RecordingState.REVIEW_2:
+          step1El.classList.add('completed');
+          step2El.classList.add('active');
+          recordStatusEl.textContent = '2回目のデータを確認してください';
+          recordStatusEl.className = 'record-status waiting';
+          btnStartRecord.disabled = true;
+          btnStopRecord.disabled = true;
+          btnRedoRecord.textContent = '2回目をやり直す';
+          btnConfirmRecord.textContent = 'OKで登録へ';
+          reviewActionsEl.classList.remove('hidden');
+          statusRecordEl.textContent = '2回目のデータを確認し、OKで登録へ進みます。';
+          updateRecordPreview();
           break;
         case RecordingState.LABELING:
           step1El.classList.add('completed');
@@ -1494,6 +1620,7 @@
           recordStatusEl.className = 'record-status labeling';
           btnStartRecord.disabled = true;
           btnStopRecord.disabled = true;
+          reviewActionsEl.classList.add('hidden');
           voiceInputArea.classList.remove('hidden');
           statusRecordEl.textContent = '音声入力または手入力で単語名を登録してください。';
           break;
@@ -1546,14 +1673,37 @@
           return;
         }
         statusRecordEl.textContent = `1回目: ${recordData1.length}フレーム記録`;
-        updateRecordingState(RecordingState.WAITING_2);
+        updateRecordingState(RecordingState.REVIEW_1);
       } else if (recordingState === RecordingState.RECORDING_2) {
         if (recordData2.length < 10) {
           statusRecordEl.textContent = 'データが少なすぎます。もう少し長く記録してください。';
           return;
         }
-        statusRecordEl.textContent = `2回目: ${recordData2.length}フレーム記録 - 平均化処理完了`;
+        statusRecordEl.textContent = `2回目: ${recordData2.length}フレーム記録`;
+        updateRecordingState(RecordingState.REVIEW_2);
+      }
+    });
+
+    btnRedoRecord.addEventListener('click', () => {
+      if (recordingState === RecordingState.REVIEW_1) {
+        recordData1 = [];
+        updateRecordingState(RecordingState.RECORDING_1);
+      } else if (recordingState === RecordingState.REVIEW_2) {
+        recordData2 = [];
+        updateRecordingState(RecordingState.RECORDING_2);
+      }
+    });
+
+    btnConfirmRecord.addEventListener('click', () => {
+      if (recordingState === RecordingState.REVIEW_1) {
+        updateRecordingState(RecordingState.WAITING_2);
+      } else if (recordingState === RecordingState.REVIEW_2) {
         averagedFeature = averageRecordData(recordData1, recordData2);
+        if (!averagedFeature) {
+          statusRecordEl.textContent = 'データがありません。記録をやり直してください。';
+          return;
+        }
+        statusRecordEl.textContent = 'データ確認完了。単語名を入力してください。';
         updateRecordingState(RecordingState.LABELING);
       }
     });
@@ -1632,6 +1782,33 @@
       labelInputRecord.value = '';
       updateRecordingState(RecordingState.IDLE);
     }
+
+    function formatPreviewData(data, maxFrames = 3) {
+      if (!data || data.length === 0) {
+        return '--';
+      }
+      const sample = data.slice(0, maxFrames).map((frame) =>
+        frame.map((value) => Number(value.toFixed(3)))
+      );
+      return JSON.stringify(sample, null, 2);
+    }
+
+    function updateRecordPreview() {
+      if (!toggleRecordPreview.checked) {
+        return;
+      }
+      previewMeta1El.textContent = `フレーム数: ${recordData1.length}`;
+      previewMeta2El.textContent = `フレーム数: ${recordData2.length}`;
+      previewData1El.textContent = formatPreviewData(recordData1);
+      previewData2El.textContent = formatPreviewData(recordData2);
+    }
+
+    toggleRecordPreview.addEventListener('change', () => {
+      recordPreviewEl.classList.toggle('hidden', !toggleRecordPreview.checked);
+      if (toggleRecordPreview.checked) {
+        updateRecordPreview();
+      }
+    });
 
     // 音声認識の対応確認
     function checkSpeechRecognition() {
