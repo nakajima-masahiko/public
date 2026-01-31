@@ -774,13 +774,6 @@
             </div>
           </div>
           <div class="data-section">
-            <label>指文字テンプレート</label>
-            <div class="btn-row">
-              <button id="addFingerSpellingLabels" class="btn btn-secondary" type="button">指文字を一括追加</button>
-            </div>
-            <div class="small">※ ラベルだけを先に作成します。認識するには記録タブでサンプル登録が必要です。</div>
-          </div>
-          <div class="data-section">
             <button id="clearData" class="btn btn-danger" type="button">全データ削除</button>
           </div>
           <div id="statusList" class="status" style="margin-top: 12px;"></div>
@@ -884,8 +877,6 @@
           <li>登録済みの手話単語が一覧表示されます。</li>
           <li>ソートドロップダウンで並び替えができます。</li>
           <li>検索ボックスで単語を絞り込めます。</li>
-          <li>指文字テンプレートを追加すると、50音のラベルを一括で用意できます。</li>
-          <li>初期状態で指文字（あ・い・う）のサンプルが自動生成済みです。</li>
         </ol>
 
         <h4>単語の削除</h4>
@@ -1108,12 +1099,6 @@
       LABELING: 'labeling'
     };
 
-    const PRESET_FINGER_SPELLING_CONFIGS = [
-      { label: "あ", config: { thumb: false, index: false, middle: false, ring: false, pinky: false } },
-      { label: "い", config: { thumb: false, index: true, middle: false, ring: false, pinky: false } },
-      { label: "う", config: { thumb: false, index: true, middle: true, ring: false, pinky: false } },
-    ];
-
     // DOM要素 - 認識タブ
     const video = document.getElementById("video");
     const canvas = document.getElementById("overlay");
@@ -1159,7 +1144,6 @@
     const importFileBtn = document.getElementById("importFileBtn");
     const importFileInput = document.getElementById("importFile");
     const clearDataBtn = document.getElementById("clearData");
-    const addFingerSpellingLabelsBtn = document.getElementById("addFingerSpellingLabels");
     const statusListEl = document.getElementById("statusList");
 
     // タブ
@@ -1183,19 +1167,6 @@
 
     // 単語メタデータ
     let wordMetadata = {};
-
-    const FINGER_SPELLING_LABELS = [
-      "あ", "い", "う", "え", "お",
-      "か", "き", "く", "け", "こ",
-      "さ", "し", "す", "せ", "そ",
-      "た", "ち", "つ", "て", "と",
-      "な", "に", "ぬ", "ね", "の",
-      "は", "ひ", "ふ", "へ", "ほ",
-      "ま", "み", "む", "め", "も",
-      "や", "ゆ", "よ",
-      "ら", "り", "る", "れ", "ろ",
-      "わ", "を", "ん"
-    ];
 
     // 選択状態
     let selectedLabels = new Set();
@@ -1325,11 +1296,6 @@
         ...ring,
         ...pinky,
       ];
-    }
-
-    function generatePresetFeatures(config) {
-      const template = createHandTemplate(config);
-      return landmarksToFeatures(template);
     }
 
     // ジェスチャーを分類
@@ -1673,22 +1639,6 @@
       if (!SpeechRecognition) {
         btnVoiceInput.style.display = 'none';
       }
-    }
-
-    function addPresetFingerSpellingExamples() {
-      const counts = knn.getClassExampleCount();
-      const now = new Date().toISOString();
-      PRESET_FINGER_SPELLING_CONFIGS.forEach(({ label, config }) => {
-        if (!counts[label]) {
-          const tensor = tf.tensor(generatePresetFeatures(config));
-          knn.addExample(tensor, label);
-          tensor.dispose();
-        }
-        if (!wordMetadata[label]) {
-          wordMetadata[label] = { createdAt: now, updatedAt: now };
-        }
-      });
-      saveMetadata();
     }
 
     // ===== 一覧タブの機能 =====
@@ -2040,25 +1990,6 @@
       statusListEl.textContent = "すべてのデータを削除しました。";
     });
 
-    // 指文字テンプレートの追加
-    addFingerSpellingLabelsBtn.addEventListener("click", () => {
-      const now = new Date().toISOString();
-      let addedCount = 0;
-      FINGER_SPELLING_LABELS.forEach((label) => {
-        if (!wordMetadata[label]) {
-          wordMetadata[label] = { createdAt: now, updatedAt: now };
-          addedCount += 1;
-        }
-      });
-      if (addedCount === 0) {
-        statusListEl.textContent = "指文字ラベルはすでに登録済みです。";
-        return;
-      }
-      saveMetadata();
-      updateWordList();
-      statusListEl.textContent = `指文字ラベルを${addedCount}件追加しました。記録タブでサンプルを登録してください。`;
-    });
-
     // ===== 初期化 =====
 
     async function init() {
@@ -2075,7 +2006,6 @@
         await setupDetector();
 
         loadMetadata();
-        addPresetFingerSpellingExamples();
         checkSpeechRecognition();
 
         statusRecognizeEl.textContent = "準備完了。手をカメラにかざしてください。";
