@@ -505,6 +505,84 @@
     input[type="file"] {
       display: none;
     }
+
+    /* 簡単な手話タブ用スタイル */
+    .signs-app {
+      max-width: 1200px;
+    }
+    .signs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .sign-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    .sign-card h3 {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 1.4rem;
+    }
+    .sign-card .sign-reading {
+      font-size: 0.9rem;
+      opacity: 0.7;
+      margin-bottom: 16px;
+    }
+    .sign-card .sign-svg {
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 16px;
+    }
+    .sign-card .sign-description {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      text-align: left;
+      background: rgba(15, 23, 42, 0.4);
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .sign-card .sign-description strong {
+      color: var(--accent);
+    }
+    /* SVGアニメーション */
+    @keyframes wave-hand {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(20deg); }
+      75% { transform: rotate(-20deg); }
+    }
+    @keyframes nod-head {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(10px); }
+    }
+    @keyframes bow {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(30deg); }
+    }
+    @keyframes point-self {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(-10px); }
+    }
+    @keyframes thumbs-up {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    @keyframes heart-beat {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.15); }
+      50% { transform: scale(1); }
+      75% { transform: scale(1.15); }
+    }
+    .animate-wave { animation: wave-hand 1.5s ease-in-out infinite; transform-origin: bottom center; }
+    .animate-nod { animation: nod-head 1.5s ease-in-out infinite; }
+    .animate-bow { animation: bow 2s ease-in-out infinite; transform-origin: bottom center; }
+    .animate-point { animation: point-self 1.2s ease-in-out infinite; }
+    .animate-thumbs { animation: thumbs-up 1.5s ease-in-out infinite; }
+    .animate-heart { animation: heart-beat 1.2s ease-in-out infinite; }
   </style>
 </head>
 <body>
@@ -515,6 +593,7 @@
       <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-list" id="tabButtonList" type="button">一覧</button>
       <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-manual" id="tabButtonManual" type="button">マニュアル</button>
       <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-spec" id="tabButtonSpec" type="button">仕様</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-signs" id="tabButtonSigns" type="button">簡単な手話</button>
     </div>
 
     <!-- 認識タブ -->
@@ -839,6 +918,179 @@
           <li><a href="https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker?hl=ja" target="_blank" rel="noopener noreferrer">手のランドマーク検出ガイド</a></li>
           <li><a href="https://www.tensorflow.org/?hl=ja" target="_blank" rel="noopener noreferrer">TensorFlow</a></li>
         </ul>
+      </div>
+    </section>
+
+    <!-- 簡単な手話タブ -->
+    <section id="tab-signs" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonSigns">
+      <div class="signs-app">
+        <header>
+          <h1>簡単な日本手話</h1>
+          <p>よく使われる基本的な日本手話をSVGアニメーションで紹介します。</p>
+        </header>
+
+        <div class="signs-grid">
+          <!-- こんにちは -->
+          <div class="sign-card">
+            <h3>こんにちは</h3>
+            <div class="sign-reading">Konnichiwa</div>
+            <div class="sign-svg">
+              <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+                <!-- 頭 -->
+                <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                <circle cx="80" cy="45" r="4" fill="#1e293b"/>
+                <circle cx="100" cy="45" r="4" fill="#1e293b"/>
+                <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
+                <!-- 体 -->
+                <rect x="70" y="80" width="40" height="50" rx="8" fill="#38bdf8"/>
+                <!-- 手（挙げて振る） -->
+                <g class="animate-wave">
+                  <ellipse cx="130" cy="60" rx="15" ry="18" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <line x1="115" y1="75" x2="105" y2="95" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+                </g>
+                <!-- 左手 -->
+                <ellipse cx="55" cy="110" rx="10" ry="12" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="sign-description">
+              <strong>動作：</strong>片手を顔の横で軽く振ります。手のひらを相手に向け、左右に動かします。
+            </div>
+          </div>
+
+          <!-- ありがとう -->
+          <div class="sign-card">
+            <h3>ありがとう</h3>
+            <div class="sign-reading">Arigatou</div>
+            <div class="sign-svg">
+              <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+                <g class="animate-bow">
+                  <!-- 頭 -->
+                  <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <circle cx="80" cy="45" r="4" fill="#1e293b"/>
+                  <circle cx="100" cy="45" r="4" fill="#1e293b"/>
+                  <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
+                  <!-- 体 -->
+                  <rect x="70" y="80" width="40" height="50" rx="8" fill="#22c55e"/>
+                  <!-- 手（合わせる） -->
+                  <ellipse cx="90" cy="100" rx="20" ry="12" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                </g>
+              </svg>
+            </div>
+            <div class="sign-description">
+              <strong>動作：</strong>両手を胸の前で合わせ、軽くお辞儀をしながら手を下に動かします。感謝の気持ちを込めて行います。
+            </div>
+          </div>
+
+          <!-- ごめんなさい -->
+          <div class="sign-card">
+            <h3>ごめんなさい</h3>
+            <div class="sign-reading">Gomen nasai</div>
+            <div class="sign-svg">
+              <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+                <g class="animate-nod">
+                  <!-- 頭 -->
+                  <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <circle cx="80" cy="45" r="4" fill="#1e293b"/>
+                  <circle cx="100" cy="45" r="4" fill="#1e293b"/>
+                  <path d="M82 60 Q90 55 98 60" stroke="#1e293b" stroke-width="2" fill="none"/>
+                  <!-- 体 -->
+                  <rect x="70" y="80" width="40" height="50" rx="8" fill="#ef4444"/>
+                  <!-- 手（頭の前） -->
+                  <ellipse cx="90" cy="35" rx="18" ry="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                </g>
+              </svg>
+            </div>
+            <div class="sign-description">
+              <strong>動作：</strong>片手を額の前に持っていき、頭を下げながら手を下に動かします。謝罪の意を表します。
+            </div>
+          </div>
+
+          <!-- わたし -->
+          <div class="sign-card">
+            <h3>わたし</h3>
+            <div class="sign-reading">Watashi</div>
+            <div class="sign-svg">
+              <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+                <!-- 頭 -->
+                <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                <circle cx="80" cy="45" r="4" fill="#1e293b"/>
+                <circle cx="100" cy="45" r="4" fill="#1e293b"/>
+                <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
+                <!-- 体 -->
+                <rect x="70" y="80" width="40" height="50" rx="8" fill="#a855f7"/>
+                <!-- 指さし -->
+                <g class="animate-point">
+                  <line x1="90" y1="105" x2="75" y2="105" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+                  <circle cx="72" cy="105" r="6" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                </g>
+              </svg>
+            </div>
+            <div class="sign-description">
+              <strong>動作：</strong>人差し指で自分の胸を指します。「自分」を表す基本的な表現です。
+            </div>
+          </div>
+
+          <!-- はい（OK） -->
+          <div class="sign-card">
+            <h3>はい / OK</h3>
+            <div class="sign-reading">Hai / OK</div>
+            <div class="sign-svg">
+              <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+                <!-- 頭 -->
+                <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                <circle cx="80" cy="45" r="4" fill="#1e293b"/>
+                <circle cx="100" cy="45" r="4" fill="#1e293b"/>
+                <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
+                <!-- 体 -->
+                <rect x="70" y="80" width="40" height="50" rx="8" fill="#22c55e"/>
+                <!-- サムズアップ -->
+                <g class="animate-thumbs">
+                  <ellipse cx="130" cy="85" rx="12" ry="15" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <rect x="125" y="85" width="10" height="25" rx="4" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                  <line x1="130" y1="75" x2="130" y2="55" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+                </g>
+              </svg>
+            </div>
+            <div class="sign-description">
+              <strong>動作：</strong>親指を立てて上に向けます（サムズアップ）。肯定や了承を表します。
+            </div>
+          </div>
+
+          <!-- すき（好き） -->
+          <div class="sign-card">
+            <h3>好き</h3>
+            <div class="sign-reading">Suki</div>
+            <div class="sign-svg">
+              <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+                <!-- 頭 -->
+                <circle cx="90" cy="50" r="30" fill="#fcd34d" stroke="#f59e0b" stroke-width="2"/>
+                <circle cx="80" cy="45" r="4" fill="#1e293b"/>
+                <circle cx="100" cy="45" r="4" fill="#1e293b"/>
+                <path d="M82 58 Q90 65 98 58" stroke="#1e293b" stroke-width="2" fill="none"/>
+                <!-- 体 -->
+                <rect x="70" y="80" width="40" height="50" rx="8" fill="#ec4899"/>
+                <!-- ハートマーク -->
+                <g class="animate-heart">
+                  <path d="M90 115 C70 95 50 110 50 125 C50 145 90 165 90 165 C90 165 130 145 130 125 C130 110 110 95 90 115" fill="#ef4444" stroke="#dc2626" stroke-width="2"/>
+                </g>
+              </svg>
+            </div>
+            <div class="sign-description">
+              <strong>動作：</strong>両手を胸の前でハート型に組むか、胸に手を当てて軽くたたきます。愛情や好意を表します。
+            </div>
+          </div>
+
+        </div>
+
+        <div class="info-panel" style="margin-top: 24px;">
+          <h3>日本手話について</h3>
+          <ul>
+            <li>日本手話（JSL: Japanese Sign Language）は、日本のろう者コミュニティで使用される視覚言語です。</li>
+            <li>手の形、動き、位置、そして表情や体の動きを組み合わせて意味を伝えます。</li>
+            <li>日本語とは異なる独自の文法体系を持っています。</li>
+            <li>上記は基本的な表現の一例です。実際の手話はより複雑で、文脈によって表現が変わることがあります。</li>
+          </ul>
+        </div>
       </div>
     </section>
   </div>
