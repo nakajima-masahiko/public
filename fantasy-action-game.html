@@ -416,7 +416,7 @@ function draw(){
   }
 
   // Player
-  if(pl.inv<=0||pl.inv%4<2){
+  if(pl && (pl.inv<=0||pl.inv%4<2)){
     var px=pl.x,py=pl.y;
     ctx.fillStyle="#1565C0";ctx.fillRect(px+4,py+12,20,18);
     ctx.fillStyle="#ffcc80";ctx.beginPath();ctx.arc(px+14,py+8,8,0,Math.PI*2);ctx.fill();
