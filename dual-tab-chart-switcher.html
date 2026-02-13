@@ -680,8 +680,8 @@ function renderD3Chart(type) {
     candles.append('line')
       .attr('x1', d => xScale(d.date) + xScale.bandwidth() / 2)
       .attr('x2', d => xScale(d.date) + xScale.bandwidth() / 2)
-      .attr('y1', d => yScale(d.high))
-      .attr('y2', d => yScale(d.low))
+      .attr('y1', innerH)
+      .attr('y2', innerH)
       .attr('stroke', d => d.close >= d.open ? '#22c55e' : '#ef4444')
       .attr('stroke-width', 1);
 
@@ -750,6 +750,13 @@ function renderD3Chart(type) {
       .delay((d, i) => i * 3)
       .attr('y', d => yScale(Math.max(d.open, d.close)))
       .attr('height', d => Math.max(1, Math.abs(yScale(d.open) - yScale(d.close))));
+
+    candles.selectAll('line')
+      .transition()
+      .duration(600)
+      .delay((d, i) => i * 3)
+      .attr('y1', d => yScale(d.high))
+      .attr('y2', d => yScale(d.low));
 
   } else {
     // Line chart
