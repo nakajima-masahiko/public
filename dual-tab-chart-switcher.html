@@ -449,8 +449,6 @@ function renderEchartsChart(type) {
 
   if (type === 'candlestick') {
     const ohlc = demoData.map(d => [d.open, d.close, d.low, d.high]);
-    const volumes = demoData.map(d => d.volume);
-    const volumeColors = demoData.map(d => d.close >= d.open ? upColor : downColor);
 
     echartsInstance.setOption({
       backgroundColor: 'transparent',
@@ -472,66 +470,32 @@ function renderEchartsChart(type) {
             <div>High: <b style="color:${color}">${d.high.toFixed(2)}</b></div>
             <div>Low: <b style="color:${color}">${d.low.toFixed(2)}</b></div>
             <div>Close: <b style="color:${color}">${d.close.toFixed(2)}</b></div>
-            <div>Volume: <b>${(d.volume / 1000000).toFixed(2)}M</b></div>
           </div>`;
         }
       },
-      axisPointer: { link: [{ xAxisIndex: 'all' }] },
-      grid: [
-        { left: 60, right: 20, top: 20, height: '60%' },
-        { left: 60, right: 20, top: '76%', height: '16%' }
-      ],
-      xAxis: [
-        {
-          type: 'category', data: dates, gridIndex: 0,
-          axisLine: { lineStyle: { color: '#1e3045' } },
-          axisLabel: { color: '#667788', fontSize: 11 },
-          splitLine: { show: true, lineStyle: { color: '#1a2535', type: 'dashed' } }
-        },
-        {
-          type: 'category', data: dates, gridIndex: 1,
-          axisLine: { lineStyle: { color: '#1e3045' } },
-          axisLabel: { show: false },
-          splitLine: { show: false }
-        }
-      ],
-      yAxis: [
-        {
-          scale: true, gridIndex: 0,
-          axisLine: { lineStyle: { color: '#1e3045' } },
-          axisLabel: { color: '#667788', fontSize: 11 },
-          splitLine: { lineStyle: { color: '#1a2535', type: 'dashed' } }
-        },
-        {
-          scale: true, gridIndex: 1,
-          axisLine: { lineStyle: { color: '#1e3045' } },
-          axisLabel: { show: false },
-          splitLine: { show: false }
-        }
-      ],
+      grid: { left: 60, right: 20, top: 20, bottom: 40 },
+      xAxis: {
+        type: 'category', data: dates,
+        axisLine: { lineStyle: { color: '#1e3045' } },
+        axisLabel: { color: '#667788', fontSize: 11 },
+        splitLine: { show: true, lineStyle: { color: '#1a2535', type: 'dashed' } }
+      },
+      yAxis: {
+        scale: true,
+        axisLine: { lineStyle: { color: '#1e3045' } },
+        axisLabel: { color: '#667788', fontSize: 11 },
+        splitLine: { lineStyle: { color: '#1a2535', type: 'dashed' } }
+      },
       dataZoom: [
-        { type: 'inside', xAxisIndex: [0, 1], start: 50, end: 100 },
-        { type: 'slider', xAxisIndex: [0, 1], start: 50, end: 100, height: 20, bottom: 5,
-          borderColor: '#1e3045', backgroundColor: '#0f1923',
-          fillerColor: 'rgba(59,130,246,0.15)',
-          handleStyle: { color: '#3b82f6' },
-          textStyle: { color: '#667788' }
-        }
+        { type: 'inside', start: 0, end: 100 }
       ],
       series: [
         {
-          type: 'candlestick', data: ohlc, xAxisIndex: 0, yAxisIndex: 0,
+          type: 'candlestick', data: ohlc,
           itemStyle: {
             color: upColor, color0: downColor,
             borderColor: upColor, borderColor0: downColor
           }
-        },
-        {
-          type: 'bar', data: volumes.map((v, i) => ({
-            value: v,
-            itemStyle: { color: volumeColors[i] + '66' }
-          })),
-          xAxisIndex: 1, yAxisIndex: 1, barMaxWidth: 8
         }
       ]
     }, true);
@@ -571,13 +535,7 @@ function renderEchartsChart(type) {
         splitLine: { lineStyle: { color: '#1a2535', type: 'dashed' } }
       },
       dataZoom: [
-        { type: 'inside', start: 0, end: 100 },
-        { type: 'slider', start: 0, end: 100, height: 20, bottom: 5,
-          borderColor: '#1e3045', backgroundColor: '#0f1923',
-          fillerColor: 'rgba(59,130,246,0.15)',
-          handleStyle: { color: '#3b82f6' },
-          textStyle: { color: '#667788' }
-        }
+        { type: 'inside', start: 0, end: 100 }
       ],
       series: [{
         type: 'line', data: closes, smooth: true,
