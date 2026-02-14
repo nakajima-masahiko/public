@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>通貨別保有額 積み重ね棒グラフ（ドラッグで過去データ読込）</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+        background: #f6f8fc;
+        color: #1f2937;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+      }
+      p {
+        margin: 0 0 12px;
+        line-height: 1.6;
+      }
+      .status {
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #e7f0ff;
+        color: #1d4ed8;
+        font-size: 0.95rem;
+      }
+      #chart {
+        width: 100%;
+        height: 560px;
+        background: #fff;
+        border: 1px solid #d8e0ef;
+        border-radius: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>通貨別保有額（積み重ね棒）</h1>
+      <p>
+        初期表示は直近12か月です。チャート内で<strong>左方向へドラッグ</strong>すると、
+        さらに過去12か月を非同期取得して表示を遡ります（取得済みはメモリから再利用）。
+      </p>
+      <div class="status" id="status">初期化中...</div>
+      <div id="chart"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script>
+      const CURRENCIES = ["JPY", "USD", "EUR", "BTC"];
+      const TOTAL_MONTHS = 64; // 5年4か月
+      const CHUNK_SIZE = 12;
+
+      // ---- デモ用バックエンド相当（過去5年4か月分を返せる） ----
+      function formatMonth(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        return `${y}-${m}`;
+      }
+
+      function generateDataset() {
+        const list = [];
+        const start = new Date();
+        start.setDate(1);
+        start.setMonth(start.getMonth() - (TOTAL_MONTHS - 1));
+
+        for (let i = 0; i < TOTAL_MONTHS; i++) {
+          const d = new Date(start);
+          d.setMonth(start.getMonth() + i);
+
+          // 月ごとに変動するデモ値
+          const trend = i * 32;
+          const seasonal = Math.sin(i / 3.2) * 140;
+
+          list.push({
+            index: i,
+            month: formatMonth(d),
+            JPY: Math.round(1800 + trend + seasonal + (i % 4) * 80),
+            USD: Math.round(1100 + trend * 0.75 + Math.cos(i / 2.5) * 90 + (i % 3) * 45),
+            EUR: Math.round(900 + trend * 0.62 + Math.sin(i / 4) * 100 + (i % 5) * 30),
+            BTC: Math.round(260 + trend * 0.2 + Math.cos(i / 1.8) * 70 + (i % 2) * 35),
+          });
+        }
+        return list;
+      }
+
+      const serverData = generateDataset();
+
+      function fetchHistoryChunk(startIndex, limit) {
+        // startIndex から limit 件（昇順）を擬似非同期で返す
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            if (startIndex < 0 || startIndex >= serverData.length) {
+              resolve([]);
+              return;
+            }
+            const result = serverData.slice(startIndex, Math.min(startIndex + limit, serverData.length));
+            resolve(result);
+          }, 450);
+        });
+      }
+
+      // ---- クライアント状態 ----
+      const cache = new Map(); // key: month, value: record
+      let loadedStartIndex = TOTAL_MONTHS - CHUNK_SIZE;
+      let loadedEndIndex = TOTAL_MONTHS - 1;
+      let viewStartIndex = loadedStartIndex;
+      let viewEndIndex = loadedEndIndex;
+      let loading = false;
+
+      const statusEl = document.getElementById("status");
+      const chart = echarts.init(document.getElementById("chart"));
+
+      function setStatus(msg) {
+        statusEl.textContent = msg;
+      }
+
+      function hydrateCache(records) {
+        records.forEach((row) => {
+          cache.set(row.month, row);
+        });
+      }
+
+      function getLoadedRows() {
+        const rows = [];
+        for (let i = loadedStartIndex; i <= loadedEndIndex; i++) {
+          const month = serverData[i].month;
+          rows.push(cache.get(month) || serverData[i]);
+        }
+        return rows;
+      }
+
+      function renderChart() {
+        const rows = getLoadedRows();
+        const months = rows.map((r) => r.month);
+
+        const option = {
+          tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+          legend: { top: 6, data: CURRENCIES },
+          grid: { left: 60, right: 30, top: 60, bottom: 120 },
+          xAxis: {
+            type: "category",
+            data: months,
+            axisLabel: { rotate: 35 },
+          },
+          yAxis: {
+            type: "value",
+            name: "保有金額",
+          },
+          dataZoom: [
+            {
+              type: "inside",
+              zoomLock: true,
+              moveOnMouseMove: true,
+              moveOnMouseWheel: true,
+              throttle: 50,
+              startValue: viewStartIndex - loadedStartIndex,
+              endValue: viewEndIndex - loadedStartIndex,
+            },
+            {
+              type: "slider",
+              bottom: 30,
+              startValue: viewStartIndex - loadedStartIndex,
+              endValue: viewEndIndex - loadedStartIndex,
+            },
+          ],
+          series: CURRENCIES.map((currency) => ({
+            name: currency,
+            type: "bar",
+            stack: "total",
+            emphasis: { focus: "series" },
+            data: rows.map((r) => r[currency]),
+          })),
+        };
+
+        chart.setOption(option, true);
+      }
+
+      async function loadInitial() {
+        const initial = await fetchHistoryChunk(loadedStartIndex, CHUNK_SIZE);
+        hydrateCache(initial);
+        renderChart();
+        setStatus(`直近12か月を表示中（全${TOTAL_MONTHS}か月のうち ${loadedStartIndex + 1}〜${loadedEndIndex + 1}件目）。`);
+      }
+
+      async function loadOlderChunkAndScroll() {
+        if (loading) return;
+        if (loadedStartIndex <= 0) {
+          setStatus("これ以上古いデータはありません。メモリ済みデータでのみ移動できます。");
+          return;
+        }
+
+        loading = true;
+        const nextStart = Math.max(0, loadedStartIndex - CHUNK_SIZE);
+        const fetchCount = loadedStartIndex - nextStart;
+
+        const needFetch = [];
+        for (let i = nextStart; i < loadedStartIndex; i++) {
+          const month = serverData[i].month;
+          if (!cache.has(month)) {
+            needFetch.push(i);
+          }
+        }
+
+        if (needFetch.length > 0) {
+          setStatus(`過去${fetchCount}か月を非同期取得中...`);
+          const fetched = await fetchHistoryChunk(nextStart, fetchCount);
+          hydrateCache(fetched);
+        } else {
+          setStatus("取得済みデータをメモリから読み込み中...");
+          await new Promise((r) => setTimeout(r, 150));
+        }
+
+        loadedStartIndex = nextStart;
+        viewStartIndex = nextStart;
+        viewEndIndex = Math.min(nextStart + CHUNK_SIZE - 1, loadedEndIndex);
+
+        renderChart();
+        setStatus(`表示範囲を更新しました（${viewStartIndex + 1}〜${viewEndIndex + 1}件目 / 全${TOTAL_MONTHS}か月）。`);
+
+        loading = false;
+      }
+
+      // 左ドラッグ検知（チャート内）
+      let dragStartX = null;
+      const dom = chart.getDom();
+
+      dom.addEventListener("pointerdown", (e) => {
+        dragStartX = e.clientX;
+      });
+
+      dom.addEventListener("pointerup", async (e) => {
+        if (dragStartX === null) return;
+        const deltaX = e.clientX - dragStartX;
+        dragStartX = null;
+
+        // 左方向へのドラッグのみトリガー
+        if (deltaX < -80) {
+          await loadOlderChunkAndScroll();
+        }
+      });
+
+      window.addEventListener("resize", () => chart.resize());
+
+      loadInitial();
+    </script>
+  </body>
+</html>
