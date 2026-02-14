@@ -48,7 +48,7 @@
     <div class="container">
       <h1>通貨別保有額（積み重ね棒）</h1>
       <p>
-        初期表示は直近12か月です。チャート内で<strong>左方向へドラッグ</strong>すると、
+        初期表示は直近12か月です。チャート内で<strong>右方向へドラッグ</strong>すると、
         さらに過去12か月を非同期取得して表示を遡ります（取得済みはメモリから再利用）。
       </p>
       <div class="status" id="status">初期化中...</div>
@@ -231,7 +231,7 @@
         loading = false;
       }
 
-      // 左ドラッグ検知（チャート内）
+      // 右ドラッグ検知（チャート内）
       let dragStartX = null;
       const dom = chart.getDom();
 
@@ -244,8 +244,8 @@
         const deltaX = e.clientX - dragStartX;
         dragStartX = null;
 
-        // 左方向へのドラッグのみトリガー
-        if (deltaX < -80) {
+        // 右方向へのドラッグのみトリガー
+        if (deltaX > 80) {
           await loadOlderChunkAndScroll();
         }
       });
