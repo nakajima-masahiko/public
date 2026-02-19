@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ラマヌジャンの公式 — MathJax デモ</title>
+
+  <!-- MathJax 設定 -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'ams'
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+
+  <style>
+    /* ===== リセット & ベース ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: #0d0d1a;
+      color: #e8e8f0;
+      line-height: 1.8;
+      min-height: 100vh;
+    }
+
+    /* ===== ヘッダー ===== */
+    header {
+      background: linear-gradient(135deg, #1a0533 0%, #0d1a3a 50%, #001a1a 100%);
+      border-bottom: 2px solid #4a2080;
+      padding: 48px 24px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 50%, rgba(120,60,200,0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 40%, rgba(0,180,220,0.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-inner { position: relative; z-index: 1; }
+    .subtitle-en {
+      font-size: 0.80rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #8888cc;
+      margin-bottom: 10px;
+    }
+    header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 700;
+      color: #f0e8ff;
+      letter-spacing: 0.04em;
+    }
+    header h1 span { color: #a78bfa; }
+    .header-desc {
+      margin-top: 14px;
+      color: #9999bb;
+      font-size: 0.92rem;
+      max-width: 560px;
+      margin-inline: auto;
+    }
+
+    /* ===== メインレイアウト ===== */
+    main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    /* ===== カード共通 ===== */
+    .card {
+      background: #111128;
+      border: 1px solid #2a2a4a;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+      transition: box-shadow 0.3s;
+    }
+    .card:hover { box-shadow: 0 6px 48px rgba(90,40,180,0.25); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 28px;
+      background: linear-gradient(90deg, #1a0a30 0%, #0a1830 100%);
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .card-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .icon-purple { background: #2d1060; color: #c084fc; }
+    .icon-blue   { background: #0a1a40; color: #60a5fa; }
+    .icon-teal   { background: #001f20; color: #2dd4bf; }
+    .icon-gold   { background: #1e1000; color: #fbbf24; }
+
+    .card-title-group { flex: 1; }
+    .card-title-group h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #e8e0ff;
+    }
+    .card-title-group .en { font-size: 0.78rem; color: #7070a0; margin-top: 2px; }
+
+    .badge {
+      font-size: 0.70rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 99px;
+      letter-spacing: 0.05em;
+    }
+    .badge-year { background: #2a1050; color: #b084fc; border: 1px solid #4a2080; }
+
+    /* ===== カード本文 ===== */
+    .card-body { padding: 28px 28px; }
+
+    /* ===== 数式ブロック ===== */
+    .formula-box {
+      background: #0a0a1e;
+      border: 1px solid #3a2070;
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+      font-size: 1.05rem;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      position: relative;
+    }
+    .formula-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, #7c3aed, #2563eb, #0891b2);
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* ===== 解説テキスト ===== */
+    .desc { color: #c0c0d8; font-size: 0.93rem; margin-bottom: 16px; }
+    .desc:last-child { margin-bottom: 0; }
+
+    /* ===== 変数テーブル ===== */
+    .var-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-top: 12px;
+      margin-bottom: 20px;
+    }
+    .var-table th {
+      background: #18183a;
+      color: #8888bb;
+      font-weight: 600;
+      padding: 8px 14px;
+      text-align: left;
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .var-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #1e1e38;
+      color: #c8c8e0;
+      vertical-align: top;
+    }
+    .var-table tr:last-child td { border-bottom: none; }
+    .var-symbol { color: #a78bfa; font-family: serif; font-size: 1.0rem; }
+
+    /* ===== ハイライトボックス ===== */
+    .highlight-box {
+      background: #0d0d28;
+      border-left: 3px solid #7c3aed;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      font-size: 0.88rem;
+      color: #b0b0cc;
+      margin-top: 16px;
+    }
+    .highlight-box.blue  { border-left-color: #2563eb; }
+    .highlight-box.teal  { border-left-color: #0891b2; }
+    .highlight-box.gold  { border-left-color: #d97706; }
+
+    /* ===== 数値ハイライト ===== */
+    .num { color: #f472b6; font-weight: 600; font-family: monospace; }
+
+    /* ===== セクション見出し ===== */
+    .section-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6060a0;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    /* ===== タイムライン（経歴） ===== */
+    .bio-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    @media (max-width: 520px) { .bio-grid { grid-template-columns: 1fr; } }
+    .bio-item {
+      background: #0d0d28;
+      border: 1px solid #202040;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .bio-item .bio-year { font-size: 0.78rem; color: #7070a0; margin-bottom: 4px; }
+    .bio-item .bio-text { font-size: 0.88rem; color: #c0c0d8; }
+
+    /* ===== フッター ===== */
+    footer {
+      text-align: center;
+      color: #44446a;
+      font-size: 0.78rem;
+      padding: 30px 20px;
+      border-top: 1px solid #1a1a30;
+    }
+    footer a { color: #6060a0; text-decoration: none; }
+    footer a:hover { color: #a0a0d0; }
+  </style>
+</head>
+<body>
+
+<!-- ===== ヘッダー ===== -->
+<header>
+  <div class="header-inner">
+    <p class="subtitle-en">Mathematical Genius from India</p>
+    <h1>ラマヌジャンの<span>公式</span></h1>
+    <p class="header-desc">
+      スリニヴァーサ・ラマヌジャン（1887–1920）が発見した数学の宝石たち。
+      MathJax を使って数式を美しく表示します。
+    </p>
+  </div>
+</header>
+
+<!-- ===== メインコンテンツ ===== -->
+<main>
+
+  <!-- ========== [1] π の無限級数（メイン公式） ========== -->
+  <section class="card" id="pi-series">
+    <div class="card-header">
+      <div class="card-icon icon-purple">π</div>
+      <div class="card-title-group">
+        <h2>円周率 π の無限級数公式</h2>
+        <div class="en">Ramanujan's Series for 1/π</div>
+      </div>
+      <span class="badge badge-year">1914年</span>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">公式</p>
+      <div class="formula-box">
+        $$
+          \frac{1}{\pi}
+          = \frac{2\sqrt{2}}{9801}
+            \sum_{k=0}^{\infty}
+            \frac{(4k)!\,(1103 + 26390\,k)}{(k!)^4\,396^{4k}}
+        $$
+      </div>
+
+      <p class="desc">
+        これはラマヌジャンが1914年の論文
+        <em>「Modular equations and approximations to π」</em>
+        で発表した、円周率の逆数 $1/\pi$ を表す超収束級数です。
+      </p>
+
+      <p class="section-label">変数の意味</p>
+      <table class="var-table">
+        <tr><th>記号</th><th>説明</th></tr>
+        <tr>
+          <td><span class="var-symbol">$k$</span></td>
+          <td>$0$ から始まる非負整数（和の添字）</td>
+        </tr>
+        <tr>
+          <td><span class="var-symbol">$(4k)!$</span></td>
+          <td>$4k$ の階乗</td>
+        </tr>
+        <tr>
+          <td><span class="var-symbol">$(k!)^4$</span></td>
+          <td>$k!$ の4乗</td>
+        </tr>
+        <tr>
+          <td><span class="var-symbol">$396^{4k}$</span></td>
+          <td>底 $396$（$= 4 \times 99$）の $4k$ 乗</td>
+        </tr>
+      </table>
+
+      <p class="desc">
+        この級数は <strong>1項追加するごとに約8桁</strong>の精度が得られる驚異的な収束速度を持ちます。
+        $k=0$ の項だけでも：
+      </p>
+      <div class="formula-box">
+        $$
+          \frac{1}{\pi}
+          \approx \frac{2\sqrt{2}}{9801} \times 1103
+          = \frac{2206\sqrt{2}}{9801}
+          \approx 0.318309886\ldots
+        $$
+      </div>
+
+      <div class="highlight-box">
+        <strong>応用：</strong>
+        この公式は1980年代にウィリアム・ゴスパーが初めてコンピュータ計算に実装し、
+        当時の π の世界記録（<span class="num">17,526,200桁</span>）の計算に使われました。
+        現在でも多倍長演算ライブラリで採用されています。
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== [2] タクシー数・ハーディ＝ラマヌジャン数 ========== -->
+  <section class="card" id="taxicab">
+    <div class="card-header">
+      <div class="card-icon icon-blue">🚕</div>
+      <div class="card-title-group">
+        <h2>ハーディ＝ラマヌジャン数（タクシー数）</h2>
+        <div class="en">Hardy–Ramanujan Number (Taxicab Number)</div>
+      </div>
+      <span class="badge badge-year">1919年頃</span>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">公式</p>
+      <div class="formula-box">
+        $$
+          1729
+          = 1^3 + 12^3
+          = 9^3  + 10^3
+        $$
+      </div>
+
+      <p class="desc">
+        $1729$ は <strong>2通りの整数の立方数の和</strong>で表せる最小の正整数です。
+        一般に、2通り以上の方法で2つの正の立方数の和として表せる正整数を
+        <strong>タクシー数（Taxicab Number）</strong>と呼びます。
+      </p>
+      <p class="desc">
+        第 $n$ タクシー数 $\text{Ta}(n)$ は次の性質を持ちます：
+      </p>
+      <div class="formula-box">
+        $$
+          \text{Ta}(n) = \min\bigl\{\, N \in \mathbb{Z}^+ \;\big|\;
+          N = a_1^3 + b_1^3 = a_2^3 + b_2^3 = \cdots = a_n^3 + b_n^3,\;
+          a_i < b_i \,\bigr\}
+        $$
+      </div>
+
+      <div class="highlight-box blue">
+        <strong>逸話：</strong>
+        数学者 G・H・ハーディが病院のラマヌジャンを見舞った際、乗ってきたタクシーの番号が
+        「<span class="num">1729</span>」だったことを「面白くない数だ」と話すと、
+        ラマヌジャンは即座に「いいえ、2通りの立方数の和として表せる最小の数ですよ」と答えたとされています。
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== [3] ラマヌジャンの総和公式 ========== -->
+  <section class="card" id="summation">
+    <div class="card-header">
+      <div class="card-icon icon-teal">Σ</div>
+      <div class="card-title-group">
+        <h2>ラマヌジャンの総和（発散級数）</h2>
+        <div class="en">Ramanujan Summation</div>
+      </div>
+      <span class="badge badge-year">1913年頃</span>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">公式</p>
+      <div class="formula-box">
+        $$
+          1 + 2 + 3 + 4 + \cdots
+          \;\overset{\mathfrak{R}}{=}\; -\frac{1}{12}
+        $$
+      </div>
+
+      <p class="desc">
+        これは一見「すべての正整数の和が負の分数」という不思議な等式ですが、
+        通常の意味での収束ではなく <strong>ラマヌジャン総和法（Ramanujan summation）</strong>
+        による正則化値です。
+      </p>
+
+      <p class="section-label">リーマンゼータ関数との関係</p>
+      <div class="formula-box">
+        $$
+          \sum_{n=1}^{\infty} n^s
+          = \zeta(-s)
+          \qquad \Rightarrow \qquad
+          \zeta(-1) = -\frac{1}{12}
+        $$
+      </div>
+
+      <p class="desc">
+        リーマンゼータ関数 $\zeta(s) = \sum_{n=1}^{\infty} n^{-s}$ を
+        解析接続すると、$s=-1$ での値は $-\tfrac{1}{12}$ になります。
+        この値は量子電気力学（QED）のカシミール効果や
+        弦理論における無限次元の正則化にも登場します。
+      </p>
+
+      <div class="highlight-box teal">
+        <strong>注意：</strong>
+        記号 $\overset{\mathfrak{R}}{=}$ はラマヌジャン総和法による等号であり、
+        通常の極限の意味での等号（$=$）とは異なります。
+        発散する級数に対して「意味のある有限値」を割り当てる手法です。
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== [4] ロジャース＝ラマヌジャン恒等式 ========== -->
+  <section class="card" id="rogers">
+    <div class="card-header">
+      <div class="card-icon icon-gold">∏</div>
+      <div class="card-title-group">
+        <h2>ロジャース＝ラマヌジャン恒等式</h2>
+        <div class="en">Rogers–Ramanujan Identities</div>
+      </div>
+      <span class="badge badge-year">1894 / 1913年</span>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">第1恒等式</p>
+      <div class="formula-box">
+        $$
+          \sum_{k=0}^{\infty}
+          \frac{q^{k^2}}{(q;q)_k}
+          =
+          \prod_{n=0}^{\infty}
+          \frac{1}{(1-q^{5n+1})(1-q^{5n+4})}
+        $$
+      </div>
+
+      <p class="section-label">第2恒等式</p>
+      <div class="formula-box">
+        $$
+          \sum_{k=0}^{\infty}
+          \frac{q^{k^2+k}}{(q;q)_k}
+          =
+          \prod_{n=0}^{\infty}
+          \frac{1}{(1-q^{5n+2})(1-q^{5n+3})}
+        $$
+      </div>
+
+      <p class="section-label">記法の説明</p>
+      <table class="var-table">
+        <tr><th>記号</th><th>説明</th></tr>
+        <tr>
+          <td><span class="var-symbol">$(q;q)_k$</span></td>
+          <td>$q$-ポッホハマー記号：$(1-q)(1-q^2)\cdots(1-q^k)$</td>
+        </tr>
+        <tr>
+          <td><span class="var-symbol">$|q| &lt; 1$</span></td>
+          <td>収束条件（$q$ は複素数）</td>
+        </tr>
+      </table>
+
+      <p class="desc">
+        これらの恒等式は整数の分割論・組合せ論・統計力学（ハードヘキサゴンモデル）など
+        多くの分野に深く関わっています。
+        ラマヌジャンは証明なしに発見し、後にロジャースとの共同研究で証明されました。
+      </p>
+
+      <div class="highlight-box gold">
+        <strong>分割論への応用：</strong>
+        第1恒等式の右辺は「差が $\geq 2$ の部分からなる $n$ の分割数」と
+        「$\equiv 1, 4 \pmod{5}$ の部分からなる $n$ の分割数」が等しいことを示します。
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== [5] 人物紹介 ========== -->
+  <section class="card" id="biography">
+    <div class="card-header">
+      <div class="card-icon icon-purple">👤</div>
+      <div class="card-title-group">
+        <h2>スリニヴァーサ・ラマヌジャン</h2>
+        <div class="en">Srinivasa Ramanujan (1887–1920)</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="desc">
+        インド南部タミル・ナードゥ州出身の数学者。
+        ほぼ独学で数論・無限級数・連分数・楕円関数などにわたる
+        <strong>約3900の定理・公式</strong>を発見しました。
+        G・H・ハーディとの共同研究を経てケンブリッジ大学に招かれ、
+        王立協会フェローにもなりましたが、32歳で病没しました。
+      </p>
+
+      <div class="bio-grid">
+        <div class="bio-item">
+          <div class="bio-year">1887年</div>
+          <div class="bio-text">インド・エローデに生まれる</div>
+        </div>
+        <div class="bio-item">
+          <div class="bio-year">1904年頃</div>
+          <div class="bio-text">独学で高等数学を習得</div>
+        </div>
+        <div class="bio-item">
+          <div class="bio-year">1913年</div>
+          <div class="bio-text">ハーディに手紙を送り交流開始</div>
+        </div>
+        <div class="bio-item">
+          <div class="bio-year">1914年</div>
+          <div class="bio-text">ケンブリッジ大学に渡英</div>
+        </div>
+        <div class="bio-item">
+          <div class="bio-year">1918年</div>
+          <div class="bio-text">王立協会フェローに選出</div>
+        </div>
+        <div class="bio-item">
+          <div class="bio-year">1920年</div>
+          <div class="bio-text">インドで逝去（享年32歳）</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== フッター ===== -->
+<footer>
+  <p>
+    数式レンダリング：<a href="https://www.mathjax.org/" target="_blank" rel="noopener">MathJax 3</a>
+    &nbsp;|&nbsp;
+    参考：
+    <a href="https://en.wikipedia.org/wiki/Srinivasa_Ramanujan" target="_blank" rel="noopener">Wikipedia — Srinivasa Ramanujan</a>
+  </p>
+  <p style="margin-top:6px">Built with MathJax &amp; pure HTML/CSS</p>
+</footer>
+
+</body>
+</html>
