@@ -123,6 +123,41 @@
             margin-bottom: 15px;
         }
 
+        .ramanujan-panel {
+            width: min(560px, 100%);
+            margin-bottom: 15px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            background: linear-gradient(120deg, #f9fbff, #eef5ff);
+            border: 1px solid #d6e2f0;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+            font-size: 0.92rem;
+        }
+
+        .ramanujan-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .ramanujan-tag {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background-color: rgba(0, 51, 102, 0.1);
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        #partitionStats {
+            margin: 4px 0 0;
+            color: #1f4269;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+        }
+
         button#toggleConjugate {
             padding: 10px 20px;
             font-size: 1rem;
@@ -187,6 +222,19 @@
             display: block;
         }
 
+        .durfee-square {
+            fill: rgba(255, 102, 0, 0.13);
+            stroke: rgba(255, 102, 0, 0.6);
+            stroke-width: 2;
+            stroke-dasharray: 6,4;
+        }
+
+        .formula-caption {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #415b79;
+        }
+
         /* フッター：解説 */
         footer {
             max-width: 1200px;
@@ -242,6 +290,16 @@
                 共役（きょうやく）な分割を表示
             </button>
         </div>
+        <div class="ramanujan-panel">
+            <div class="ramanujan-tags">
+                <span class="ramanujan-tag">1729</span>
+                <span class="ramanujan-tag">q-級数</span>
+                <span class="ramanujan-tag">対称性</span>
+            </div>
+            <div id="ramanujanInsight">色の濃淡は「行×列」の重みを表し、対角線付近の構造が一目で見えるようにしています。</div>
+            <p id="partitionStats"></p>
+            <div class="formula-caption">ラマヌジャンの着想: 「数式だけでなく、配置の形にも規則が潜む」</div>
+        </div>
         <div id="diagram-container">
             <svg id="youngDiagram" width="500" height="500" viewBox="0 0 500 500">
                 </svg>
@@ -266,6 +324,8 @@
     const partitionCountSpan = document.getElementById('partitionCount');
     const svgElement = document.getElementById('youngDiagram');
     const toggleConjugateBtn = document.getElementById('toggleConjugate');
+    const partitionStats = document.getElementById('partitionStats');
+    const ramanujanInsight = document.getElementById('ramanujanInsight');
 
     const SVG_SIZE = 500;
     const PADDING = 40;
@@ -287,6 +347,7 @@
         isConjugateView = !isConjugateView;
         toggleConjugateBtn.classList.toggle('active', isConjugateView);
         renderDiagram(allPartitions[activePartitionIndex]);
+        renderInsights(allPartitions[activePartitionIndex]);
     });
 
 
@@ -368,6 +429,32 @@
         
         // 図形の再描画
         renderDiagram(allPartitions[index]);
+        renderInsights(allPartitions[index]);
+    }
+
+    function getDurfeeSize(partition) {
+        let d = 0;
+        while (d < partition.length && partition[d] >= d + 1) {
+            d++;
+        }
+        return d;
+    }
+
+    function renderInsights(partition) {
+        if (!partition || partition.length === 0) {
+            partitionStats.textContent = '';
+            return;
+        }
+
+        const durfee = getDurfeeSize(partition);
+        const maxPart = partition[0];
+        const length = partition.length;
+        const rank = maxPart - length;
+
+        partitionStats.textContent = `Durfee正方形: ${durfee} × ${durfee} ｜ 最大部品: ${maxPart} ｜ 部品数: ${length} ｜ rank = ${rank}`;
+        ramanujanInsight.textContent = isConjugateView
+            ? '共役表示では行と列が入れ替わり、rank の符号も反転して見える対称性を体験できます。'
+            : '色の濃淡は「行×列」の重みです。ラマヌジャンが重視した“形に潜む法則”を視覚的に追えます。';
     }
 
 
@@ -395,6 +482,17 @@
         diagonalLine.setAttribute('class', `diagonal-line ${isConjugateView ? 'active' : ''}`);
         svgElement.appendChild(diagonalLine);
 
+        const durfeeSize = getDurfeeSize(targetPartition);
+        if (durfeeSize > 0) {
+            const durfeeSquare = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            durfeeSquare.setAttribute('x', PADDING);
+            durfeeSquare.setAttribute('y', PADDING);
+            durfeeSquare.setAttribute('width', durfeeSize * blockSize);
+            durfeeSquare.setAttribute('height', durfeeSize * blockSize);
+            durfeeSquare.setAttribute('class', 'durfee-square');
+            svgElement.appendChild(durfeeSquare);
+        }
+
         // ブロックの描画
         targetPartition.forEach((rowLength, rowIndex) => {
             for (let colIndex = 0; colIndex < rowLength; colIndex++) {
@@ -409,10 +507,20 @@
                 rect.setAttribute('width', blockSize);
                 rect.setAttribute('height', blockSize);
                 rect.setAttribute('class', `block ${isConjugateView ? 'conjugate-mode' : ''}`);
+                const intensity = Math.min(0.85, ((rowIndex + 1) * (colIndex + 1)) / (maxDimension * maxDimension));
+                const hue = isConjugateView ? 24 : 214;
+                const sat = isConjugateView ? 90 : 62;
+                const light = isConjugateView ? (62 - intensity * 26) : (54 - intensity * 24);
+                rect.setAttribute('fill', `hsl(${hue}, ${sat}%, ${light}%)`);
                 
-                // アニメーション用の初期位置（オプション：これを入れると出現時に動きが出る）
-                // rect.style.transform = 'scale(0.8)';
-                // setTimeout(() => rect.style.transform = 'scale(1)', 10);
+                // 出現アニメーション
+                rect.style.opacity = '0';
+                rect.style.transformOrigin = `${x + blockSize / 2}px ${y + blockSize / 2}px`;
+                rect.style.transform = 'scale(0.88)';
+                setTimeout(() => {
+                    rect.style.opacity = '1';
+                    rect.style.transform = 'scale(1)';
+                }, 18 * (rowIndex + colIndex));
 
                 svgElement.appendChild(rect);
             }
@@ -427,8 +535,10 @@
         // 最初の要素を選択状態にする
         if (allPartitions.length > 0) {
             renderDiagram(allPartitions[activePartitionIndex]);
+            renderInsights(allPartitions[activePartitionIndex]);
         } else {
              svgElement.innerHTML = '';
+             partitionStats.textContent = '';
         }
     }
 
