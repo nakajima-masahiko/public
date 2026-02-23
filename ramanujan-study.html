@@ -258,7 +258,7 @@
     // --- グローバル変数と初期設定 ---
     let currentN = 4;
     let allPartitions = [];
-    let active PartitionIndex = 0;
+    let activePartitionIndex = 0;
     let isConjugateView = false;
 
     const numberInput = document.getElementById('numberInput');
@@ -273,7 +273,8 @@
 
     // --- イベントリスナー ---
     numberInput.addEventListener('change', (e) => {
-        let val = parseInt(e.target.value);
+        let val = parseInt(e.target.value, 10);
+        if (Number.isNaN(val)) val = currentN;
         if (val < 1) val = 1;
         if (val > 15) val = 15; // パフォーマンスと表示のため制限
         numberInput.value = val;
