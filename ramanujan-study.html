@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ラマヌジャンの視点：整数の分割とヤング図形</title>
+    <style>
+        :root {
+            --primary-color: #003366; /* 濃紺 */
+            --secondary-color: #f0f4f8; /* 薄いグレー青 */
+            --accent-color: #ff6600; /* オレンジ（強調用） */
+            --text-color: #333;
+            --bg-color: #fff;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 160px); /* ヘッダーとフッターの分を引く */
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: var(--bg-color);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* 左ペイン：数式制御 */
+        .pane-left {
+            flex: 1;
+            padding: 20px;
+            border-right: 1px solid #eee;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+
+        .control-panel {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--secondary-color);
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        input[type=number] {
+            font-size: 1.2rem;
+            padding: 5px;
+            width: 60px;
+            margin-left: 10px;
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .partition-list h3 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        #partitionListUl {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #partitionListUl li {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        #partitionListUl li:hover {
+            background-color: #eef6fc;
+            border-color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        #partitionListUl li.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* 右ペイン：図形表示 */
+        .pane-right {
+            flex: 2;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: white;
+        }
+
+        .diagram-controls {
+            margin-bottom: 15px;
+        }
+
+        button#toggleConjugate {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+        button#toggleConjugate:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        button#toggleConjugate.active {
+             background-color: var(--primary-color);
+             color: white;
+        }
+
+        button#toggleConjugate svg {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+
+        #diagram-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        /* SVGとアニメーション */
+        svg#youngDiagram {
+            border: 1px dashed #ccc;
+            background-color: #fcfcfc;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        .block {
+            fill: var(--primary-color);
+            stroke: white;
+            stroke-width: 2px;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        .block.conjugate-mode {
+             fill: var(--accent-color);
+        }
+
+        .diagonal-line {
+            stroke: rgba(255, 102, 0, 0.5); /* オレンジの半透明 */
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            display: none;
+        }
+        .diagonal-line.active {
+            display: block;
+        }
+
+        /* フッター：解説 */
+        footer {
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            padding: 15px 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            font-size: 0.95rem;
+            border-left: 5px solid var(--accent-color);
+        }
+        footer strong {
+            color: var(--primary-color);
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+            .pane-left, .pane-right {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>ラマヌジャンの視点：整数の分割とヤング図形</h1>
+</header>
+
+<div class="container">
+    <div class="pane-left">
+        <div class="control-panel">
+            <label for="numberInput" style="font-weight: bold;">整数 n を選択 (1-15): </label>
+            <input type="number" id="numberInput" value="4" min="1" max="15">
+        </div>
+
+        <div class="partition-list">
+            <h3>分割パターン (<span id="partitionCount">5</span>通り)</h3>
+            <p style="font-size:0.9rem; color:#666;">リストにカーソルを合わせると図形が表示されます。</p>
+            <ul id="partitionListUl">
+                </ul>
+        </div>
+    </div>
+
+    <div class="pane-right">
+        <div class="diagram-controls">
+            <button id="toggleConjugate">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-2.79 0-5.16-1.89-5.82-4.48l-2.11.88C5.13 18.28 8.31 21 12 21c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 2.79 0 5.16 1.89 5.82 4.48l2.11-.88C18.87 5.72 15.69 3 12 3 7.58 3 4 6.58 4 11H1l4 4 4-4H6z"/></svg>
+                共役（きょうやく）な分割を表示
+            </button>
+        </div>
+        <div id="diagram-container">
+            <svg id="youngDiagram" width="500" height="500" viewBox="0 0 500 500">
+                </svg>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p><strong>解説：数式と図形の架け橋</strong><br>
+    「整数の分割」は、ある整数を足し算の形に分解する方法が何通りあるか、という単純な問題です。しかし、このリストを右のような「ヤング図形（階段状の積み木）」として視覚化すると、数式だけでは見えなかった対称性（共役）や構造が浮かび上がります。天才数学者ラマヌジャンは、こうした図形の並びが持つ深い規則性を見抜き、そこから現代数学にも通じる驚くべき公式を次々と発見しました。</p>
+</footer>
+
+<script>
+    // --- グローバル変数と初期設定 ---
+    let currentN = 4;
+    let allPartitions = [];
+    let active PartitionIndex = 0;
+    let isConjugateView = false;
+
+    const numberInput = document.getElementById('numberInput');
+    const partitionListUl = document.getElementById('partitionListUl');
+    const partitionCountSpan = document.getElementById('partitionCount');
+    const svgElement = document.getElementById('youngDiagram');
+    const toggleConjugateBtn = document.getElementById('toggleConjugate');
+
+    const SVG_SIZE = 500;
+    const PADDING = 40;
+    let blockSize = 50; // Nに応じて動的に計算される
+
+    // --- イベントリスナー ---
+    numberInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        if (val < 1) val = 1;
+        if (val > 15) val = 15; // パフォーマンスと表示のため制限
+        numberInput.value = val;
+        currentN = val;
+        activePartitionIndex = 0;
+        updateApp();
+    });
+
+    toggleConjugateBtn.addEventListener('click', () => {
+        isConjugateView = !isConjugateView;
+        toggleConjugateBtn.classList.toggle('active', isConjugateView);
+        renderDiagram(allPartitions[activePartitionIndex]);
+    });
+
+
+    // --- コアロジック：分割生成アルゴリズム (再帰) ---
+    // 整数targetを、maxVal以下の数値の和として降順で表現するリストを生成
+    function generatePartitionsRecursive(target, maxVal, currentPartition, resultList) {
+        if (target === 0) {
+            resultList.push([...currentPartition]);
+            return;
+        }
+        for (let i = Math.min(target, maxVal); i >= 1; i--) {
+            currentPartition.push(i);
+            generatePartitionsRecursive(target - i, i, currentPartition, resultList);
+            currentPartition.pop();
+        }
+    }
+
+    function getPartitions(n) {
+        const result = [];
+        generatePartitionsRecursive(n, n, [], result);
+        return result;
+    }
+
+
+    // --- コアロジック：共役分割の計算 ---
+    // ヤング図形の行と列を入れ替える操作
+    function getConjugate(partition) {
+        if (!partition || partition.length === 0) return [];
+        const numRows = partition.length;
+        const numCols = partition[0];
+        const conjugate = new Array(numCols).fill(0);
+
+        for (let r = 0; r < numRows; r++) {
+            for (let c = 0; c < partition[r]; c++) {
+                // 元の図形の(r行目, c列目)にブロックがある場合、
+                // 共役図形のc行目のカウントを増やす
+                conjugate[c]++;
+            }
+        }
+        // 末尾の0を削除（念のため）
+        return conjugate.filter(x => x > 0);
+    }
+
+
+    // --- UI更新：リスト描画 ---
+    function renderPartitionList() {
+        partitionListUl.innerHTML = '';
+        partitionCountSpan.textContent = allPartitions.length;
+
+        allPartitions.forEach((partition, index) => {
+            const li = document.createElement('li');
+            // 数式表示形式を作成 (例: 4 + 2 + 1)
+            li.textContent = partition.join(' + ');
+            
+            if (index === activePartitionIndex) {
+                li.classList.add('active');
+            }
+
+            // インタラクション設定
+            li.addEventListener('mouseover', () => {
+                setActivePartition(index);
+            });
+            li.addEventListener('click', () => {
+                setActivePartition(index);
+            });
+
+            partitionListUl.appendChild(li);
+        });
+    }
+
+    function setActivePartition(index) {
+        if (activePartitionIndex === index && !isConjugateView) return; // 最適化
+
+        activePartitionIndex = index;
+        // リストのハイライト更新
+        Array.from(partitionListUl.children).forEach((li, i) => {
+            li.classList.toggle('active', i === index);
+        });
+        
+        // 図形の再描画
+        renderDiagram(allPartitions[index]);
+    }
+
+
+    // --- UI更新：SVG図形描画 ---
+    function renderDiagram(partition) {
+        svgElement.innerHTML = ''; // SVGクリア
+
+        if (!partition) return;
+
+        // 表示対象の分割（通常または共役）を決定
+        const targetPartition = isConjugateView ? getConjugate(partition) : partition;
+
+        // ブロックサイズの動的計算（SVG領域に収まるように）
+        const maxRows = targetPartition.length;
+        const maxCols = targetPartition[0] || 1;
+        const maxDimension = Math.max(maxRows, maxCols);
+        blockSize = Math.floor((SVG_SIZE - PADDING * 2) / maxDimension);
+
+        // 対角線の描画（共役の軸）
+        const diagonalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        diagonalLine.setAttribute('x1', PADDING);
+        diagonalLine.setAttribute('y1', PADDING);
+        diagonalLine.setAttribute('x2', PADDING + maxDimension * blockSize);
+        diagonalLine.setAttribute('y2', PADDING + maxDimension * blockSize);
+        diagonalLine.setAttribute('class', `diagonal-line ${isConjugateView ? 'active' : ''}`);
+        svgElement.appendChild(diagonalLine);
+
+        // ブロックの描画
+        targetPartition.forEach((rowLength, rowIndex) => {
+            for (let colIndex = 0; colIndex < rowLength; colIndex++) {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                
+                // 位置計算
+                const x = PADDING + colIndex * blockSize;
+                const y = PADDING + rowIndex * blockSize;
+
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', blockSize);
+                rect.setAttribute('height', blockSize);
+                rect.setAttribute('class', `block ${isConjugateView ? 'conjugate-mode' : ''}`);
+                
+                // アニメーション用の初期位置（オプション：これを入れると出現時に動きが出る）
+                // rect.style.transform = 'scale(0.8)';
+                // setTimeout(() => rect.style.transform = 'scale(1)', 10);
+
+                svgElement.appendChild(rect);
+            }
+        });
+    }
+
+
+    // --- アプリケーション初期化 ---
+    function updateApp() {
+        allPartitions = getPartitions(currentN);
+        renderPartitionList();
+        // 最初の要素を選択状態にする
+        if (allPartitions.length > 0) {
+            renderDiagram(allPartitions[activePartitionIndex]);
+        } else {
+             svgElement.innerHTML = '';
+        }
+    }
+
+    // 初回実行
+    updateApp();
+
+</script>
+</body>
+</html>
