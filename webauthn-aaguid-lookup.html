@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebAuthn AAGUID ルックアップ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: #f8fafc;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      margin: 0 0 28px;
+    }
+
+    .card {
+      background: #1e2330;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 780px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.8rem;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: #4f7ef7;
+    }
+
+    textarea::placeholder {
+      color: #4a5568;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      padding: 10px 22px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    #lookupBtn {
+      background: #4f7ef7;
+      color: #fff;
+    }
+    #lookupBtn:hover { background: #3d6de6; }
+    #lookupBtn:disabled { background: #2d3748; color: #4a5568; cursor: not-allowed; transform: none; }
+
+    #clearBtn {
+      background: #2d3748;
+      color: #94a3b8;
+    }
+    #clearBtn:hover { background: #374151; }
+
+    /* Result area */
+    #result { max-width: 780px; }
+
+    .result-card {
+      background: #1e2330;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 24px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-card.found {
+      border-color: #22c55e44;
+      background: linear-gradient(135deg, #1e2330 0%, #162316 100%);
+    }
+
+    .result-card.not-found {
+      border-color: #f59e0b44;
+      background: linear-gradient(135deg, #1e2330 0%, #201a0a 100%);
+    }
+
+    .result-card.error {
+      border-color: #ef444444;
+      background: linear-gradient(135deg, #1e2330 0%, #200f0f 100%);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge.found  { background: #14532d; color: #4ade80; }
+    .badge.not-found { background: #451a03; color: #fb923c; }
+    .badge.error  { background: #450a0a; color: #f87171; }
+
+    .authenticator-name {
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 16px;
+    }
+
+    .icon-preview {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #0f1117;
+      padding: 4px;
+    }
+
+    .field-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 520px) {
+      .field-group { grid-template-columns: 1fr; }
+    }
+
+    .field {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .field-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 4px;
+    }
+
+    .field-value {
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.8125rem;
+      color: #e2e8f0;
+      word-break: break-all;
+    }
+
+    .field-value.highlight { color: #7dd3fc; }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #2d3748;
+      border-top-color: #4f7ef7;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #64748b;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 0;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #4a5568;
+      margin-top: 10px;
+    }
+
+    a { color: #7dd3fc; }
+  </style>
+</head>
+<body>
+
+  <h1>WebAuthn AAGUID ルックアップ</h1>
+  <p class="subtitle">
+    <code>navigator.credentials.create()</code> の戻り値を <code>.toJSON()</code> した JSON を貼り付けると、AAGUID を解析して認証器名を表示します。
+  </p>
+
+  <div class="card">
+    <label for="credentialJson">JSON を貼り付け</label>
+    <textarea
+      id="credentialJson"
+      placeholder='{"id":"...","rawId":"...","type":"public-key","response":{"clientDataJSON":"...","attestationObject":"..."},...}'
+      spellcheck="false"
+    ></textarea>
+    <p class="hint">
+      ※ attestationObject に AAGUID が含まれます。<code>none</code> アテステーションや一部の仮想認証器では取得できない場合があります。
+    </p>
+    <div class="actions">
+      <button id="lookupBtn" onclick="lookup()">AAGUID を検索</button>
+      <button id="clearBtn" onclick="clearAll()">クリア</button>
+    </div>
+  </div>
+
+  <div id="result"></div>
+
+<script>
+// ─── Minimal CBOR decoder ────────────────────────────────────────────────────
+function decodeCBOR(buffer) {
+  const view = new DataView(buffer instanceof ArrayBuffer ? buffer : buffer.buffer);
+  let offset = 0;
+
+  function readLen(add) {
+    if (add < 24)  return add;
+    if (add === 24) return view.getUint8(offset++);
+    if (add === 25) { const v = view.getUint16(offset); offset += 2; return v; }
+    if (add === 26) { const v = view.getUint32(offset); offset += 4; return v; }
+    throw new Error('Unsupported CBOR length encoding: ' + add);
+  }
+
+  function read() {
+    const b    = view.getUint8(offset++);
+    const type = (b >> 5) & 0x7;
+    const add  = b & 0x1f;
+
+    if (type === 0) return readLen(add); // uint
+
+    if (type === 2) { // byte string
+      const len   = readLen(add);
+      const bytes = new Uint8Array(view.buffer, offset, len);
+      offset += len;
+      return bytes;
+    }
+
+    if (type === 3) { // text string
+      const len   = readLen(add);
+      const bytes = new Uint8Array(view.buffer, offset, len);
+      offset += len;
+      return new TextDecoder().decode(bytes);
+    }
+
+    if (type === 4) { // array
+      const len = readLen(add);
+      return Array.from({ length: len }, read);
+    }
+
+    if (type === 5) { // map
+      const len = readLen(add);
+      const map = {};
+      for (let i = 0; i < len; i++) { const k = read(); map[k] = read(); }
+      return map;
+    }
+
+    throw new Error('Unsupported CBOR type: ' + type);
+  }
+
+  return read();
+}
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+function base64urlToBytes(str) {
+  const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  const pad  = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=');
+  return Uint8Array.from(atob(pad), c => c.charCodeAt(0));
+}
+
+function bytesToUUID(bytes) {
+  const h = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+}
+
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── AAGUID list sources (tried in order) ────────────────────────────────────
+const AAGUID_SOURCES = [
+  'https://raw.githubusercontent.com/passkeydeveloper/passkey-authenticator-aaguids/main/aaguid.json',
+  'https://cdn.jsdelivr.net/gh/passkeydeveloper/passkey-authenticator-aaguids@main/aaguid.json',
+];
+
+async function fetchAAGUIDList() {
+  for (const url of AAGUID_SOURCES) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (_) { /* try next */ }
+  }
+  throw new Error('AAGUID リストの取得に失敗しました。ネットワーク環境を確認してください。');
+}
+
+// ─── Main logic ──────────────────────────────────────────────────────────────
+async function lookup() {
+  const btn       = document.getElementById('lookupBtn');
+  const resultDiv = document.getElementById('result');
+  const raw       = document.getElementById('credentialJson').value.trim();
+
+  if (!raw) {
+    showError('JSON が入力されていません。');
+    return;
+  }
+
+  btn.disabled = true;
+  resultDiv.innerHTML = `
+    <div class="result-card">
+      <div class="loading-text"><span class="spinner"></span>解析中…</div>
+    </div>`;
+
+  try {
+    // 1. Parse JSON
+    let cred;
+    try { cred = JSON.parse(raw); }
+    catch (e) { throw new Error('JSON のパースに失敗しました: ' + e.message); }
+
+    if (!cred?.response?.attestationObject) {
+      throw new Error('"response.attestationObject" フィールドが見つかりません。<br>PublicKeyCredential.toJSON() の出力を貼り付けてください。');
+    }
+
+    // 2. Decode attestationObject (CBOR)
+    const attObjBytes = base64urlToBytes(cred.response.attestationObject);
+    let attObj;
+    try { attObj = decodeCBOR(attObjBytes); }
+    catch (e) { throw new Error('attestationObject の CBOR デコードに失敗しました: ' + e.message); }
+
+    const authData = attObj.authData;
+    if (!authData || authData.length < 53) {
+      throw new Error('authData が短すぎます。AAGUID を取得できません。');
+    }
+
+    // 3. Check AT flag (bit 6 of flags byte at index 32)
+    const flags  = authData[32];
+    const atFlag = (flags & 0x40) !== 0;
+    if (!atFlag) {
+      throw new Error('authData の AT フラグが立っていません。<br>このクレデンシャルは Attested Credential Data を含まないため AAGUID を取得できません。');
+    }
+
+    // 4. Extract AAGUID (bytes 37–52)
+    const aaguidBytes = authData.slice(37, 53);
+    const aaguid      = bytesToUUID(aaguidBytes);
+
+    const fmt = attObj.fmt ?? '(不明)';
+
+    // 5. Fetch AAGUID list and look up
+    resultDiv.innerHTML = `
+      <div class="result-card">
+        <div class="loading-text"><span class="spinner"></span>認証器リストを取得中…</div>
+      </div>`;
+
+    const list = await fetchAAGUIDList();
+    const info = list[aaguid];
+
+    // 6. Render result
+    if (info) {
+      resultDiv.innerHTML = `
+        <div class="result-card found">
+          <div class="result-header">
+            <span class="badge found">✓ 認証器を特定</span>
+            ${info.icon_dark || info.icon_light ? `<img class="icon-preview" src="${esc(info.icon_dark ?? info.icon_light)}" alt="icon" onerror="this.style.display='none'">` : ''}
+          </div>
+          <div class="authenticator-name">${esc(info.name)}</div>
+          <div class="field-group">
+            <div class="field">
+              <div class="field-label">AAGUID</div>
+              <div class="field-value highlight">${esc(aaguid)}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">アテステーション形式</div>
+              <div class="field-value">${esc(fmt)}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Credential ID</div>
+              <div class="field-value">${esc(cred.id ?? '–')}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">authData フラグ</div>
+              <div class="field-value">0x${flags.toString(16).padStart(2,'0').toUpperCase()}
+                ${flags & 0x01 ? ' UP' : ''}${flags & 0x04 ? ' UV' : ''}${flags & 0x40 ? ' AT' : ''}${flags & 0x80 ? ' ED' : ''}
+              </div>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      resultDiv.innerHTML = `
+        <div class="result-card not-found">
+          <div class="result-header">
+            <span class="badge not-found">未登録の AAGUID</span>
+          </div>
+          <p style="color:#fbbf24;margin:0 0 16px">この AAGUID は既知のリストに含まれていませんでした。</p>
+          <div class="field-group">
+            <div class="field">
+              <div class="field-label">AAGUID</div>
+              <div class="field-value highlight">${esc(aaguid)}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">アテステーション形式</div>
+              <div class="field-value">${esc(fmt)}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Credential ID</div>
+              <div class="field-value">${esc(cred.id ?? '–')}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">authData フラグ</div>
+              <div class="field-value">0x${flags.toString(16).padStart(2,'0').toUpperCase()}
+                ${flags & 0x01 ? ' UP' : ''}${flags & 0x04 ? ' UV' : ''}${flags & 0x40 ? ' AT' : ''}${flags & 0x80 ? ' ED' : ''}
+              </div>
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:#64748b;margin:14px 0 0">
+            ※ <a href="https://github.com/passkeydeveloper/passkey-authenticator-aaguids" target="_blank" rel="noopener">passkeydeveloper/passkey-authenticator-aaguids</a> のリストを参照しています。
+          </p>
+        </div>`;
+    }
+
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showError(msg) {
+  document.getElementById('result').innerHTML = `
+    <div class="result-card error">
+      <div class="result-header"><span class="badge error">エラー</span></div>
+      <p style="margin:0;color:#fca5a5;">${msg}</p>
+    </div>`;
+  document.getElementById('lookupBtn').disabled = false;
+}
+
+function clearAll() {
+  document.getElementById('credentialJson').value = '';
+  document.getElementById('result').innerHTML = '';
+}
+
+// Allow Enter key shortcut inside textarea (Ctrl+Enter or Cmd+Enter)
+document.getElementById('credentialJson').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') lookup();
+});
+</script>
+</body>
+</html>
