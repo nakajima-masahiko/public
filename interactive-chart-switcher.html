@@ -94,6 +94,48 @@
       gap: 10px;
     }
 
+    /* ─── レスポンシブ対応 ─── */
+    @media (max-width: 767px) {
+      body {
+        padding: 12px 10px;
+      }
+
+      .grid-3x3 {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        margin-bottom: 10px;
+      }
+
+      .title {
+        font-size: 1.1rem;
+      }
+
+      .controls {
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .btn {
+        padding: 6px 14px;
+        font-size: 0.8rem;
+      }
+
+      .card {
+        padding: 14px 12px 12px;
+      }
+
+      .stock-panel {
+        padding: 10px 10px 8px;
+      }
+    }
+
     .stock-panel {
       background: #111420;
       border: 1px solid #252836;
