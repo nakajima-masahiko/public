@@ -6,14 +6,14 @@
   <title>Realtime Chart Dashboard</title>
 
   <!-- React 18 -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
   <!-- Babel (JSX transpile — no build step) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <!-- d3 v7 (scale / axis math only — zero DOM usage) -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
   <!-- PixiJS v7 (all canvas rendering) -->
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.3/dist/pixi.min.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -196,7 +196,7 @@
     /** Single OHLC candle via random walk from prevClose */
     function generateOHLC(prevClose, volatility) {
       const open  = prevClose;
-      const move  = (Math.random() - 0.49) * volatility * 2;
+      const move  = (Math.random() - 0.5) * volatility * 2;
       const close = Math.max(open + move, prevClose * 0.01);
       const wick  = Math.random() * volatility * 0.55;
       const high  = Math.max(open, close) + wick;
@@ -274,8 +274,8 @@
           height,
           backgroundColor: 0x1a1d27,
           antialias:       true,
-          resolution:      1,
-          autoDensity:     false,
+          resolution:      window.devicePixelRatio || 1,
+          autoDensity:     true,
         });
 
         // Sync canvas CSS dimensions so it fills the container
@@ -408,9 +408,22 @@
         fill.beginFill(0x38bdf8, 0.18);
         fill.drawPolygon(pts);
         fill.endFill();
-        // Lighter inner layer (top half of the area, approximated)
+        // Lighter inner layer (actual upper half region)
+        const midPts = [];
+        for (let i = 0; i < data.length; i++) {
+          const x = xScale(i) + xScale.bandwidth() / 2;
+          const y = yScale(data[i].close);
+          midPts.push(x, y + (H - y) * 0.5);
+        }
+        const upperHalf = [];
+        for (let i = 0; i < data.length; i++) {
+          upperHalf.push(xScale(i) + xScale.bandwidth() / 2, yScale(data[i].close));
+        }
+        for (let i = data.length - 1; i >= 0; i--) {
+          upperHalf.push(midPts[i * 2], midPts[i * 2 + 1]);
+        }
         fill.beginFill(0x38bdf8, 0.07);
-        fill.drawPolygon(pts);
+        fill.drawPolygon(upperHalf);
         fill.endFill();
 
         // Line
@@ -508,6 +521,36 @@
       { id: 8, name: 'DOGE/USD',  basePrice: 0.18,  volatility: 0.007 },
     ];
 
+    /* Shared realtime ticker (single interval for all chart cards) */
+    const realtimeSubscribers = new Set();
+    let realtimeIntervalId = null;
+
+    function ensureRealtimeTicker() {
+      if (realtimeIntervalId != null) return;
+      realtimeIntervalId = setInterval(() => {
+        realtimeSubscribers.forEach(fn => fn());
+      }, 1000);
+    }
+
+    function subscribeRealtimeTick(fn, startDelay = 0) {
+      let active = true;
+      const timeoutId = setTimeout(() => {
+        if (!active) return;
+        realtimeSubscribers.add(fn);
+        ensureRealtimeTicker();
+      }, startDelay);
+
+      return () => {
+        active = false;
+        clearTimeout(timeoutId);
+        realtimeSubscribers.delete(fn);
+        if (realtimeSubscribers.size === 0 && realtimeIntervalId != null) {
+          clearInterval(realtimeIntervalId);
+          realtimeIntervalId = null;
+        }
+      };
+    }
+
     /* ═══════════════════════════════════════════════════════
        REACT COMPONENTS
     ═══════════════════════════════════════════════════════ */
@@ -527,10 +570,14 @@
           <div className="mode-toggle">
             <button
               className={mode === 'candles' ? 'active' : ''}
+              aria-pressed={mode === 'candles'}
+              aria-label={`${name}をローソク足表示に切り替え`}
               onClick={() => onModeChange('candles')}
             >Candles</button>
             <button
               className={mode === 'area' ? 'active' : ''}
+              aria-pressed={mode === 'area'}
+              aria-label={`${name}をエリア表示に切り替え`}
               onClick={() => onModeChange('area')}
             >Area</button>
           </div>
@@ -583,8 +630,8 @@
       const handleMouseMove = useCallback(e => {
         const renderer = rendererRef.current;
         if (!renderer) return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        renderer.updateCrosshair(e.clientX - rect.left, e.clientY - rect.top);
+        const { offsetX, offsetY } = e.nativeEvent;
+        renderer.updateCrosshair(offsetX, offsetY);
       }, []);
 
       const handleMouseLeave = useCallback(() => {
@@ -629,11 +676,8 @@
         renderer.render(data, xScale, yScale, getYTicks(yScale), getXTicks(data.length), newMode);
       }, []);
 
-      // 1-second realtime tick (independent per chart, staggered via Math.random offset)
+      // 1-second realtime tick (shared interval, staggered subscription start)
       useEffect(() => {
-        // Small random initial delay so charts don't all fire simultaneously
-        const delay = Math.random() * 900;
-        let id;
         const tick = () => {
           dataRef.current = appendNewCandle(dataRef.current, config.volatility);
           const data     = dataRef.current;
@@ -645,13 +689,8 @@
           // Only React state update is the price number — minimal re-render
           setCurrentPrice(data[data.length - 1].close);
         };
-
-        const timeout = setTimeout(() => {
-          tick();
-          id = setInterval(tick, 1000);
-        }, delay);
-
-        return () => { clearTimeout(timeout); clearInterval(id); };
+        const unsubscribe = subscribeRealtimeTick(tick, Math.random() * 900);
+        return unsubscribe;
       }, [config.volatility]);
 
       return (
