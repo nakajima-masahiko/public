@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>インタラクティブ チャート</title>
+  <title>インタラクティブ チャート 3×3</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,14 +17,14 @@
       color: #c9cdd4;
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       padding: 24px 16px;
     }
 
     .container {
       width: 100%;
-      max-width: 960px;
+      max-width: 1260px;
     }
 
     .header {
@@ -50,7 +50,7 @@
       background: #161923;
       border: 1px solid #252836;
       border-radius: 14px;
-      padding: 20px 24px 16px;
+      padding: 20px 20px 16px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.5);
     }
 
@@ -58,7 +58,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .btn {
@@ -87,35 +87,91 @@
 
     .btn svg { flex-shrink: 0; }
 
+    /* ─── 3×3 グリッド ─── */
+    .grid-3x3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stock-panel {
+      background: #111420;
+      border: 1px solid #252836;
+      border-radius: 10px;
+      padding: 10px 10px 6px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .stock-header {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+
+    .stock-id {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .stock-name {
+      font-size: 0.7rem;
+      color: #444;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stock-change {
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .stock-change.up   { color: #26d78e; }
+    .stock-change.down { color: #f0506e; }
+
+    .stock-price {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #c9cdd4;
+    }
+
+    /* ─── チャート共通 ─── */
     .chart-wrap { position: relative; width: 100%; }
 
     .tooltip {
       position: absolute;
       background: #1e2232;
       border: 1px solid #2e3245;
-      border-radius: 9px;
-      padding: 10px 14px;
-      font-size: 0.775rem;
+      border-radius: 8px;
+      padding: 7px 11px;
+      font-size: 0.7rem;
       line-height: 1.7;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.12s;
+      transition: opacity 0.1s;
       z-index: 20;
-      min-width: 140px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      min-width: 110px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45);
     }
 
-    .tooltip-date { font-weight: 700; margin-bottom: 4px; }
-    .tooltip-row { display: flex; justify-content: space-between; gap: 16px; }
-    .tooltip-val { font-weight: 600; color: #fff; }
+    .tooltip-date { font-weight: 700; margin-bottom: 2px; }
+    .tooltip-row  { display: flex; justify-content: space-between; gap: 10px; }
+    .tooltip-val  { font-weight: 600; color: #fff; }
 
-    svg .grid line { stroke: #1e2232; }
+    svg .grid line   { stroke: #191c2a; }
     svg .grid .domain { stroke: none; }
     svg .axis line, svg .axis .domain { stroke: #252836; }
-    svg .axis text { fill: #4a4f65; font-size: 11px; }
+    svg .axis text   { fill: #363a52; font-size: 9px; }
 
-    .fade-enter { animation: fadeIn 0.22s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: none; }
+    }
   </style>
 </head>
 <body>
@@ -124,43 +180,58 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    /* ─── ダミーデータ生成 ─────────────────────────────────── */
-    function generateOHLC(count = 60) {
+    /* ─── 9銘柄設定 ──────────────────────────────────────── */
+    const STOCKS = [
+      { id: 'AAPL',  name: 'Apple',     initPrice: 182,  vol: 4   },
+      { id: 'GOOGL', name: 'Alphabet',  initPrice: 173,  vol: 3   },
+      { id: 'MSFT',  name: 'Microsoft', initPrice: 418,  vol: 5   },
+      { id: 'AMZN',  name: 'Amazon',    initPrice: 196,  vol: 4.5 },
+      { id: 'META',  name: 'Meta',      initPrice: 528,  vol: 8   },
+      { id: 'TSLA',  name: 'Tesla',     initPrice: 252,  vol: 14  },
+      { id: 'NVDA',  name: 'NVIDIA',    initPrice: 892,  vol: 18  },
+      { id: 'NFLX',  name: 'Netflix',   initPrice: 648,  vol: 10  },
+      { id: 'AMD',   name: 'AMD',       initPrice: 168,  vol: 8   },
+    ];
+
+    /* ─── データ生成 ─────────────────────────────────────── */
+    function generateInitialData(initPrice, vol, count = 40) {
       const data = [];
-      let price = 180;
-      const start = new Date('2025-01-06');
+      let price = initPrice;
+      const now = new Date();
 
-      for (let i = 0; i < count; i++) {
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        if (d.getDay() === 6) d.setDate(d.getDate() + 2);
-        if (d.getDay() === 0) d.setDate(d.getDate() + 1);
-
-        const open  = price + (Math.random() - 0.5) * 2;
-        const vol   = Math.random() * 9 + 3;
-        const close = Math.max(open + (Math.random() - 0.47) * vol, 10);
-        const high  = Math.max(open, close) + Math.random() * vol * 0.6;
-        const low   = Math.min(open, close) - Math.random() * vol * 0.6;
-
-        data.push({ date: d, open, high, low, close });
+      for (let i = count - 1; i >= 0; i--) {
+        const t     = new Date(now.getTime() - i * 1000);
+        const open  = price + (Math.random() - 0.5) * 1.5;
+        const range = Math.random() * vol + vol * 0.3;
+        const close = Math.max(open + (Math.random() - 0.47) * range, 1);
+        const high  = Math.max(open, close) + Math.random() * range * 0.5;
+        const low   = Math.min(open, close) - Math.random() * range * 0.5;
+        data.push({ date: t, open, high, low, close });
         price = close;
       }
       return data;
     }
 
-    const DATA = generateOHLC();
+    function nextCandle(lastClose, vol) {
+      const open  = lastClose + (Math.random() - 0.5) * 1.5;
+      const range = Math.random() * vol + vol * 0.3;
+      const close = Math.max(open + (Math.random() - 0.47) * range, 1);
+      const high  = Math.max(open, close) + Math.random() * range * 0.5;
+      const low   = Math.min(open, close) - Math.random() * range * 0.5;
+      return { date: new Date(), open, high, low, close };
+    }
 
-    /* ─── ローソク足チャート ─────────────────────────────────── */
+    /* ─── ローソク足チャート ─────────────────────────────── */
     function CandlestickChart({ data }) {
-      const svgRef  = useRef(null);
-      const tipRef  = useRef(null);
+      const svgRef = useRef(null);
+      const tipRef = useRef(null);
 
       useEffect(() => {
         if (!svgRef.current) return;
 
-        const margin = { top: 16, right: 20, bottom: 44, left: 58 };
+        const margin = { top: 6, right: 8, bottom: 24, left: 42 };
         const W = svgRef.current.parentElement.clientWidth - margin.left - margin.right;
-        const H = 360 - margin.top - margin.bottom;
+        const H = 120;
 
         d3.select(svgRef.current).selectAll('*').remove();
 
@@ -173,7 +244,7 @@
         const x = d3.scaleBand()
           .domain(data.map(d => d.date))
           .range([0, W])
-          .padding(0.28);
+          .padding(0.22);
 
         const yMin = d3.min(data, d => d.low);
         const yMax = d3.max(data, d => d.high);
@@ -183,47 +254,41 @@
           .domain([yMin - yPad, yMax + yPad])
           .range([H, 0]);
 
-        /* グリッド */
         svg.append('g').attr('class', 'grid')
           .call(d3.axisLeft(y).tickSize(-W).tickFormat(''))
           .call(g => g.select('.domain').remove());
 
-        /* X軸 */
-        const every = Math.ceil(data.length / 7);
+        const every = Math.ceil(data.length / 4);
         svg.append('g').attr('class', 'axis')
           .attr('transform', `translate(0,${H})`)
           .call(d3.axisBottom(x)
             .tickValues(data.filter((_, i) => i % every === 0).map(d => d.date))
-            .tickFormat(d3.timeFormat('%m/%d')))
+            .tickFormat(d => d3.timeFormat('%M:%S')(d)))
           .call(g => g.select('.domain').remove());
 
-        /* Y軸 */
         svg.append('g').attr('class', 'axis')
-          .call(d3.axisLeft(y).ticks(6).tickFormat(d => d.toFixed(0)))
+          .call(d3.axisLeft(y).ticks(4).tickFormat(d => d.toFixed(0)))
           .call(g => g.select('.domain').remove());
 
         const BULL = '#26d78e';
         const BEAR = '#f0506e';
 
-        /* ヒゲ */
         svg.selectAll('.wick').data(data).join('line')
           .attr('x1', d => x(d.date) + x.bandwidth() / 2)
           .attr('x2', d => x(d.date) + x.bandwidth() / 2)
           .attr('y1', d => y(d.high))
           .attr('y2', d => y(d.low))
           .attr('stroke', d => d.close >= d.open ? BULL : BEAR)
-          .attr('stroke-width', 1.5);
+          .attr('stroke-width', 1.1);
 
-        /* 本体 */
         svg.selectAll('.body').data(data).join('rect')
           .attr('x',      d => x(d.date))
           .attr('y',      d => y(Math.max(d.open, d.close)))
           .attr('width',  x.bandwidth())
-          .attr('height', d => Math.max(1.5, Math.abs(y(d.open) - y(d.close))))
+          .attr('height', d => Math.max(1, Math.abs(y(d.open) - y(d.close))))
           .attr('fill',   d => d.close >= d.open ? BULL : BEAR)
-          .attr('rx', 1.5);
+          .attr('rx', 1);
 
-        /* ツールチップ */
         svg.selectAll('.hit').data(data).join('rect')
           .attr('x',      d => x(d.date) - x.step() * 0.1)
           .attr('y',      0)
@@ -231,24 +296,22 @@
           .attr('height', H)
           .attr('fill',   'transparent')
           .on('mouseover', (_, d) => {
-            const bull = d.close >= d.open;
+            const bull  = d.close >= d.open;
             const color = bull ? BULL : BEAR;
             tipRef.current.style.opacity = 1;
             tipRef.current.innerHTML = `
-              <div class="tooltip-date" style="color:${color}">
-                ${bull ? '▲' : '▼'} ${d3.timeFormat('%Y/%m/%d')(d.date)}
-              </div>
-              <div class="tooltip-row"><span>始値</span><span class="tooltip-val">${d.open.toFixed(2)}</span></div>
-              <div class="tooltip-row"><span>高値</span><span class="tooltip-val">${d.high.toFixed(2)}</span></div>
-              <div class="tooltip-row"><span>安値</span><span class="tooltip-val">${d.low.toFixed(2)}</span></div>
-              <div class="tooltip-row"><span>終値</span><span class="tooltip-val" style="color:${color}">${d.close.toFixed(2)}</span></div>
+              <div class="tooltip-date" style="color:${color}">${bull ? '▲' : '▼'} ${d3.timeFormat('%H:%M:%S')(d.date)}</div>
+              <div class="tooltip-row"><span>始</span><span class="tooltip-val">${d.open.toFixed(2)}</span></div>
+              <div class="tooltip-row"><span>高</span><span class="tooltip-val">${d.high.toFixed(2)}</span></div>
+              <div class="tooltip-row"><span>安</span><span class="tooltip-val">${d.low.toFixed(2)}</span></div>
+              <div class="tooltip-row"><span>終</span><span class="tooltip-val" style="color:${color}">${d.close.toFixed(2)}</span></div>
             `;
           })
           .on('mousemove', (event) => {
             const parent = svgRef.current.parentElement.getBoundingClientRect();
-            let lx = event.clientX - parent.left + 14;
-            let ly = event.clientY - parent.top  - 90;
-            if (lx + 160 > parent.width) lx = event.clientX - parent.left - 170;
+            let lx = event.clientX - parent.left + 12;
+            let ly = event.clientY - parent.top  - 72;
+            if (lx + 130 > parent.width) lx = event.clientX - parent.left - 138;
             if (ly < 0) ly = 4;
             tipRef.current.style.left = `${lx}px`;
             tipRef.current.style.top  = `${ly}px`;
@@ -258,25 +321,25 @@
       }, [data]);
 
       return (
-        <div className="chart-wrap fade-enter">
+        <div className="chart-wrap">
           <svg ref={svgRef} style={{ display:'block', width:'100%' }}></svg>
           <div ref={tipRef} className="tooltip"></div>
         </div>
       );
     }
 
-    /* ─── グラデーション折れ線チャート ────────────────────────── */
-    function LineChart({ data }) {
-      const svgRef = useRef(null);
-      const tipRef = useRef(null);
+    /* ─── グラデーション折れ線チャート ──────────────────────── */
+    function LineChart({ data, chartId }) {
+      const svgRef   = useRef(null);
+      const tipRef   = useRef(null);
       const focusRef = useRef(null);
 
       useEffect(() => {
         if (!svgRef.current) return;
 
-        const margin = { top: 16, right: 20, bottom: 44, left: 58 };
+        const margin = { top: 6, right: 8, bottom: 24, left: 42 };
         const W = svgRef.current.parentElement.clientWidth - margin.left - margin.right;
-        const H = 360 - margin.top - margin.bottom;
+        const H = 120;
 
         d3.select(svgRef.current).selectAll('*').remove();
 
@@ -298,77 +361,67 @@
           .domain([yMin - yPad, yMax + yPad])
           .range([H, 0]);
 
-        /* グラデーション定義 */
-        const defs = svg.append('defs');
+        /* グラデーション — IDをチャートごとに一意にする */
+        const defs   = svg.append('defs');
+        const gradId = `lineGrad-${chartId}`;
 
         const grad = defs.append('linearGradient')
-          .attr('id', 'lineGrad')
+          .attr('id', gradId)
           .attr('x1', '0%').attr('y1', '0%')
           .attr('x2', '0%').attr('y2', '100%');
         grad.append('stop').attr('offset', '0%')
-          .attr('stop-color', '#4c8ef7').attr('stop-opacity', 0.45);
+          .attr('stop-color', '#4c8ef7').attr('stop-opacity', 0.42);
         grad.append('stop').attr('offset', '80%')
-          .attr('stop-color', '#4c8ef7').attr('stop-opacity', 0.04);
+          .attr('stop-color', '#4c8ef7').attr('stop-opacity', 0.03);
         grad.append('stop').attr('offset', '100%')
           .attr('stop-color', '#4c8ef7').attr('stop-opacity', 0);
 
-        /* グリッド */
         svg.append('g').attr('class', 'grid')
           .call(d3.axisLeft(y).tickSize(-W).tickFormat(''))
           .call(g => g.select('.domain').remove());
 
-        /* X軸 */
         svg.append('g').attr('class', 'axis')
           .attr('transform', `translate(0,${H})`)
-          .call(d3.axisBottom(x).ticks(7).tickFormat(d3.timeFormat('%m/%d')))
+          .call(d3.axisBottom(x).ticks(4).tickFormat(d3.timeFormat('%M:%S')))
           .call(g => g.select('.domain').remove());
 
-        /* Y軸 */
         svg.append('g').attr('class', 'axis')
-          .call(d3.axisLeft(y).ticks(6).tickFormat(d => d.toFixed(0)))
+          .call(d3.axisLeft(y).ticks(4).tickFormat(d => d.toFixed(0)))
           .call(g => g.select('.domain').remove());
 
         const curve = d3.curveMonotoneX;
 
-        /* エリア（グラデーション塗り） */
-        const area = d3.area()
-          .x(d => x(d.date))
-          .y0(H).y1(d => y(d.close))
-          .curve(curve);
-
         svg.append('path').datum(data)
-          .attr('fill', 'url(#lineGrad)')
-          .attr('d', area);
-
-        /* 折れ線 */
-        const line = d3.line()
-          .x(d => x(d.date))
-          .y(d => y(d.close))
-          .curve(curve);
+          .attr('fill', `url(#${gradId})`)
+          .attr('d', d3.area()
+            .x(d => x(d.date))
+            .y0(H).y1(d => y(d.close))
+            .curve(curve));
 
         svg.append('path').datum(data)
           .attr('fill', 'none')
           .attr('stroke', '#4c8ef7')
-          .attr('stroke-width', 2.2)
-          .attr('d', line);
+          .attr('stroke-width', 1.8)
+          .attr('d', d3.line()
+            .x(d => x(d.date))
+            .y(d => y(d.close))
+            .curve(curve));
 
-        /* フォーカス十字 */
         const focus = svg.append('g').style('display', 'none');
         focusRef.current = focus;
 
         focus.append('line')
           .attr('y1', 0).attr('y2', H)
           .attr('stroke', '#4c8ef7').attr('stroke-width', 1)
-          .attr('stroke-dasharray', '4,4').attr('opacity', 0.5);
+          .attr('stroke-dasharray', '3,3').attr('opacity', 0.5);
 
         focus.append('circle')
-          .attr('r', 5)
+          .attr('r', 3.5)
           .attr('fill', '#4c8ef7')
-          .attr('stroke', '#fff').attr('stroke-width', 2);
+          .attr('stroke', '#fff').attr('stroke-width', 1.5);
 
         const bisect = d3.bisector(d => d.date).left;
 
-        /* ツールチップ用オーバーレイ */
         svg.append('rect')
           .attr('width', W).attr('height', H)
           .attr('fill', 'transparent')
@@ -378,26 +431,24 @@
           })
           .on('mousemove', (event) => {
             const [mx] = d3.pointer(event);
-            const x0 = x.invert(mx);
-            const i  = bisect(data, x0, 1);
-            const d0 = data[i - 1];
-            const d1 = data[i] || d0;
-            const d  = (x0 - d0.date > d1.date - x0) ? d1 : d0;
+            const x0  = x.invert(mx);
+            const i   = bisect(data, x0, 1);
+            const d0  = data[i - 1];
+            const d1  = data[i] || d0;
+            const d   = (x0 - d0.date > d1.date - x0) ? d1 : d0;
 
             focus.select('line').attr('transform', `translate(${x(d.date)},0)`);
             focus.select('circle').attr('transform', `translate(${x(d.date)},${y(d.close)})`);
 
             const parent = svgRef.current.parentElement.getBoundingClientRect();
-            let lx = event.clientX - parent.left + 14;
-            let ly = event.clientY - parent.top  - 70;
-            if (lx + 155 > parent.width) lx = event.clientX - parent.left - 164;
+            let lx = event.clientX - parent.left + 12;
+            let ly = event.clientY - parent.top  - 60;
+            if (lx + 130 > parent.width) lx = event.clientX - parent.left - 138;
             if (ly < 0) ly = 4;
             tipRef.current.style.left = `${lx}px`;
             tipRef.current.style.top  = `${ly}px`;
             tipRef.current.innerHTML  = `
-              <div class="tooltip-date" style="color:#4c8ef7">
-                ${d3.timeFormat('%Y/%m/%d')(d.date)}
-              </div>
+              <div class="tooltip-date" style="color:#4c8ef7">${d3.timeFormat('%H:%M:%S')(d.date)}</div>
               <div class="tooltip-row"><span>終値</span><span class="tooltip-val">${d.close.toFixed(2)}</span></div>
               <div class="tooltip-row"><span>始値</span><span class="tooltip-val">${d.open.toFixed(2)}</span></div>
             `;
@@ -410,40 +461,83 @@
       }, [data]);
 
       return (
-        <div className="chart-wrap fade-enter">
+        <div className="chart-wrap">
           <svg ref={svgRef} style={{ display:'block', width:'100%' }}></svg>
           <div ref={tipRef} className="tooltip"></div>
         </div>
       );
     }
 
-    /* ─── アイコン ────────────────────────────────────────── */
+    /* ─── アイコン ───────────────────────────────────────── */
     const CandleIcon = () => (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <rect x="2"  y="4" width="3" height="6" fill="currentColor" rx="0.5"/>
-        <line x1="3.5" y1="1" x2="3.5" y2="4"  stroke="currentColor" strokeWidth="1.3"/>
+        <line x1="3.5" y1="1"  x2="3.5" y2="4"  stroke="currentColor" strokeWidth="1.3"/>
         <line x1="3.5" y1="10" x2="3.5" y2="13" stroke="currentColor" strokeWidth="1.3"/>
         <rect x="9"  y="6" width="3" height="4" fill="currentColor" rx="0.5" opacity="0.55"/>
-        <line x1="10.5" y1="3" x2="10.5" y2="6"  stroke="currentColor" strokeWidth="1.3" opacity="0.55"/>
+        <line x1="10.5" y1="3"  x2="10.5" y2="6"  stroke="currentColor" strokeWidth="1.3" opacity="0.55"/>
         <line x1="10.5" y1="10" x2="10.5" y2="12" stroke="currentColor" strokeWidth="1.3" opacity="0.55"/>
       </svg>
     );
 
     const LineIcon = () => (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <polyline points="1,11 4,7 7,9 10,4 13,2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinejoin="round" strokeLinecap="round"/>
+        <polyline points="1,11 4,7 7,9 10,4 13,2"
+          stroke="currentColor" strokeWidth="1.6"
+          fill="none" strokeLinejoin="round" strokeLinecap="round"/>
       </svg>
     );
 
-    /* ─── アプリ本体 ──────────────────────────────────────── */
+    /* ─── 個別銘柄パネル ─────────────────────────────────── */
+    function StockPanel({ stock, mode }) {
+      const [data, setData] = useState(
+        () => generateInitialData(stock.initPrice, stock.vol)
+      );
+
+      /* 1秒ごとに末尾に新しいローソクを追加し先頭を削除 */
+      useEffect(() => {
+        const id = setInterval(() => {
+          setData(prev => {
+            const last   = prev[prev.length - 1];
+            const candle = nextCandle(last.close, stock.vol);
+            return [...prev.slice(1), candle];
+          });
+        }, 1000);
+        return () => clearInterval(id);
+      }, []);
+
+      const last   = data[data.length - 1];
+      const prev   = data[data.length - 2];
+      const change = (last.close - prev.close) / prev.close * 100;
+      const isUp   = change >= 0;
+
+      return (
+        <div className="stock-panel">
+          <div className="stock-header">
+            <span className="stock-id">{stock.id}</span>
+            <span className="stock-name">{stock.name}</span>
+            <span className={`stock-change ${isUp ? 'up' : 'down'}`}>
+              {isUp ? '+' : ''}{change.toFixed(2)}%
+            </span>
+            <span className="stock-price">${last.close.toFixed(2)}</span>
+          </div>
+          {mode === 'candle'
+            ? <CandlestickChart data={data} />
+            : <LineChart        data={data} chartId={stock.id} />
+          }
+        </div>
+      );
+    }
+
+    /* ─── アプリ本体 ─────────────────────────────────────── */
     function App() {
       const [mode, setMode] = useState('candle');
 
       return (
         <div className="container">
           <div className="header">
-            <span className="title">インタラクティブ チャート</span>
-            <span className="subtitle">ダミーデータ — D3.js + React</span>
+            <span className="title">インタラクティブ チャート 3×3</span>
+            <span className="subtitle">リアルタイム更新 (1秒) — D3.js + React</span>
           </div>
 
           <div className="card">
@@ -462,10 +556,11 @@
               </button>
             </div>
 
-            {mode === 'candle'
-              ? <CandlestickChart key="candle" data={DATA} />
-              : <LineChart        key="line"   data={DATA} />
-            }
+            <div className="grid-3x3">
+              {STOCKS.map(stock => (
+                <StockPanel key={stock.id} stock={stock} mode={mode} />
+              ))}
+            </div>
           </div>
         </div>
       );
