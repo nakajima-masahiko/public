@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realtime Chart Dashboard</title>
+
+  <!-- React 18 -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel (JSX transpile — no build step) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- d3 v7 (scale / axis math only — zero DOM usage) -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <!-- PixiJS v7 (all canvas rendering) -->
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f1117;
+      --card:     #1a1d27;
+      --header:   #13151f;
+      --border:   #2a2d3a;
+      --text:     #e2e8f0;
+      --dim:      #64748b;
+      --accent:   #38bdf8;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, monospace, sans-serif;
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    #root { height: 100%; }
+
+    /* ── App shell ── */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 14px;
+      background: var(--header);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #ef5350;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── 3×3 dashboard grid ── */
+    .dashboard {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 6px;
+      padding: 6px;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: none;
+        overflow-y: auto;
+      }
+    }
+    @media (max-width: 550px) {
+      .dashboard { grid-template-columns: 1fr; }
+    }
+
+    /* ── Chart card ── */
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    @media (max-width: 900px) {
+      .chart-card { min-height: 220px; }
+    }
+
+    /* ── Title bar ── */
+    .title-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      background: var(--header);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chart-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      min-width: 70px;
+    }
+
+    .current-price {
+      flex: 1;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .mode-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .mode-toggle button {
+      padding: 2px 8px;
+      font-size: 10px;
+      font-family: inherit;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .mode-toggle button + button { border-left: 1px solid var(--border); }
+
+    .mode-toggle button:hover {
+      background: rgba(56,189,248,0.12);
+      color: var(--text);
+    }
+
+    .mode-toggle button.active {
+      background: var(--accent);
+      color: #0f1117;
+      font-weight: 700;
+    }
+
+    /* ── Canvas wrapper ── */
+    .chart-container {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-container canvas {
+      position: absolute;
+      top: 0; left: 0;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    /* ═══════════════════════════════════════════════════════
+       DATA UTILITIES
+    ═══════════════════════════════════════════════════════ */
+
+    /** Single OHLC candle via random walk from prevClose */
+    function generateOHLC(prevClose, volatility) {
+      const open  = prevClose;
+      const move  = (Math.random() - 0.49) * volatility * 2;
+      const close = Math.max(open + move, prevClose * 0.01);
+      const wick  = Math.random() * volatility * 0.55;
+      const high  = Math.max(open, close) + wick;
+      const low   = Math.max(Math.min(open, close) - wick, prevClose * 0.005);
+      return { open, high, low, close };
+    }
+
+    /** Generate initial sliding-window array */
+    function generateInitialData(basePrice, volatility, count = 25) {
+      const data = [];
+      let price = basePrice;
+      for (let i = 0; i < count; i++) {
+        const c = generateOHLC(price, volatility);
+        data.push({ ...c, index: i });
+        price = c.close;
+      }
+      return data;
+    }
+
+    /** Drop oldest candle, append fresh one */
+    function appendNewCandle(data, volatility) {
+      const last = data[data.length - 1];
+      const next = generateOHLC(last.close, volatility);
+      return [...data.slice(1), { ...next, index: last.index + 1 }];
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       D3 SCALE UTILITIES  (pure math — zero DOM/SVG usage)
+    ═══════════════════════════════════════════════════════ */
+
+    function computeScales(data, innerW, innerH) {
+      const xScale = d3.scaleBand()
+        .domain(data.map((_, i) => i))
+        .range([0, innerW])
+        .padding(0.2);
+
+      let yMin = d3.min(data, d => d.low);
+      let yMax = d3.max(data, d => d.high);
+      if (yMin === yMax) { yMin -= 1; yMax += 1; }
+      const pad = (yMax - yMin) * 0.12;
+
+      const yScale = d3.scaleLinear()
+        .domain([yMin - pad, yMax + pad])
+        .range([innerH, 0]);
+
+      return { xScale, yScale };
+    }
+
+    function getYTicks(yScale, count = 5) {
+      return yScale.ticks(count);
+    }
+
+    function getXTicks(dataLen, step = 5) {
+      const t = [];
+      for (let i = 0; i < dataLen; i += step) t.push(i);
+      return t;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       CHART RENDERER — all PixiJS drawing lives here
+    ═══════════════════════════════════════════════════════ */
+
+    class ChartRenderer {
+      constructor(canvas, width, height) {
+        this.margin = { top: 10, right: 58, bottom: 22, left: 8 };
+        this.width  = width;
+        this.height = height;
+        this._iw = width  - this.margin.left - this.margin.right;
+        this._ih = height - this.margin.top  - this.margin.bottom;
+
+        // PixiJS Application — attach to caller-supplied canvas
+        this.app = new PIXI.Application({
+          view:            canvas,
+          width,
+          height,
+          backgroundColor: 0x1a1d27,
+          antialias:       true,
+          resolution:      1,
+          autoDensity:     false,
+        });
+
+        // Sync canvas CSS dimensions so it fills the container
+        canvas.style.width  = width  + 'px';
+        canvas.style.height = height + 'px';
+
+        // Container offset by margins — inner-space origin at (0,0)
+        this.ctr = new PIXI.Container();
+        this.ctr.x = this.margin.left;
+        this.ctr.y = this.margin.top;
+        this.app.stage.addChild(this.ctr);
+
+        // Graphics layers in z-order (back → front)
+        this.gGrid      = new PIXI.Graphics(); // grid lines
+        this.gAreaFill  = new PIXI.Graphics(); // area polygon fill
+        this.gAreaLine  = new PIXI.Graphics(); // area polyline
+        this.gCandle    = new PIXI.Graphics(); // candle bodies + wicks
+        this.gLatest    = new PIXI.Graphics(); // dashed latest-price line
+        this.gAxis      = new PIXI.Graphics(); // axis border lines
+        this.gCrosshair = new PIXI.Graphics(); // interactive crosshair
+
+        for (const g of [
+          this.gGrid, this.gAreaFill, this.gAreaLine,
+          this.gCandle, this.gLatest, this.gAxis, this.gCrosshair,
+        ]) this.ctr.addChild(g);
+
+        // Label pool — PIXI.Text objects reused to avoid texture churn
+        this.labelCtr     = new PIXI.Container();
+        this.app.stage.addChild(this.labelCtr);
+        this._pool        = [];   // free labels
+        this._active      = [];   // labels in use this frame
+      }
+
+      get innerWidth()  { return this._iw; }
+      get innerHeight() { return this._ih; }
+
+      /* ─ Resize ─ */
+      resize(w, h) {
+        this.width  = w; this.height = h;
+        this._iw = w - this.margin.left - this.margin.right;
+        this._ih = h - this.margin.top  - this.margin.bottom;
+        this.app.renderer.resize(w, h);
+        const cv = this.app.view;
+        cv.style.width  = w + 'px';
+        cv.style.height = h + 'px';
+      }
+
+      /* ─ Text-label pool helpers ─ */
+      _get(text, style) {
+        let t;
+        if (this._pool.length) {
+          t = this._pool.pop();
+          t.text    = text;
+          t.style   = style;
+          t.visible = true;
+        } else {
+          t = new PIXI.Text(text, style);
+          this.labelCtr.addChild(t);
+        }
+        this._active.push(t);
+        return t;
+      }
+
+      _releaseLabels() {
+        for (const t of this._active) { t.visible = false; this._pool.push(t); }
+        this._active = [];
+      }
+
+      /* ─ Grid lines ─ */
+      drawGrid(xTicks, yTicks, xScale, yScale) {
+        const g = this.gGrid;
+        g.clear();
+        const W = this._iw, H = this._ih;
+        g.lineStyle(1, 0x1e2235, 1);
+        for (const v of yTicks) {
+          const y = yScale(v);
+          g.moveTo(0, y); g.lineTo(W, y);
+        }
+        for (const i of xTicks) {
+          const x = xScale(i) + xScale.bandwidth() / 2;
+          g.moveTo(x, 0); g.lineTo(x, H);
+        }
+      }
+
+      /* ─ Candlestick ─ */
+      drawCandles(data, xScale, yScale) {
+        const g  = this.gCandle;
+        g.clear();
+        const bw = Math.max(xScale.bandwidth(), 1);
+
+        for (let i = 0; i < data.length; i++) {
+          const d     = data[i];
+          const x     = xScale(i);
+          const cx    = x + bw / 2;
+          const bull  = d.close >= d.open;
+          const color = bull ? 0x26a69a : 0xef5350;
+
+          const bTop = yScale(Math.max(d.open, d.close));
+          const bBot = yScale(Math.min(d.open, d.close));
+          const bH   = Math.max(bBot - bTop, 1);
+
+          g.beginFill(color, 1);
+          g.drawRect(x, bTop, bw, bH);
+          g.endFill();
+
+          g.lineStyle(1, color, 1);
+          g.moveTo(cx, yScale(d.high)); g.lineTo(cx, bTop);
+          g.moveTo(cx, bBot);           g.lineTo(cx, yScale(d.low));
+        }
+      }
+
+      /* ─ Area chart (semi-transparent fill + solid line) ─ */
+      drawArea(data, xScale, yScale) {
+        const H = this._ih;
+        if (data.length < 2) return;
+
+        // Build polygon: close-values path + bottom-right + bottom-left
+        const pts = [];
+        for (let i = 0; i < data.length; i++) {
+          pts.push(xScale(i) + xScale.bandwidth() / 2, yScale(data[i].close));
+        }
+        pts.push(
+          xScale(data.length - 1) + xScale.bandwidth() / 2, H,
+          xScale(0)               + xScale.bandwidth() / 2, H,
+        );
+
+        // Fill — subtle gradient simulation: two stacked fills with different alphas
+        const fill = this.gAreaFill;
+        fill.clear();
+        fill.beginFill(0x38bdf8, 0.18);
+        fill.drawPolygon(pts);
+        fill.endFill();
+        // Lighter inner layer (top half of the area, approximated)
+        fill.beginFill(0x38bdf8, 0.07);
+        fill.drawPolygon(pts);
+        fill.endFill();
+
+        // Line
+        const line = this.gAreaLine;
+        line.clear();
+        line.lineStyle(2, 0x38bdf8, 1);
+        line.moveTo(xScale(0) + xScale.bandwidth() / 2, yScale(data[0].close));
+        for (let i = 1; i < data.length; i++) {
+          line.lineTo(xScale(i) + xScale.bandwidth() / 2, yScale(data[i].close));
+        }
+      }
+
+      /* ─ Axis borders + y-tick labels (PIXI.Text) ─ */
+      drawAxes(yTicks, yScale) {
+        const g = this.gAxis;
+        g.clear();
+        const W = this._iw, H = this._ih;
+
+        g.lineStyle(1, 0x2a2d3a, 1);
+        g.moveTo(0, 0); g.lineTo(0, H);   // left edge
+        g.moveTo(0, H); g.lineTo(W, H);   // bottom edge
+
+        this._releaseLabels();
+
+        const style = { fontSize: 9, fill: '#5a6a80', fontFamily: 'monospace' };
+        for (const v of yTicks) {
+          const lbl = this._get(v.toFixed(2), style);
+          lbl.x = this.margin.left + W + 3;
+          lbl.y = this.margin.top  + yScale(v) - 5;
+        }
+      }
+
+      /* ─ Dashed horizontal line at latest close ─ */
+      drawLatestLine(lastClose, yScale) {
+        const g = this.gLatest;
+        g.clear();
+        const y = yScale(lastClose);
+        const W = this._iw;
+        g.lineStyle(1, 0x38bdf8, 0.45);
+        for (let x = 0; x < W; x += 8) {
+          g.moveTo(x, y); g.lineTo(Math.min(x + 4, W), y);
+        }
+      }
+
+      /* ─ Crosshair ─ */
+      updateCrosshair(mouseX, mouseY) {
+        const g  = this.gCrosshair;
+        g.clear();
+        const ix = mouseX - this.margin.left;
+        const iy = mouseY - this.margin.top;
+        const W  = this._iw, H = this._ih;
+        if (ix < 0 || ix > W || iy < 0 || iy > H) return;
+        g.lineStyle(1, 0x5a9fd4, 0.65);
+        g.moveTo(ix, 0); g.lineTo(ix, H);
+        g.moveTo(0, iy); g.lineTo(W, iy);
+      }
+
+      hideCrosshair() { this.gCrosshair.clear(); }
+
+      /* ─ Master render — called every second + on resize / mode change ─ */
+      render(data, xScale, yScale, yTicks, xTicks, mode) {
+        this.drawGrid(xTicks, yTicks, xScale, yScale);
+        this.drawAxes(yTicks, yScale);
+        this.drawLatestLine(data[data.length - 1].close, yScale);
+
+        if (mode === 'candles') {
+          this.gAreaFill.clear();
+          this.gAreaLine.clear();
+          this.drawCandles(data, xScale, yScale);
+        } else {
+          this.gCandle.clear();
+          this.drawArea(data, xScale, yScale);
+        }
+      }
+
+      destroy() {
+        this._releaseLabels();
+        this.app.destroy(false, { children: true, texture: true });
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       CHART CONFIGS  (9 independent instruments)
+    ═══════════════════════════════════════════════════════ */
+
+    const CHART_CONFIGS = [
+      { id: 0, name: 'BTC/USD',   basePrice: 65000, volatility: 450  },
+      { id: 1, name: 'ETH/USD',   basePrice: 3500,  volatility: 70   },
+      { id: 2, name: 'SOL/USD',   basePrice: 175,   volatility: 7    },
+      { id: 3, name: 'BNB/USD',   basePrice: 580,   volatility: 14   },
+      { id: 4, name: 'XRP/USD',   basePrice: 0.85,  volatility: 0.025 },
+      { id: 5, name: 'ADA/USD',   basePrice: 0.55,  volatility: 0.018 },
+      { id: 6, name: 'AVAX/USD',  basePrice: 42,    volatility: 2    },
+      { id: 7, name: 'MATIC/USD', basePrice: 1.20,  volatility: 0.045 },
+      { id: 8, name: 'DOGE/USD',  basePrice: 0.18,  volatility: 0.007 },
+    ];
+
+    /* ═══════════════════════════════════════════════════════
+       REACT COMPONENTS
+    ═══════════════════════════════════════════════════════ */
+
+    /* ── TitleBar ── */
+    function TitleBar({ name, mode, onModeChange, currentPrice }) {
+      const fmt = (v) => {
+        if (v == null) return '—';
+        if (v >= 1000) return v.toFixed(2);
+        if (v >= 1)    return v.toFixed(3);
+        return v.toFixed(5);
+      };
+      return (
+        <div className="title-bar">
+          <span className="chart-name">{name}</span>
+          <span className="current-price">{fmt(currentPrice)}</span>
+          <div className="mode-toggle">
+            <button
+              className={mode === 'candles' ? 'active' : ''}
+              onClick={() => onModeChange('candles')}
+            >Candles</button>
+            <button
+              className={mode === 'area' ? 'active' : ''}
+              onClick={() => onModeChange('area')}
+            >Area</button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── ChartCanvas — owns PixiJS lifecycle, resize, mouse ── */
+    function ChartCanvas({ dataRef, modeRef, rendererRef }) {
+      const canvasRef    = useRef(null);
+      const containerRef = useRef(null);
+
+      useEffect(() => {
+        const canvas    = canvasRef.current;
+        const container = containerRef.current;
+        if (!canvas || !container) return;
+
+        const rect = container.getBoundingClientRect();
+        const w    = Math.max(rect.width,  40);
+        const h    = Math.max(rect.height, 40);
+
+        const renderer = new ChartRenderer(canvas, w, h);
+        rendererRef.current = renderer;
+
+        // Initial draw
+        const data = dataRef.current;
+        const { xScale, yScale } = computeScales(data, renderer.innerWidth, renderer.innerHeight);
+        renderer.render(data, xScale, yScale, getYTicks(yScale), getXTicks(data.length), modeRef.current);
+
+        // Watch container size — resize renderer + redraw
+        const ro = new ResizeObserver(entries => {
+          for (const e of entries) {
+            const { width: nw, height: nh } = e.contentRect;
+            if (nw < 10 || nh < 10) continue;
+            renderer.resize(nw, nh);
+            const d = dataRef.current;
+            const { xScale: xs, yScale: ys } = computeScales(d, renderer.innerWidth, renderer.innerHeight);
+            renderer.render(d, xs, ys, getYTicks(ys), getXTicks(d.length), modeRef.current);
+          }
+        });
+        ro.observe(container);
+
+        return () => {
+          ro.disconnect();
+          renderer.destroy();
+          rendererRef.current = null;
+        };
+      }, []); // mount / unmount only
+
+      const handleMouseMove = useCallback(e => {
+        const renderer = rendererRef.current;
+        if (!renderer) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        renderer.updateCrosshair(e.clientX - rect.left, e.clientY - rect.top);
+      }, []);
+
+      const handleMouseLeave = useCallback(() => {
+        rendererRef.current?.hideCrosshair();
+      }, []);
+
+      return (
+        <div ref={containerRef} className="chart-container">
+          <canvas
+            ref={canvasRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          />
+        </div>
+      );
+    }
+
+    /* ── ChartCard — owns OHLC data, mode state, 1-second timer ── */
+    function ChartCard({ config }) {
+      const [mode,         setMode]         = useState('candles');
+      const [currentPrice, setCurrentPrice] = useState(null);
+
+      // Mutable refs — mutations never trigger React re-renders
+      const dataRef     = useRef(generateInitialData(config.basePrice, config.volatility));
+      const rendererRef = useRef(null);
+      const modeRef     = useRef('candles');
+
+      // Set initial price display once
+      useEffect(() => {
+        const last = dataRef.current[dataRef.current.length - 1];
+        setCurrentPrice(last.close);
+      }, []);
+
+      // Mode toggle: sync ref immediately, redraw directly via PixiJS (no React render needed)
+      const handleModeChange = useCallback(newMode => {
+        modeRef.current = newMode;
+        setMode(newMode); // updates button highlight only
+        const renderer = rendererRef.current;
+        if (!renderer) return;
+        const data = dataRef.current;
+        const { xScale, yScale } = computeScales(data, renderer.innerWidth, renderer.innerHeight);
+        renderer.render(data, xScale, yScale, getYTicks(yScale), getXTicks(data.length), newMode);
+      }, []);
+
+      // 1-second realtime tick (independent per chart, staggered via Math.random offset)
+      useEffect(() => {
+        // Small random initial delay so charts don't all fire simultaneously
+        const delay = Math.random() * 900;
+        let id;
+        const tick = () => {
+          dataRef.current = appendNewCandle(dataRef.current, config.volatility);
+          const data     = dataRef.current;
+          const renderer = rendererRef.current;
+          if (renderer) {
+            const { xScale, yScale } = computeScales(data, renderer.innerWidth, renderer.innerHeight);
+            renderer.render(data, xScale, yScale, getYTicks(yScale), getXTicks(data.length), modeRef.current);
+          }
+          // Only React state update is the price number — minimal re-render
+          setCurrentPrice(data[data.length - 1].close);
+        };
+
+        const timeout = setTimeout(() => {
+          tick();
+          id = setInterval(tick, 1000);
+        }, delay);
+
+        return () => { clearTimeout(timeout); clearInterval(id); };
+      }, [config.volatility]);
+
+      return (
+        <div className="chart-card">
+          <TitleBar
+            name={config.name}
+            mode={mode}
+            onModeChange={handleModeChange}
+            currentPrice={currentPrice}
+          />
+          <ChartCanvas
+            dataRef={dataRef}
+            modeRef={modeRef}
+            rendererRef={rendererRef}
+          />
+        </div>
+      );
+    }
+
+    /* ── Dashboard — 3×3 grid ── */
+    function Dashboard() {
+      return (
+        <div className="dashboard">
+          {CHART_CONFIGS.map(cfg => (
+            <ChartCard key={cfg.id} config={cfg} />
+          ))}
+        </div>
+      );
+    }
+
+    /* ── App — root ── */
+    function App() {
+      return (
+        <div className="app">
+          <header className="app-header">
+            <span className="app-title">Realtime Chart Dashboard</span>
+            <div className="live-dot" title="Live" />
+          </header>
+          <Dashboard />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
