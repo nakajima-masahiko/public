@@ -384,11 +384,11 @@
           const bBot = yScale(Math.min(d.open, d.close));
           const bH   = Math.max(bBot - bTop, 1);
 
+          g.lineStyle(1, color, 1);
           g.beginFill(color, 1);
           g.drawRect(x, bTop, bw, bH);
           g.endFill();
 
-          g.lineStyle(1, color, 1);
           g.moveTo(cx, yScale(d.high)); g.lineTo(cx, bTop);
           g.moveTo(cx, bBot);           g.lineTo(cx, yScale(d.low));
         }
