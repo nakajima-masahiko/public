@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lightweight Charts Switcher</title>
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1923;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a2a3a 0%, #0f1923 100%);
+      border-bottom: 1px solid #2a3a4a;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #f0f0f0;
+    }
+
+    .header .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .content {
+      padding: 20px 24px;
+    }
+
+    /* Controls */
+    .chart-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .chart-controls label {
+      font-size: 13px;
+      color: #8899aa;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .switch-group {
+      display: flex;
+      background: #1a2a3a;
+      border-radius: 8px;
+      border: 1px solid #2a3a4a;
+      overflow: hidden;
+    }
+
+    .switch-btn {
+      padding: 9px 24px;
+      border: none;
+      background: transparent;
+      color: #8899aa;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .switch-btn:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 25%;
+      height: 50%;
+      width: 1px;
+      background: #2a3a4a;
+    }
+
+    .switch-btn:hover {
+      color: #c0d0e0;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .switch-btn.active {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .switch-btn.active::after {
+      display: none;
+    }
+
+    .switch-btn .btn-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* Chart wrapper */
+    .chart-wrapper {
+      background: #152232;
+      border: 1px solid #1e3045;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .chart-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #1e3045;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chart-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chart-header .symbol {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f0f0;
+    }
+
+    .chart-type-label {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .chart-type-label.candlestick {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .chart-type-label.area {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    .price-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .price {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .price.up { color: #22c55e; }
+    .price.down { color: #ef4444; }
+
+    .change {
+      font-size: 13px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .change.up {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .change.down {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    /* Chart area */
+    .chart-area {
+      height: 520px;
+      position: relative;
+    }
+
+    #chart-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Legend tooltip */
+    .legend {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(21, 34, 50, 0.88);
+      border: 1px solid #2a3a4a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      line-height: 1.8;
+      color: #cdd5e0;
+      pointer-events: none;
+      z-index: 10;
+      min-width: 140px;
+      display: none;
+    }
+
+    .legend.visible {
+      display: block;
+    }
+
+    .legend .legend-date {
+      font-weight: 600;
+      color: #f0f0f0;
+      margin-bottom: 2px;
+    }
+
+    .legend .legend-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .legend .legend-label {
+      color: #8899aa;
+    }
+
+    .legend .up-val { color: #22c55e; }
+    .legend .down-val { color: #ef4444; }
+    .legend .blue-val { color: #60a5fa; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Lightweight Charts</h1>
+  <span class="badge">Demo Data</span>
+</div>
+
+<div class="content">
+  <div class="chart-controls">
+    <label>Chart Type:</label>
+    <div class="switch-group">
+      <button class="switch-btn active" id="btn-candlestick">
+        <span class="btn-icon">&#9650;</span>
+        Candlestick
+      </button>
+      <button class="switch-btn" id="btn-area">
+        <span class="btn-icon">&#9660;</span>
+        Area
+      </button>
+    </div>
+  </div>
+
+  <div class="chart-wrapper">
+    <div class="chart-header">
+      <div class="chart-header-left">
+        <span class="symbol">DEMO/USD</span>
+        <span class="chart-type-label candlestick" id="type-label">Candlestick</span>
+      </div>
+      <div class="price-info">
+        <span class="price up" id="last-price">--</span>
+        <span class="change up" id="price-change">--</span>
+      </div>
+    </div>
+    <div class="chart-area">
+      <div id="chart-container"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Dummy Data Generation
+// ============================================================
+function generateData(days) {
+  const data = [];
+  let price = 185;
+  const base = new Date('2024-06-03');
+
+  for (let i = 0; i < days; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    if (d.getDay() === 0 || d.getDay() === 6) continue;
+
+    const vol = 2.5 + Math.random() * 4;
+    const trend = Math.sin(i / 20) * 0.6 + Math.cos(i / 40) * 0.4 + (Math.random() - 0.47) * 0.9;
+    const open = price + (Math.random() - 0.5) * vol * 0.4;
+    const close = open + trend * vol;
+    const high = Math.max(open, close) + Math.random() * vol * 0.9;
+    const low = Math.min(open, close) - Math.random() * vol * 0.9;
+
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+
+    data.push({
+      time: `${yyyy}-${mm}-${dd}`,
+      open: +open.toFixed(2),
+      high: +high.toFixed(2),
+      low: +low.toFixed(2),
+      close: +close.toFixed(2),
+    });
+
+    price = close;
+  }
+  return data;
+}
+
+const rawData = generateData(200);
+const lastBar = rawData[rawData.length - 1];
+const prevBar = rawData[rawData.length - 2];
+const delta = lastBar.close - prevBar.close;
+const deltaPct = (delta / prevBar.close * 100).toFixed(2);
+const isUp = delta >= 0;
+
+// Price header
+document.getElementById('last-price').textContent = `$${lastBar.close.toFixed(2)}`;
+document.getElementById('last-price').className = `price ${isUp ? 'up' : 'down'}`;
+document.getElementById('price-change').textContent =
+  `${isUp ? '+' : ''}${delta.toFixed(2)} (${isUp ? '+' : ''}${deltaPct}%)`;
+document.getElementById('price-change').className = `change ${isUp ? 'up' : 'down'}`;
+
+// ============================================================
+// Chart Setup
+// ============================================================
+const container = document.getElementById('chart-container');
+const legend = document.getElementById('legend');
+
+const chart = LightweightCharts.createChart(container, {
+  layout: {
+    background: { type: 'solid', color: '#152232' },
+    textColor: '#667788',
+    fontSize: 11,
+  },
+  grid: {
+    vertLines: { color: '#1a2535', style: LightweightCharts.LineStyle.Dashed },
+    horzLines: { color: '#1a2535', style: LightweightCharts.LineStyle.Dashed },
+  },
+  crosshair: {
+    mode: LightweightCharts.CrosshairMode.Normal,
+    vertLine: { color: '#556677', width: 1, style: LightweightCharts.LineStyle.Dashed, labelBackgroundColor: '#1e3a5f' },
+    horzLine: { color: '#556677', width: 1, style: LightweightCharts.LineStyle.Dashed, labelBackgroundColor: '#1e3a5f' },
+  },
+  rightPriceScale: {
+    borderColor: '#1e3045',
+    scaleMargins: { top: 0.1, bottom: 0.1 },
+  },
+  timeScale: {
+    borderColor: '#1e3045',
+    timeVisible: false,
+    fixLeftEdge: true,
+    fixRightEdge: true,
+  },
+  handleScroll: { mouseWheel: true, pressedMouseMove: true },
+  handleScale: { mouseWheel: true, pinch: true },
+});
+
+// Resize observer
+new ResizeObserver(() => {
+  chart.resize(container.offsetWidth, container.offsetHeight);
+}).observe(container);
+
+// ============================================================
+// Series
+// ============================================================
+let activeSeries = null;
+let activeType = 'candlestick';
+
+function removeSeries() {
+  if (activeSeries) {
+    chart.removeSeries(activeSeries);
+    activeSeries = null;
+  }
+}
+
+function showCandlestick() {
+  removeSeries();
+  activeType = 'candlestick';
+
+  activeSeries = chart.addCandlestickSeries({
+    upColor: '#22c55e',
+    downColor: '#ef4444',
+    borderUpColor: '#22c55e',
+    borderDownColor: '#ef4444',
+    wickUpColor: '#22c55e',
+    wickDownColor: '#ef4444',
+  });
+  activeSeries.setData(rawData);
+  chart.timeScale().fitContent();
+
+  document.getElementById('type-label').textContent = 'Candlestick';
+  document.getElementById('type-label').className = 'chart-type-label candlestick';
+}
+
+function showArea() {
+  removeSeries();
+  activeType = 'area';
+
+  activeSeries = chart.addAreaSeries({
+    lineColor: '#3b82f6',
+    topColor: 'rgba(59, 130, 246, 0.38)',
+    bottomColor: 'rgba(59, 130, 246, 0.0)',
+    lineWidth: 2,
+    crosshairMarkerVisible: true,
+    crosshairMarkerRadius: 5,
+    crosshairMarkerBorderColor: '#1e3045',
+    crosshairMarkerBackgroundColor: '#3b82f6',
+  });
+
+  activeSeries.setData(rawData.map(d => ({ time: d.time, value: d.close })));
+  chart.timeScale().fitContent();
+
+  document.getElementById('type-label').textContent = 'Area';
+  document.getElementById('type-label').className = 'chart-type-label area';
+}
+
+// ============================================================
+// Crosshair Legend
+// ============================================================
+chart.subscribeCrosshairMove(param => {
+  if (!param || !param.time || !activeSeries) {
+    legend.classList.remove('visible');
+    return;
+  }
+
+  const seriesData = param.seriesData.get(activeSeries);
+  if (!seriesData) {
+    legend.classList.remove('visible');
+    return;
+  }
+
+  legend.classList.add('visible');
+
+  if (activeType === 'candlestick') {
+    const { open, high, low, close } = seriesData;
+    const color = close >= open ? '#22c55e' : '#ef4444';
+    const cls = close >= open ? 'up-val' : 'down-val';
+    legend.innerHTML = `
+      <div class="legend-date">${param.time}</div>
+      <div class="legend-row"><span class="legend-label">O</span><span class="${cls}">${open.toFixed(2)}</span></div>
+      <div class="legend-row"><span class="legend-label">H</span><span class="${cls}">${high.toFixed(2)}</span></div>
+      <div class="legend-row"><span class="legend-label">L</span><span class="${cls}">${low.toFixed(2)}</span></div>
+      <div class="legend-row"><span class="legend-label">C</span><span class="${cls}">${close.toFixed(2)}</span></div>
+    `;
+  } else {
+    const { value } = seriesData;
+    legend.innerHTML = `
+      <div class="legend-date">${param.time}</div>
+      <div class="legend-row"><span class="legend-label">Close</span><span class="blue-val">$${value.toFixed(2)}</span></div>
+    `;
+  }
+});
+
+// ============================================================
+// Button Switching
+// ============================================================
+document.getElementById('btn-candlestick').addEventListener('click', () => {
+  document.getElementById('btn-candlestick').classList.add('active');
+  document.getElementById('btn-area').classList.remove('active');
+  showCandlestick();
+});
+
+document.getElementById('btn-area').addEventListener('click', () => {
+  document.getElementById('btn-area').classList.add('active');
+  document.getElementById('btn-candlestick').classList.remove('active');
+  showArea();
+});
+
+// Initial render
+showCandlestick();
+</script>
+
+</body>
+</html>
