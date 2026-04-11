@@ -307,6 +307,14 @@
         this.app.stage.addChild(this.labelCtr);
         this._pool        = [];   // free labels
         this._active      = [];   // labels in use this frame
+
+        // Shared text style — built once so label reuse doesn't trigger
+        // per-frame TextStyle reconstruction (would defeat the pool).
+        this._labelStyle = new PIXI.TextStyle({
+          fontSize:   9,
+          fill:       '#5a6a80',
+          fontFamily: 'monospace',
+        });
       }
 
       get innerWidth()  { return this._iw; }
@@ -324,15 +332,14 @@
       }
 
       /* ─ Text-label pool helpers ─ */
-      _get(text, style) {
+      _get(text) {
         let t;
         if (this._pool.length) {
           t = this._pool.pop();
           t.text    = text;
-          t.style   = style;
           t.visible = true;
         } else {
-          t = new PIXI.Text(text, style);
+          t = new PIXI.Text(text, this._labelStyle);
           this.labelCtr.addChild(t);
         }
         this._active.push(t);
@@ -448,9 +455,8 @@
 
         this._releaseLabels();
 
-        const style = { fontSize: 9, fill: '#5a6a80', fontFamily: 'monospace' };
         for (const v of yTicks) {
-          const lbl = this._get(v.toFixed(2), style);
+          const lbl = this._get(v.toFixed(2));
           lbl.x = this.margin.left + W + 3;
           lbl.y = this.margin.top  + yScale(v) - 5;
         }
