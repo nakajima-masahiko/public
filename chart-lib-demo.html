@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chart-lib demo</title>
+
+  <!-- Peer dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.3/dist/pixi.min.js"></script>
+
+  <!-- The library itself -->
+  <script src="./chart-lib.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #0f1117;
+      --card:   #1a1d27;
+      --header: #13151f;
+      --border: #2a2d3a;
+      --text:   #e2e8f0;
+      --dim:    #64748b;
+      --accent: #38bdf8;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ef5350;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .title-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--header);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chart-name {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      min-width: 80px;
+    }
+
+    .price {
+      flex: 1;
+      font-family: 'Courier New', monospace;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .mode-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mode-toggle button {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-family: inherit;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      cursor: pointer;
+    }
+    .mode-toggle button + button { border-left: 1px solid var(--border); }
+    .mode-toggle button:hover {
+      background: rgba(56,189,248,0.12);
+      color: var(--text);
+    }
+    .mode-toggle button.active {
+      background: var(--accent);
+      color: #0f1117;
+      font-weight: 700;
+    }
+
+    .chart-container {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    footer {
+      font-size: 11px;
+      color: var(--dim);
+      text-align: center;
+    }
+    footer code {
+      background: var(--card);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>chart-lib demo</h1>
+      <div class="live-dot" title="Live"></div>
+    </header>
+
+    <div class="card">
+      <div class="title-bar">
+        <span class="chart-name" id="name">BTC/USD</span>
+        <span class="price" id="price">—</span>
+        <div class="mode-toggle">
+          <button id="btn-candles" class="active">Candles</button>
+          <button id="btn-area">Area</button>
+        </div>
+      </div>
+      <div class="chart-container" id="chart"></div>
+    </div>
+
+    <footer>
+      Built with <code>ChartLib.Chart</code> — see <code>chart-lib.md</code> for the API reference.
+    </footer>
+  </div>
+
+  <script>
+    // ─────────────────────────────────────────────────────────────
+    // Minimal chart-lib usage example
+    // ─────────────────────────────────────────────────────────────
+
+    // 1. Instantiate a chart inside any sized container.
+    const chart = new ChartLib.Chart(document.getElementById('chart'), {
+      basePrice:  65000,
+      volatility: 450,
+      count:      30,
+      mode:       'candles',
+    });
+
+    // 2. Sync the current price readout.
+    const priceEl = document.getElementById('price');
+    const fmt = v => (v == null ? '—' : v >= 1000 ? v.toFixed(2) : v.toFixed(4));
+    priceEl.textContent = fmt(chart.getLastClose());
+
+    // 3. Subscribe to the shared 1-second ticker.
+    const unsubscribe = ChartLib.subscribeRealtimeTick(() => {
+      const last = chart.tick();
+      priceEl.textContent = fmt(last.close);
+    });
+
+    // 4. Wire the mode toggle buttons.
+    const btnCandles = document.getElementById('btn-candles');
+    const btnArea    = document.getElementById('btn-area');
+    btnCandles.addEventListener('click', () => {
+      chart.setMode('candles');
+      btnCandles.classList.add('active');
+      btnArea.classList.remove('active');
+    });
+    btnArea.addEventListener('click', () => {
+      chart.setMode('area');
+      btnArea.classList.add('active');
+      btnCandles.classList.remove('active');
+    });
+
+    // 5. Clean up if the page is torn down (HMR, SPA nav, etc.).
+    window.addEventListener('beforeunload', () => {
+      unsubscribe();
+      chart.destroy();
+    });
+  </script>
+</body>
+</html>
