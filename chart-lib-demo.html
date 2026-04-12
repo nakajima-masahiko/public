@@ -169,15 +169,49 @@
 
   <script>
     // ─────────────────────────────────────────────────────────────
+    // Demo data generation utilities
+    // (random-walk OHLC — for demo purposes only)
+    // ─────────────────────────────────────────────────────────────
+
+    /** Single OHLC candle generated via random walk from prevClose. */
+    function generateOHLC(prevClose, volatility) {
+      const open  = prevClose;
+      const move  = (Math.random() - 0.5) * volatility * 2;
+      const close = Math.max(open + move, prevClose * 0.01);
+      const wick  = Math.random() * volatility * 0.55;
+      const high  = Math.max(open, close) + wick;
+      const low   = Math.max(Math.min(open, close) - wick, prevClose * 0.005);
+      return { open, high, low, close };
+    }
+
+    /** Build an initial sliding-window array of length `count`. */
+    function generateInitialData(basePrice, volatility, count = 25) {
+      const data = [];
+      let price = basePrice;
+      for (let i = 0; i < count; i++) {
+        const c = generateOHLC(price, volatility);
+        data.push({ ...c, index: i });
+        price = c.close;
+      }
+      return data;
+    }
+
+    /** Generate a new candle from the last close price via random walk. */
+    function generateNextCandle(lastClose, volatility) {
+      return generateOHLC(lastClose, volatility);
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // Minimal chart-lib usage example
     // ─────────────────────────────────────────────────────────────
 
-    // 1. Instantiate a chart inside any sized container.
+    const VOLATILITY = 450;
+
+    // 1. Generate demo data and instantiate a chart.
+    const initialData = generateInitialData(65000, VOLATILITY, 30);
     const chart = new ChartLib.Chart(document.getElementById('chart'), {
-      basePrice:  65000,
-      volatility: 450,
-      count:      30,
-      mode:       'candles',
+      data: initialData,
+      mode: 'candles',
     });
 
     // 2. Sync the current price readout.
@@ -187,7 +221,8 @@
 
     // 3. Subscribe to the shared 1-second ticker.
     const unsubscribe = ChartLib.subscribeRealtimeTick(() => {
-      const last = chart.tick();
+      const newCandle = generateNextCandle(chart.getLastClose(), VOLATILITY);
+      const last = chart.tick(newCandle);
       priceEl.textContent = fmt(last.close);
     });
 

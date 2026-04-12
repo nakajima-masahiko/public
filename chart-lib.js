@@ -2,8 +2,6 @@
    chart-lib.js — Realtime OHLC chart rendering library (PixiJS + d3)
 
    Exposes a global `ChartLib` namespace with:
-     • Data utilities ........ generateOHLC / generateInitialData /
-                               appendNewCandle
      • Scale utilities ....... computeScales / getYTicks / getXTicks
      • ChartRenderer ......... low-level PixiJS renderer
      • Chart ................. high-level convenience wrapper that
@@ -23,40 +21,6 @@
   }
   if (typeof global.PIXI === 'undefined') {
     console.warn('[chart-lib] PixiJS is not loaded — ChartLib requires PixiJS v7.');
-  }
-
-  /* ─────────────────────────────────────────────────────────────────
-     DATA UTILITIES
-  ───────────────────────────────────────────────────────────────── */
-
-  /** Single OHLC candle generated via random walk from prevClose. */
-  function generateOHLC(prevClose, volatility) {
-    const open  = prevClose;
-    const move  = (Math.random() - 0.5) * volatility * 2;
-    const close = Math.max(open + move, prevClose * 0.01);
-    const wick  = Math.random() * volatility * 0.55;
-    const high  = Math.max(open, close) + wick;
-    const low   = Math.max(Math.min(open, close) - wick, prevClose * 0.005);
-    return { open, high, low, close };
-  }
-
-  /** Build an initial sliding-window array of length `count`. */
-  function generateInitialData(basePrice, volatility, count = 25) {
-    const data = [];
-    let price = basePrice;
-    for (let i = 0; i < count; i++) {
-      const c = generateOHLC(price, volatility);
-      data.push({ ...c, index: i });
-      price = c.close;
-    }
-    return data;
-  }
-
-  /** Drop oldest candle, append a fresh one. Returns a new array. */
-  function appendNewCandle(data, volatility) {
-    const last = data[data.length - 1];
-    const next = generateOHLC(last.close, volatility);
-    return [...data.slice(1), { ...next, index: last.index + 1 }];
   }
 
   /* ─────────────────────────────────────────────────────────────────
@@ -385,31 +349,23 @@
    *                                 appended to it; container should have
    *                                 an explicit size (or flex into one).
    * @param {object}  opts
-   * @param {number}  opts.basePrice
-   * @param {number}  opts.volatility
-   * @param {number} [opts.count=25]         sliding window size
+   * @param {Array}   opts.data                OHLC data array (required)
    * @param {'candles'|'area'} [opts.mode='candles']
    * @param {object} [opts.margin]
    * @param {object} [opts.theme]
-   * @param {Array}  [opts.initialData]       supply your own data instead
-   *                                          of random-walk
    * @param {boolean}[opts.crosshair=true]
    */
   class Chart {
     constructor(container, opts = {}) {
       if (!container) throw new Error('[chart-lib] Chart requires a container element.');
+      if (!opts.data || !opts.data.length) throw new Error('[chart-lib] Chart requires opts.data (OHLC array).');
 
       this.container  = container;
-      this.basePrice  = opts.basePrice  ?? 100;
-      this.volatility = opts.volatility ?? 1;
-      this.count      = opts.count      ?? 25;
-      this.mode       = opts.mode       ?? 'candles';
+      this.mode       = opts.mode   ?? 'candles';
       this.margin     = opts.margin;
       this.theme      = opts.theme;
 
-      this.data = opts.initialData
-        ? opts.initialData.slice()
-        : generateInitialData(this.basePrice, this.volatility, this.count);
+      this.data = opts.data.slice();
 
       // Build canvas inside container
       this.canvas = document.createElement('canvas');
@@ -466,9 +422,14 @@
       );
     }
 
-    /** Append one new candle + redraw. Returns the new last candle. */
-    tick() {
-      this.data = appendNewCandle(this.data, this.volatility);
+    /**
+     * Drop the oldest candle, append `newCandle`, and redraw.
+     * @param {{ open:number, high:number, low:number, close:number }} newCandle
+     * @returns {object} the appended candle (with `index`)
+     */
+    tick(newCandle) {
+      const last = this.data[this.data.length - 1];
+      this.data = [...this.data.slice(1), { ...newCandle, index: last.index + 1 }];
       this._draw();
       return this.data[this.data.length - 1];
     }
@@ -557,10 +518,6 @@
   ───────────────────────────────────────────────────────────────── */
 
   global.ChartLib = {
-    // data
-    generateOHLC,
-    generateInitialData,
-    appendNewCandle,
     // scales
     computeScales,
     getYTicks,

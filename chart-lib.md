@@ -2,10 +2,13 @@
 
 
 - **低レベル API** (`ChartRenderer`): キャンバスに直接描画する Pixi レンダラ
-- **高レベル API** (`Chart`): データ生成 / リサイズ / クロスヘアまで面倒を見る薄いラッパー
-- **ユーティリティ**: ランダムウォーク OHLC 生成、d3 スケール計算、共有ティッカー
+- **高レベル API** (`Chart`): リサイズ / クロスヘアまで面倒を見る薄いラッパー
+- **ユーティリティ**: d3 スケール計算、共有ティッカー
 
 ビルドステップは不要で、既存の静的 HTML にそのまま `<script>` で差し込めます。
+
+> **Note:** デモデータ生成（ランダムウォーク OHLC）はライブラリには含まれていません。
+> デモ用のデータ生成コードは `chart-lib-demo.html` を参照してください。
 
 ---
 
@@ -14,7 +17,7 @@
 | ファイル | 役割 |
 |---|---|
 | `chart-lib.js` | ライブラリ本体 (`window.ChartLib` を公開) |
-| `chart-lib-demo.html` | 最小構成のデモページ (単一チャート + モード切り替え) |
+| `chart-lib-demo.html` | 最小構成のデモページ (単一チャート + モード切り替え + デモデータ生成) |
 | `chart-lib.md` | このドキュメント |
 
 ---
@@ -42,15 +45,26 @@
 <div id="chart" style="width: 600px; height: 360px;"></div>
 
 <script>
+  // OHLC データは利用者が用意する
+  const data = [
+    { open: 100, high: 105, low: 98, close: 103, index: 0 },
+    { open: 103, high: 108, low: 101, close: 106, index: 1 },
+    // ...
+  ];
+
   const chart = new ChartLib.Chart(document.getElementById('chart'), {
-    basePrice:  65000,
-    volatility: 450,
-    count:      30,           // スライディングウィンドウの長さ
-    mode:       'candles',    // 'candles' | 'area'
+    data: data,
+    mode: 'candles',    // 'candles' | 'area'
   });
 
-  // 1 秒ごとに新しいローソクを追加して再描画
-  const unsubscribe = ChartLib.subscribeRealtimeTick(() => chart.tick());
+  // 新しいローソクを追加して再描画 (最古の 1 本は自動で除去)
+  chart.tick({ open: 106, high: 110, low: 104, close: 109 });
+
+  // 1 秒ごとに自動で再描画する例
+  const unsubscribe = ChartLib.subscribeRealtimeTick(() => {
+    const newCandle = fetchLatestCandle(); // 自前のデータ取得関数
+    chart.tick(newCandle);
+  });
 
   // 表示モード切り替え
   chart.setMode('area');
@@ -71,7 +85,7 @@
 
 ### `ChartLib.Chart`
 
-データ生成、レンダラ、`ResizeObserver`、クロスヘアをまとめた高レベルラッパー。
+レンダラ、`ResizeObserver`、クロスヘアをまとめた高レベルラッパー。
 
 #### コンストラクタ
 
@@ -82,20 +96,17 @@ new ChartLib.Chart(container, options)
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `container` | `HTMLElement` | `<canvas>` を挿入する親要素。明示的な寸法が必要 |
-| `options.basePrice` | `number` | 初期価格 (デフォルト `100`) |
-| `options.volatility` | `number` | 1 ティックあたりの値動き幅 (デフォルト `1`) |
-| `options.count` | `number` | スライディングウィンドウに保持する本数 (デフォルト `25`) |
+| `options.data` | `Array` | OHLC データ配列 (**必須**) — `{ open, high, low, close, index }` |
 | `options.mode` | `'candles' \| 'area'` | 初期表示モード (デフォルト `'candles'`) |
 | `options.margin` | `{top,right,bottom,left}` | 描画マージン (任意) |
 | `options.theme` | `object` | カラーテーマ上書き。`ChartLib.DEFAULT_THEME` 参照 |
-| `options.initialData` | `Array` | ランダムウォークの代わりに使う初期データ |
 | `options.crosshair` | `boolean` | クロスヘア表示 (デフォルト `true`) |
 
 #### インスタンスメソッド
 
 | メソッド | 説明 |
 |---|---|
-| `tick()` | 最古の 1 本を捨てて新しい 1 本を追加し、再描画。追加した最新ローソクを返す |
+| `tick(newCandle)` | 最古の 1 本を捨てて `newCandle` を追加し、再描画。追加した最新ローソクを返す |
 | `setData(data)` | データ全体を差し替えて再描画 |
 | `setMode(mode)` | `'candles'` / `'area'` を切り替え |
 | `getLastClose()` | 現在の最新終値を返す |
@@ -143,18 +154,6 @@ renderer.destroy();
 
 ---
 
-### データユーティリティ
-
-| 関数 | 説明 |
-|---|---|
-| `generateOHLC(prevClose, volatility)` | `prevClose` からランダムウォークで 1 本の OHLC を生成 |
-| `generateInitialData(basePrice, volatility, count)` | 初期データ配列を生成 |
-| `appendNewCandle(data, volatility)` | 最古の 1 本を捨てて最新 1 本を末尾に追加 (非破壊) |
-
-配列の要素は `{ open, high, low, close, index }` です。
-
----
-
 ### スケールユーティリティ (純関数)
 
 | 関数 | 返り値 |
@@ -171,7 +170,8 @@ renderer.destroy();
 
 ```js
 const unsub = ChartLib.subscribeRealtimeTick(() => {
-  chart.tick();
+  const newCandle = getNewCandle(); // 自前のデータ取得
+  chart.tick(newCandle);
 }, Math.random() * 900);  // startDelay で描画ジッタを散らす
 
 // 停止
@@ -189,7 +189,7 @@ ChartLib.setTickInterval(500);
 
 ```js
 new ChartLib.Chart(el, {
-  basePrice: 100, volatility: 1.2,
+  data: myOhlcData,
   theme: {
     background:  0x08121c,
     bullCandle:  0x00e5ff,
@@ -219,3 +219,6 @@ npm run dev
 # または任意の静的サーバ
 npx serve .
 ```
+
+デモページにはランダムウォークによる OHLC データ生成関数が含まれており、
+リアルタイムチャートの動作を確認できます。
