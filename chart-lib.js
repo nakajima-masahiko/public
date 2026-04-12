@@ -390,14 +390,24 @@
 
       this._draw();
 
-      // Resize observer — debounced 50 ms to prevent mid-frame thrash on mobile
+      // Resize observer (mobile anti-flicker):
+      // - debounce rapid bursts
+      // - ignore sub-pixel jitter (fractional size noise on mobile browsers)
+      // - skip no-op resize when rounded size is unchanged
+      this._lastResizeW = Math.round(w);
+      this._lastResizeH = Math.round(h);
       this._ro = new ResizeObserver(entries => {
         let lw = 0, lh = 0;
         for (const e of entries) { lw = e.contentRect.width; lh = e.contentRect.height; }
         clearTimeout(this._roTimer);
         this._roTimer = setTimeout(() => {
-          if (lw < 10 || lh < 10) return;
-          this.renderer.resize(lw, lh);
+          const rw = Math.round(lw);
+          const rh = Math.round(lh);
+          if (rw < 10 || rh < 10) return;
+          if (rw === this._lastResizeW && rh === this._lastResizeH) return;
+          this._lastResizeW = rw;
+          this._lastResizeH = rh;
+          this.renderer.resize(rw, rh);
           this._draw();
         }, 50);
       });
