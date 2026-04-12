@@ -241,11 +241,15 @@ npx serve .
 
 ライブラリ (`chart-lib.js`) と デモ HTML の両側で対策を施しています。
 
+先頭付近のカードだけがチラついて見えやすかった主因は、モバイルブラウザで発生する
+`ResizeObserver` のサブピクセル揺れ (例: `320.00px → 319.67px → 320.00px`) により、
+実サイズが変わっていないのに canvas リサイズ + 全再描画が連続実行されていたためです。
+
 | 対策 | 場所 | 効果 |
 |---|---|---|
 | `canvas.style.willChange = 'transform'` | `ChartRenderer` コンストラクタ | GPU コンポジットレイヤーを生成しキャンバスの再ペイントを防止 |
 | `.card { transform: translateZ(0); will-change: transform; }` | CSS | カード全体を GPU レイヤーに昇格させ周辺 DOM との合成フラッシュを防止 |
-| ResizeObserver を 50 ms デバウンス | `Chart` コンストラクタ | iOS Safari でスクロール中に発生するビューポート高さ変動による連続リサイズを抑制 |
+| ResizeObserver を 50 ms デバウンス + `Math.round` + 同一サイズスキップ | `Chart` コンストラクタ | サブピクセル揺れ起因の不要なリサイズ/再描画を止め、スマホでの先頭チャートのチラつきを抑制 |
 | `.chart-container { background: var(--card) }` | CSS | キャンバス背景色と一致させ、リサイズ時の一瞬の白/黒フラッシュを不可視化 |
 | `overscroll-behavior: none` | `body` | iOS のバウンススクロールによる意図しないリサイズイベントを抑制 |
 | ティッカーの起動を 80 ms ずつずらす | デモ JS | 9 チャートの初期描画を分散させ初期ロードスパイクを軽減 |
