@@ -1,7 +1,5 @@
 # chart-lib
 
-`realtime-chart-dashboard.html` のチャート描画処理を抜き出した、
-PixiJS + d3 ベースのリアルタイム OHLC チャート描画ライブラリです。
 
 - **低レベル API** (`ChartRenderer`): キャンバスに直接描画する Pixi レンダラ
 - **高レベル API** (`Chart`): データ生成 / リサイズ / クロスヘアまで面倒を見る薄いラッパー
@@ -205,24 +203,6 @@ new ChartLib.Chart(el, {
 ```
 
 上書きしないキーは `ChartLib.DEFAULT_THEME` の値が使われます。
-
----
-
-## `realtime-chart-dashboard.html` からの移行メモ
-
-元ファイルに直書きされていた以下のシンボルは、そのまま `ChartLib.*` から取得できます。
-
-| 元の場所 | 置換先 |
-|---|---|
-| `generateOHLC` / `generateInitialData` / `appendNewCandle` | `ChartLib.generateOHLC` 他 |
-| `computeScales` / `getYTicks` / `getXTicks` | `ChartLib.computeScales` 他 |
-| `class ChartRenderer` | `ChartLib.ChartRenderer` |
-| `subscribeRealtimeTick` | `ChartLib.subscribeRealtimeTick` |
-
-`ChartRenderer` のコンストラクタは `(canvas, width, height, options?)` と
-第 4 引数に `margin` / `theme` を取るようになりましたが、省略時の挙動は
-元ファイルと完全に同じです。React コンポーネント側のコードは変更不要で、
-`new ChartRenderer(canvas, w, h)` をそのまま動かせます。
 
 ---
 
