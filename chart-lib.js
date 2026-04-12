@@ -110,8 +110,9 @@
         autoDensity:     true,
       });
 
-      canvas.style.width  = width  + 'px';
-      canvas.style.height = height + 'px';
+      canvas.style.width       = width  + 'px';
+      canvas.style.height      = height + 'px';
+      canvas.style.willChange  = 'transform';
 
       // Container offset by margins — inner-space origin at (0,0)
       this.ctr = new PIXI.Container();
@@ -389,14 +390,16 @@
 
       this._draw();
 
-      // Resize observer
+      // Resize observer — debounced 50 ms to prevent mid-frame thrash on mobile
       this._ro = new ResizeObserver(entries => {
-        for (const e of entries) {
-          const { width: nw, height: nh } = e.contentRect;
-          if (nw < 10 || nh < 10) continue;
-          this.renderer.resize(nw, nh);
+        let lw = 0, lh = 0;
+        for (const e of entries) { lw = e.contentRect.width; lh = e.contentRect.height; }
+        clearTimeout(this._roTimer);
+        this._roTimer = setTimeout(() => {
+          if (lw < 10 || lh < 10) return;
+          this.renderer.resize(lw, lh);
           this._draw();
-        }
+        }, 50);
       });
       this._ro.observe(container);
 
@@ -452,6 +455,7 @@
     }
 
     destroy() {
+      clearTimeout(this._roTimer);
       this._ro?.disconnect();
       if (this._onMove)  this.canvas.removeEventListener('mousemove',  this._onMove);
       if (this._onLeave) this.canvas.removeEventListener('mouseleave', this._onLeave);
