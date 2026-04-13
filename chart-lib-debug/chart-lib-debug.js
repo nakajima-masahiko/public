@@ -157,6 +157,10 @@
         height,
         backgroundColor: this.theme.background,
         antialias:       true,
+        // Share one global ticker across all charts.
+        // On mobile, many independent tickers can increase RAF pressure and
+        // lead to visible blink/flicker on the first in-viewport charts.
+        sharedTicker:    true,
         resolution:      window.devicePixelRatio || 1,
         autoDensity:     true,
       });
