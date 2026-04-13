@@ -106,6 +106,11 @@
         height,
         backgroundColor: this.theme.background,
         antialias:       true,
+        // Share one global ticker across all charts.
+        // Mobile pages can host many Chart instances (e.g. 9 cards in the demo);
+        // per-instance tickers increase RAF pressure and can cause visible flicker
+        // on the first in-viewport canvases.
+        sharedTicker:    true,
         resolution:      window.devicePixelRatio || 1,
         autoDensity:     true,
       });
