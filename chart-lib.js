@@ -389,6 +389,12 @@
       });
 
       this._draw();
+      // Force a synchronous render immediately after drawing so the canvas is
+      // fully painted before the browser's first composite frame.  Without this,
+      // PixiJS's opaque-black WebGL surface is visible until the first Ticker
+      // tick (~700 ms on mid-range mobile), causing a visible flash on charts
+      // that are in the initial viewport (typically the first 2 on mobile).
+      this.renderer.app.renderer.render(this.renderer.app.stage);
 
       // Resize observer (mobile anti-flicker):
       // - debounce rapid bursts
