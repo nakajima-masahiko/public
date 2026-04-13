@@ -99,28 +99,29 @@
       this._iw = width  - this.margin.left - this.margin.right;
       this._ih = height - this.margin.top  - this.margin.bottom;
 
+      // Android で高DPR + 複数WebGLコンテキストを同時に作ると、
+      // 最初に生成されたチャートのコンテキストが失われて点滅する
+      // ケースがあるため、Androidでは保守的な設定に寄せる。
+      const ua = navigator.userAgent || '';
+      const isAndroid = /Android/i.test(ua);
+      const targetResolution = isAndroid
+        ? 1
+        : Math.min(window.devicePixelRatio || 1, 2);
+
       // PixiJS Application — attach to caller-supplied canvas
       this.app = new PIXI.Application({
         view:            canvas,
         width,
         height,
         backgroundColor: this.theme.background,
-        antialias:       true,
+        antialias:       !isAndroid,
         // This chart is event-driven (draw only when data/size/pointer changes),
         // so a continuous RAF render loop is unnecessary and can cause mobile
         // startup flicker with multiple in-viewport canvases.
         sharedTicker:    false,
         autoStart:       false,
-        resolution:      window.devicePixelRatio || 1,
+        resolution:      targetResolution,
         autoDensity:     true,
-        // Event-driven rendering (no continuous RAF) requires preserving
-        // the drawing buffer; otherwise some Android GPUs/compositors can
-        // drop the previous frame and show an opaque black canvas until the
-        // next explicit render (seen as a 1-second blink cadence).
-        preserveDrawingBuffer: true,
-        // Avoid a transient clear-to-background flash on some mobile GPUs
-        // when Pixi internally performs an unexpected render pass.
-        clearBeforeRender: true,
       });
       this.app.stop();
       // Belt-and-suspenders: keep Pixi's internal ticker fully stopped.
@@ -131,6 +132,16 @@
 
       canvas.style.width       = width  + 'px';
       canvas.style.height      = height + 'px';
+
+      // Android Chrome の WebGL context loss を検知したら即時再描画する。
+      this._onContextLost = e => {
+        e.preventDefault();
+      };
+      this._onContextRestored = () => {
+        this.present();
+      };
+      canvas.addEventListener('webglcontextlost', this._onContextLost, false);
+      canvas.addEventListener('webglcontextrestored', this._onContextRestored, false);
 
       // Container offset by margins — inner-space origin at (0,0)
       this.ctr = new PIXI.Container();
@@ -358,6 +369,8 @@
 
     destroy() {
       this._releaseLabels();
+      this.app.view.removeEventListener('webglcontextlost', this._onContextLost, false);
+      this.app.view.removeEventListener('webglcontextrestored', this._onContextRestored, false);
       this.app.destroy(false, { children: true, texture: true });
     }
   }
