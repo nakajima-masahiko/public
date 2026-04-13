@@ -257,6 +257,7 @@ npx serve .
 | `.card { transform: translateZ(0); will-change: transform; }` | CSS | カード全体を GPU レイヤーに昇格させ周辺 DOM との合成フラッシュを防止 |
 | ResizeObserver を 50 ms デバウンス + `Math.round` + 同一サイズスキップ | `Chart` コンストラクタ | サブピクセル揺れ起因の不要なリサイズ/再描画を防止 |
 | **`_ro.observe()` を `requestAnimationFrame` まで遅延し、その時点でサイズを再計測** | `Chart` コンストラクタ | 初期通知到着時のサイズと保持値が一致し、先頭チャートの誤検知リサイズ→チラつきを解消 |
+| **Android 時は `IntersectionObserver` で可視領域付近のチャートだけ描画** | `Chart` コンストラクタ / `_draw` | 画面外チャートの再描画を抑え、狭い画面での WebGL 負荷と描画揺れを低減 |
 | `.chart-container { background: var(--card) }` | CSS | キャンバス背景色と一致させ、リサイズ時の一瞬の白/黒フラッシュを不可視化 |
 | `overscroll-behavior: none` | `body` | iOS のバウンススクロールによる意図しないリサイズイベントを抑制 |
 | ティッカーの起動を 80 ms ずつずらす | デモ JS | 9 チャートの初期描画を分散させ初期ロードスパイクを軽減 |

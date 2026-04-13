@@ -401,6 +401,11 @@
       this.margin     = opts.margin;
       this.theme      = opts.theme;
 
+      const ua = navigator.userAgent || '';
+      this._isAndroid = /Android/i.test(ua);
+      this._isInViewport = true;
+      this._needsRedraw = false;
+
       this.data = opts.data.slice();
 
       // Build canvas inside container
@@ -423,13 +428,13 @@
         theme:  this.theme,
       });
 
-      this._draw();
+      const didDraw = this._draw();
       // Force a synchronous render immediately after drawing so the canvas is
       // fully painted before the browser's first composite frame.  Without this,
       // PixiJS's opaque-black WebGL surface is visible until the first Ticker
       // tick (~700 ms on mid-range mobile), causing a visible flash on charts
       // that are in the initial viewport (typically the first 2 on mobile).
-      this.renderer.app.renderer.render(this.renderer.app.stage);
+      if (didDraw) this.renderer.app.renderer.render(this.renderer.app.stage);
 
       // Resize observer (mobile anti-flicker):
       // - debounce rapid bursts
@@ -476,6 +481,26 @@
         this._ro.observe(this.container);
       });
 
+      // Android viewport optimization:
+      // update/offscreen charts only store data, and draw only when visible.
+      if (this._isAndroid && typeof IntersectionObserver !== 'undefined') {
+        this._isInViewport = false;
+        this._io = new IntersectionObserver(entries => {
+          for (const e of entries) {
+            if (e.target !== this.container) continue;
+            this._isInViewport = e.isIntersecting;
+            if (this._isInViewport && this._needsRedraw) {
+              this._draw(true);
+            }
+          }
+        }, {
+          root: null,
+          threshold: 0,
+          rootMargin: '120px 0px 120px 0px',
+        });
+        this._io.observe(this.container);
+      }
+
       // Crosshair
       if (opts.crosshair !== false) {
         this._onMove  = e => {
@@ -491,7 +516,12 @@
       }
     }
 
-    _draw() {
+    _draw(force = false) {
+      if (!force && this._isAndroid && !this._isInViewport) {
+        this._needsRedraw = true;
+        return false;
+      }
+
       const { xScale, yScale } = computeScales(
         this.data,
         this.renderer.innerWidth,
@@ -503,6 +533,8 @@
         this.mode,
       );
       this.renderer.present();
+      this._needsRedraw = false;
+      return true;
     }
 
     /**
@@ -538,6 +570,7 @@
       cancelAnimationFrame(this._initRafId);
       clearTimeout(this._roTimer);
       this._ro?.disconnect();
+      this._io?.disconnect();
       if (this._onMove)  this.canvas.removeEventListener('mousemove',  this._onMove);
       if (this._onLeave) this.canvas.removeEventListener('mouseleave', this._onLeave);
       this.renderer.destroy();
