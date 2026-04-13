@@ -411,7 +411,29 @@
           this._draw();
         }, 50);
       });
-      this._ro.observe(container);
+
+      // Defer observe() to after the first animation frame so that all charts
+      // finish being appended to the DOM (the forEach loop is synchronous) and
+      // the browser completes its initial layout before we start watching.
+      // Without this, the ResizeObserver's first notification arrives with the
+      // fully-settled size, which can differ from the size measured above for
+      // the earliest-created charts (the first 2 on mobile), triggering a
+      // spurious resize+redraw that causes a visible flicker.
+      this._initRafId = requestAnimationFrame(() => {
+        this._initRafId = null;
+        // Re-measure in case layout settled to a different size than at
+        // construction time (e.g. scrollbar appearance, URL-bar animation).
+        const r2 = this.container.getBoundingClientRect();
+        const rw = Math.round(Math.max(r2.width,  40));
+        const rh = Math.round(Math.max(r2.height, 40));
+        if (rw !== this._lastResizeW || rh !== this._lastResizeH) {
+          this._lastResizeW = rw;
+          this._lastResizeH = rh;
+          this.renderer.resize(rw, rh);
+          this._draw();
+        }
+        this._ro.observe(this.container);
+      });
 
       // Crosshair
       if (opts.crosshair !== false) {
@@ -465,6 +487,7 @@
     }
 
     destroy() {
+      cancelAnimationFrame(this._initRafId);
       clearTimeout(this._roTimer);
       this._ro?.disconnect();
       if (this._onMove)  this.canvas.removeEventListener('mousemove',  this._onMove);
