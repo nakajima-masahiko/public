@@ -422,6 +422,8 @@
       });
 
       this._draw();
+      // Force an immediate render (same fix as chart-lib.js — see comment there)
+      this.renderer.app.renderer.render(this.renderer.app.stage);
 
       this._lastResizeW = Math.round(w);
       this._lastResizeH = Math.round(h);
