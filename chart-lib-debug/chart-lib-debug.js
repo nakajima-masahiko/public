@@ -164,12 +164,9 @@
         autoStart:       false,
         resolution:      window.devicePixelRatio || 1,
         autoDensity:     true,
-        // Event-driven rendering (no continuous RAF) needs the backbuffer
-        // preserved so the chart remains visible between explicit renders.
-        preserveDrawingBuffer: true,
         // Avoid a transient clear-to-background flash on some mobile GPUs
         // when Pixi internally performs an unexpected render pass.
-        clearBeforeRender:false,
+        clearBeforeRender: true,
       });
       this.app.stop();
       // Belt-and-suspenders: keep Pixi's internal ticker fully stopped.
