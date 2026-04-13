@@ -106,14 +106,15 @@
         height,
         backgroundColor: this.theme.background,
         antialias:       true,
-        // Share one global ticker across all charts.
-        // Mobile pages can host many Chart instances (e.g. 9 cards in the demo);
-        // per-instance tickers increase RAF pressure and can cause visible flicker
-        // on the first in-viewport canvases.
-        sharedTicker:    true,
+        // This chart is event-driven (draw only when data/size/pointer changes),
+        // so a continuous RAF render loop is unnecessary and can cause mobile
+        // startup flicker with multiple in-viewport canvases.
+        sharedTicker:    false,
+        autoStart:       false,
         resolution:      window.devicePixelRatio || 1,
         autoDensity:     true,
       });
+      this.app.stop();
 
       canvas.style.width       = width  + 'px';
       canvas.style.height      = height + 'px';
@@ -315,6 +316,10 @@
 
     hideCrosshair() { this.gCrosshair.clear(); }
 
+    present() {
+      this.app.renderer.render(this.app.stage);
+    }
+
     /**
      * Master render.
      * @param {Array} data   OHLC candles
@@ -448,8 +453,14 @@
 
       // Crosshair
       if (opts.crosshair !== false) {
-        this._onMove  = e => this.renderer.updateCrosshair(e.offsetX, e.offsetY);
-        this._onLeave = () => this.renderer.hideCrosshair();
+        this._onMove  = e => {
+          this.renderer.updateCrosshair(e.offsetX, e.offsetY);
+          this.renderer.present();
+        };
+        this._onLeave = () => {
+          this.renderer.hideCrosshair();
+          this.renderer.present();
+        };
         this.canvas.addEventListener('mousemove',  this._onMove);
         this.canvas.addEventListener('mouseleave', this._onLeave);
       }
@@ -466,6 +477,7 @@
         getYTicks(yScale), getXTicks(this.data.length),
         this.mode,
       );
+      this.renderer.present();
     }
 
     /**

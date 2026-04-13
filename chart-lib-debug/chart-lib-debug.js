@@ -157,13 +157,15 @@
         height,
         backgroundColor: this.theme.background,
         antialias:       true,
-        // Share one global ticker across all charts.
-        // On mobile, many independent tickers can increase RAF pressure and
-        // lead to visible blink/flicker on the first in-viewport charts.
-        sharedTicker:    true,
+        // Event-driven rendering: avoid continuous RAF loop.
+        // This removes startup flicker seen on mobile when many charts
+        // initialize together in the first viewport.
+        sharedTicker:    false,
+        autoStart:       false,
         resolution:      window.devicePixelRatio || 1,
         autoDensity:     true,
       });
+      this.app.stop();
 
       canvas.style.width       = width  + 'px';
       canvas.style.height      = height + 'px';
@@ -363,6 +365,10 @@
 
     hideCrosshair() { this.gCrosshair.clear(); }
 
+    present() {
+      this.app.renderer.render(this.app.stage);
+    }
+
     render(data, xScale, yScale, yTicks, xTicks, mode) {
       this.drawGrid(xTicks, yTicks, xScale, yScale);
       this.drawAxes(yTicks, yScale);
@@ -426,20 +432,12 @@
       });
 
       this._draw();
-      // Force an immediate render (same fix as chart-lib.js — see comment there)
-      this.renderer.app.renderer.render(this.renderer.app.stage);
+      this.renderer.present();
 
       this._lastResizeW = Math.round(w);
       this._lastResizeH = Math.round(h);
 
-      // ★ LOG: PixiJS Ticker の最初の描画フレームを記録
-      let _tickerLogged = false;
-      this.renderer.app.ticker.add(() => {
-        if (!_tickerLogged) {
-          _tickerLogged = true;
-          _log('TICKER', `[${this._debugName}] PixiJS Ticker first render fired`);
-        }
-      });
+      _log('PRESENT', `[${this._debugName}] first synchronous present done`);
 
       // ResizeObserver（デバウンス + サブピクセルスキップ）
       this._ro = new ResizeObserver(entries => {
@@ -495,8 +493,14 @@
 
       // Crosshair
       if (opts.crosshair !== false) {
-        this._onMove  = e => this.renderer.updateCrosshair(e.offsetX, e.offsetY);
-        this._onLeave = () => this.renderer.hideCrosshair();
+        this._onMove  = e => {
+          this.renderer.updateCrosshair(e.offsetX, e.offsetY);
+          this.renderer.present();
+        };
+        this._onLeave = () => {
+          this.renderer.hideCrosshair();
+          this.renderer.present();
+        };
         this.canvas.addEventListener('mousemove',  this._onMove);
         this.canvas.addEventListener('mouseleave', this._onLeave);
       }
@@ -513,6 +517,7 @@
         getYTicks(yScale), getXTicks(this.data.length),
         this.mode,
       );
+      this.renderer.present();
     }
 
     tick(newCandle) {
