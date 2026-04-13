@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chart-lib debug demo</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.3/dist/pixi.min.js"></script>
+  <script src="./chart-lib-debug.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #0f1117;
+      --card:   #1a1d27;
+      --header: #13151f;
+      --border: #2a2d3a;
+      --text:   #e2e8f0;
+      --dim:    #64748b;
+      --accent: #38bdf8;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 10px;
+    }
+
+    header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ef5350;
+      flex-shrink: 0;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr;
+    }
+
+    .card {
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      transform: translateZ(0);
+      will-change: transform;
+    }
+
+    .title-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--header);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chart-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .price {
+      flex: 1;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .mode-toggle {
+      flex-shrink: 0;
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mode-toggle button {
+      padding: 3px 7px;
+      font-size: 10px;
+      font-family: inherit;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mode-toggle button + button { border-left: 1px solid var(--border); }
+    .mode-toggle button:hover,
+    .mode-toggle button:active {
+      background: rgba(56,189,248,0.12);
+      color: var(--text);
+    }
+    .mode-toggle button.active {
+      background: var(--accent);
+      color: #0f1117;
+      font-weight: 700;
+    }
+
+    .chart-container {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      background: var(--card);
+    }
+
+    footer {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--dim);
+      text-align: center;
+      padding-bottom: 4px;
+    }
+
+    @media (min-width: 600px) {
+      .page { padding: 12px; gap: 12px; }
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .card { height: 220px; }
+    }
+
+    @media (min-width: 960px) {
+      html, body { height: 100%; }
+      .page {
+        height: 100vh;
+        padding: 14px;
+        gap: 12px;
+        overflow: hidden;
+      }
+      .grid {
+        flex: 1;
+        min-height: 0;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .card { height: auto; }
+      .chart-name { font-size: 12px; }
+      .price      { font-size: 12px; }
+      .mode-toggle button { padding: 4px 10px; font-size: 11px; }
+    }
+
+    /* ── ログDLボタン（画面右下に固定浮動） ── */
+    #debug-bar {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #btn-dl-log {
+      padding: 10px 18px;
+      background: var(--accent);
+      color: #0f1117;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(56,189,248,0.45);
+      -webkit-tap-highlight-color: transparent;
+      letter-spacing: 0.04em;
+    }
+    #btn-dl-log:active {
+      opacity: 0.8;
+    }
+
+    #btn-clear-log {
+      padding: 10px 14px;
+      background: var(--card);
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #btn-clear-log:active { opacity: 0.7; }
+
+    #log-count {
+      font-size: 11px;
+      color: var(--dim);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>chart-lib debug demo</h1>
+      <div class="live-dot" title="Live"></div>
+    </header>
+
+    <div class="grid" id="grid"></div>
+
+    <footer>
+      診断版 — ログ DL ボタンでログファイルをダウンロードできます
+    </footer>
+  </div>
+
+  <!-- ログDLパネル（右下固定） -->
+  <div id="debug-bar">
+    <span id="log-count">0 logs</span>
+    <button id="btn-clear-log">クリア</button>
+    <button id="btn-dl-log">📥 ログ DL</button>
+  </div>
+
+  <script>
+    // ─────────────────────────────────────────────────────────────
+    // ログカウント表示の更新
+    // ─────────────────────────────────────────────────────────────
+    const logCountEl = document.getElementById('log-count');
+    function updateLogCount() {
+      logCountEl.textContent = ChartLib.getDebugLogs().length + ' logs';
+    }
+    // 500ms ごとにカウント表示を更新
+    setInterval(updateLogCount, 500);
+
+    document.getElementById('btn-dl-log').addEventListener('click', () => {
+      ChartLib.downloadDebugLogs();
+    });
+    document.getElementById('btn-clear-log').addEventListener('click', () => {
+      ChartLib.clearDebugLogs();
+      updateLogCount();
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // デモデータ生成
+    // ─────────────────────────────────────────────────────────────
+    function generateOHLC(prevClose, volatility) {
+      const open  = prevClose;
+      const move  = (Math.random() - 0.5) * volatility * 2;
+      const close = Math.max(open + move, prevClose * 0.01);
+      const wick  = Math.random() * volatility * 0.55;
+      const high  = Math.max(open, close) + wick;
+      const low   = Math.max(Math.min(open, close) - wick, prevClose * 0.005);
+      return { open, high, low, close };
+    }
+
+    function generateInitialData(basePrice, volatility, count = 30) {
+      const data = [];
+      let price = basePrice;
+      for (let i = 0; i < count; i++) {
+        const c = generateOHLC(price, volatility);
+        data.push({ ...c, index: i });
+        price = c.close;
+      }
+      return data;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // インストゥルメント定義
+    // ─────────────────────────────────────────────────────────────
+    const INSTRUMENTS = [
+      { name: 'BTC/USD',  base: 65000,  vol: 450,   mode: 'candles' },
+      { name: 'ETH/USD',  base: 3200,   vol: 28,    mode: 'area'    },
+      { name: 'SOL/USD',  base: 185,    vol: 3.5,   mode: 'candles' },
+      { name: 'BNB/USD',  base: 580,    vol: 8,     mode: 'candles' },
+      { name: 'XRP/USD',  base: 0.62,   vol: 0.012, mode: 'area'    },
+      { name: 'ADA/USD',  base: 0.48,   vol: 0.009, mode: 'candles' },
+      { name: 'DOGE/USD', base: 0.12,   vol: 0.004, mode: 'area'    },
+      { name: 'AVAX/USD', base: 38,     vol: 0.8,   mode: 'candles' },
+      { name: 'LINK/USD', base: 14,     vol: 0.3,   mode: 'area'    },
+    ];
+
+    const fmt = v => {
+      if (v == null) return '—';
+      if (v >= 1000) return v.toFixed(2);
+      if (v >= 1)    return v.toFixed(3);
+      return v.toFixed(5);
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // チャート生成
+    // ─────────────────────────────────────────────────────────────
+    const charts        = [];
+    const unsubscribers = [];
+    const grid          = document.getElementById('grid');
+
+    INSTRUMENTS.forEach((inst, idx) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const bar = document.createElement('div');
+      bar.className = 'title-bar';
+
+      const nameEl = document.createElement('span');
+      nameEl.className   = 'chart-name';
+      nameEl.textContent = inst.name;
+
+      const priceEl = document.createElement('span');
+      priceEl.className   = 'price';
+      priceEl.textContent = '—';
+
+      const toggle = document.createElement('div');
+      toggle.className = 'mode-toggle';
+
+      const btnC = document.createElement('button');
+      btnC.textContent = 'Candles';
+      const btnA = document.createElement('button');
+      btnA.textContent = 'Area';
+      (inst.mode === 'candles' ? btnC : btnA).classList.add('active');
+      toggle.append(btnC, btnA);
+
+      bar.append(nameEl, priceEl, toggle);
+
+      const ctr = document.createElement('div');
+      ctr.className = 'chart-container';
+
+      card.append(bar, ctr);
+      grid.appendChild(card);
+
+      // _debugName にインストゥルメント名を渡してログを識別しやすくする
+      const chart = new ChartLib.Chart(ctr, {
+        data:       generateInitialData(inst.base, inst.vol, 30),
+        mode:       inst.mode,
+        _debugName: inst.name,
+      });
+      charts.push(chart);
+      priceEl.textContent = fmt(chart.getLastClose());
+
+      const unsub = ChartLib.subscribeRealtimeTick(() => {
+        const nc   = generateOHLC(chart.getLastClose(), inst.vol);
+        const last = chart.tick(nc);
+        priceEl.textContent = fmt(last.close);
+      }, idx * 80);
+      unsubscribers.push(unsub);
+
+      btnC.addEventListener('click', () => {
+        chart.setMode('candles');
+        btnC.classList.add('active');
+        btnA.classList.remove('active');
+      });
+      btnA.addEventListener('click', () => {
+        chart.setMode('area');
+        btnA.classList.add('active');
+        btnC.classList.remove('active');
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // Cleanup
+    // ─────────────────────────────────────────────────────────────
+    window.addEventListener('beforeunload', () => {
+      unsubscribers.forEach(u => u());
+      charts.forEach(c => c.destroy());
+    });
+  </script>
+</body>
+</html>
