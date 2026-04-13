@@ -113,6 +113,11 @@
         autoStart:       false,
         resolution:      window.devicePixelRatio || 1,
         autoDensity:     true,
+        // Event-driven rendering (no continuous RAF) requires preserving
+        // the drawing buffer; otherwise some Android GPUs/compositors can
+        // drop the previous frame and show an opaque black canvas until the
+        // next explicit render (seen as a 1-second blink cadence).
+        preserveDrawingBuffer: true,
         // Avoid a transient clear-to-background flash on some mobile GPUs
         // when Pixi internally performs an unexpected render pass.
         clearBeforeRender: true,
