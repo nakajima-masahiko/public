@@ -164,12 +164,19 @@
         autoStart:       false,
         resolution:      window.devicePixelRatio || 1,
         autoDensity:     true,
+        // Avoid a transient clear-to-background flash on some mobile GPUs
+        // when Pixi internally performs an unexpected render pass.
+        clearBeforeRender:false,
       });
       this.app.stop();
+      // Belt-and-suspenders: keep Pixi's internal ticker fully stopped.
+      // On some Android Chrome builds, an internal first tick can still occur
+      // and briefly flash charts in the initial viewport.
+      this.app.ticker.autoStart = false;
+      this.app.ticker.stop();
 
       canvas.style.width       = width  + 'px';
       canvas.style.height      = height + 'px';
-      canvas.style.willChange  = 'transform';
 
       this.ctr = new PIXI.Container();
       this.ctr.x = this.margin.left;
